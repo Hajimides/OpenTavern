@@ -146,6 +146,66 @@ body {
 
     /* Mobile: input area */
     #messageInput { font-size: 16px; } /* prevent iOS zoom */
+
+    /* ===== World Book Modal Mobile Adaptations ===== */
+    #worldBookModal .relative.glass.rounded-3xl {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Stack list + editor vertically on mobile */
+    #worldBookModal .flex-1.flex.overflow-hidden {
+        flex-direction: column !important;
+    }
+
+    /* Compact entry list as top section */
+    #worldBookModal .w-72 {
+        width: 100% !important;
+        max-height: 160px !important;
+        flex-shrink: 0;
+        border-right: none !important;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Header buttons more compact and wrap-friendly */
+    #worldBookModal .px-5.py-3 {
+        padding: 6px 8px !important;
+        gap: 3px !important;
+        flex-wrap: wrap;
+    }
+
+    #worldBookModal button {
+        font-size: 10px !important;
+        padding: 4px 7px !important;
+        min-height: 28px;
+        line-height: 1;
+    }
+
+    #worldBookModal .text-lg {
+        font-size: 15px !important;
+    }
+
+    /* Tighter editor padding */
+    #worldBookModal .p-4 {
+        padding: 10px !important;
+    }
+
+    #worldBookModal .space-y-4 > * + * {
+        margin-top: 10px !important;
+    }
+
+    /* Make form fields a bit larger for touch */
+    #worldBookModal input,
+    #worldBookModal select,
+    #worldBookModal textarea {
+        font-size: 14px !important;
+        padding-top: 6px !important;
+        padding-bottom: 6px !important;
+    }
 }
 
 @media (min-width: 768px) {
@@ -784,7 +844,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 <span class="text-zinc-400 flex-shrink-0">📖</span>
                 <span class="flex-1 text-zinc-300 truncate" data-i18n="world_book">World Book</span>
                 <span id="wiEntryCount" class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 flex-shrink-0"></span>
-                <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0" data-i18n="world_book_btn">Edit</button>
+                <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="world_book_btn">Edit</button>
             </div>
         </div>
         <div id="convList" class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
