@@ -1985,7 +1985,7 @@ function defaultConversation() {
         character: null,
         messages: [],
         summaries: [],
-        worldInfo: null,   // { name: string, entries: { [uid:string]: WIEntry } }
+        worldInfo: null,   // { name: string, entries: { [uid:string]: WIEntry } }  -- 新对话时会从上一个对话复制（如果有）
         created: Date.now(),
         updated: Date.now()
     };
@@ -4310,15 +4310,21 @@ function newConversation() {
     saveCurrentConversation();
     var conv = defaultConversation();
     var current = getActiveConv();
-    if (current && current.character) {
-        conv.character = JSON.parse(JSON.stringify(current.character));
-        var charName = conv.character.name;
-        var userName = state.settings.userName || 'User';
-        var firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
-        if (firstMes) {
-            conv.messages.push({ role: 'assistant', content: firstMes });
+    if (current) {
+        if (current.character) {
+            conv.character = JSON.parse(JSON.stringify(current.character));
+            var charName = conv.character.name;
+            var userName = state.settings.userName || 'User';
+            var firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
+            if (firstMes) {
+                conv.messages.push({ role: 'assistant', content: firstMes });
+            }
+            conv.title = t('chat_with') + conv.character.name;
         }
-        conv.title = t('chat_with') + conv.character.name;
+        // 修复：新对话时保留世界书（与角色卡保持一致的行为）
+        if (current.worldInfo) {
+            conv.worldInfo = JSON.parse(JSON.stringify(current.worldInfo));
+        }
     }
     state.conversations[conv.id] = conv;
     state.conversationOrder.unshift(conv.id);
@@ -4326,7 +4332,7 @@ function newConversation() {
     if (conv._wiBudgetWarning) conv._wiBudgetWarning = false;
     conv._lastRenderedVisibleCount = 0;   // 新对话，增量状态重置
     conv._showAllMessages = false;
-    conv._wiCache = null;                 // 新对话清除世界书缓存
+    conv._wiCache = null;                 // 新对话清除世界书缓存（即使复制了 worldInfo，也要重新计算激活）
 
     // 关键修复：切换到全新对话时立即清空消息容器 DOM，防止旧对话残留节点
     // 配合 renderMessages 里的启发式检测 + requestRender 后的全量/增量重建
@@ -5348,11 +5354,18 @@ function bindEvents() {
                 var hasMsgs = conv.messages.some(function(m) { return m.role !== 'system'; });
                 if (hasMsgs) {
                     saveCurrentConversation();
+                    // 捕获旧对话的世界书
+                    var oldWorldInfo = conv.worldInfo ? JSON.parse(JSON.stringify(conv.worldInfo)) : null;
+
                     var newConv = defaultConversation();
                     state.conversations[newConv.id] = newConv;
                     state.conversationOrder.unshift(newConv.id);
                     state.activeConvId = newConv.id;
                     conv = newConv;
+
+                    if (oldWorldInfo) {
+                        conv.worldInfo = oldWorldInfo;
+                    }
                 }
 
                 conv.character = character;
