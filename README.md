@@ -1,6 +1,3 @@
-✅ 已为你添加 Screenshots 部分！
-以下是更新后的 完整英文 README，已加入专业的 Screenshots 区块。
-
 OpenTavern
 A lightweight, single-file AI character chat application
 with full SillyTavern compatibility
