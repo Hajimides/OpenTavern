@@ -3933,6 +3933,15 @@ function performSummarization(subset, startIdx, endIdx, onDone) {
         conv._lastRenderedVisibleCount = 0;
         conv._showAllMessages = false;
 
+        // 【重要修复】消息被大量裁剪后，必须清除世界书激活缓存，否则可能返回过时的空结果
+        conv._wiCache = null;
+
+        // 世界书定时效果（sticky/cooldown）基于消息计数，裁剪后计数下降会导致状态异常，这里做保守重置
+        if (conv._wiTimedEffects) {
+            // 简单策略：清掉定时状态，让下次激活重新计算（用户可接受的折中）
+            conv._wiTimedEffects = {};
+        }
+
         persistState();
         if (onDone) onDone(null);
     });
@@ -4013,9 +4022,17 @@ function renderSummaryHistory() {
     }
 
     var html = '';
+    var currentMsgCount = conv.messages.filter(function(m){ return m.role !== 'system'; }).length;
+
     for (var i = summaries.length - 1; i >= 0; i--) {
         var s = summaries[i];
-        var rangeText = t('summary_covered') + (s.coveredStart + 1) + t('summary_to') + (s.coveredEnd + 1) + t('summary_turns_suffix');
+        var rangeText;
+
+        if (typeof s.coveredEnd === 'number' && s.coveredEnd > currentMsgCount + 50) {
+            rangeText = '历史摘要（已压缩）';
+        } else {
+            rangeText = t('summary_covered') + (s.coveredStart + 1) + t('summary_to') + (s.coveredEnd + 1) + t('summary_turns_suffix');
+        }
         var date = new Date(s.created).toLocaleString();
         html += '<div class="glass rounded-xl p-4 group" data-summary-id="' + s.id + '">';
         html += '<div class="flex items-center justify-between mb-2">';
@@ -4108,10 +4125,19 @@ function renderSummaryManagerList() {
     }
 
     var html = '';
+    var currentMsgCount = conv.messages.filter(function(m){ return m.role !== 'system'; }).length;
+
     for (var i = summaries.length - 1; i >= 0; i--) {
         var s = summaries[i];
-        var rangeText = t('summary_covered') + (s.coveredStart + 1) + t('summary_to') + (s.coveredEnd + 1) + t('summary_turns_suffix') + 
+        var rangeText;
+
+        // 裁剪后旧摘要的索引会严重失真，这里做保护性显示
+        if (typeof s.coveredEnd === 'number' && s.coveredEnd > currentMsgCount + 50) {
+            rangeText = '历史摘要（已压缩）';
+        } else {
+            rangeText = t('summary_covered') + (s.coveredStart + 1) + t('summary_to') + (s.coveredEnd + 1) + t('summary_turns_suffix') +
                         (s.coveredStart < 0 ? ' ' + t('summary_covered_legacy') : '');
+        }
         var date = new Date(s.created).toLocaleString();
         html += '<div class="glass rounded-xl p-3 group" data-summary-id="' + s.id + '">';
         html += '<div class="flex items-center justify-between mb-1.5">';
@@ -4183,9 +4209,7 @@ function doGenerateSummary() {
         return;
     }
 
-    var isRecentMode = !dom.modeRangePanel.classList.contains('hidden') ? false : true; // 简单判断
-    // 更可靠的判断：
-    isRecentMode = dom.modeRecentPanel && !dom.modeRecentPanel.classList.contains('hidden');
+    var isRecentMode = dom.modeRecentPanel && !dom.modeRecentPanel.classList.contains('hidden');
 
     dom.summaryManagerStatus.textContent = t('summary_generating');
     dom.summaryGenerateBtn.disabled = true;
@@ -4302,6 +4326,7 @@ function newConversation() {
     if (conv._wiBudgetWarning) conv._wiBudgetWarning = false;
     conv._lastRenderedVisibleCount = 0;   // 新对话，增量状态重置
     conv._showAllMessages = false;
+    conv._wiCache = null;                 // 新对话清除世界书缓存
 
     // 关键修复：切换到全新对话时立即清空消息容器 DOM，防止旧对话残留节点
     // 配合 renderMessages 里的启发式检测 + requestRender 后的全量/增量重建
@@ -4328,6 +4353,7 @@ function loadConversation(id) {
     if (newConv) {
         newConv._showAllMessages = false;
         newConv._lastRenderedVisibleCount = 0;   // 关键：重置增量计数，避免跨对话污染
+        newConv._wiCache = null;                 // 切换对话时清除世界书缓存
     }
 
     // 关键修复：load 其它对话时立即清空消息容器，根除旧 DOM 残留
