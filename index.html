@@ -1879,7 +1879,10 @@ var renderSubscriptions = {
     },
     'isGenerating': function() {
         updateInputState();
-        renderMessagesOnly();
+        // 不再自动调用 renderMessagesOnly()：
+        // - 启动生成时，onToken 会在首次收到 token 时手动创建 streaming 气泡
+        // - 完成时，appendFinalAssistantMessage 负责增量追加最终 AI 消息（避免滚动跳动）
+        // - 之前这里会触发 renderMessagesOnly + appendFinal 两条路径，配合 activeConvId 切换时的 DOM 残留，容易产生重复消息
     },
     'settings': function() {
         updateInputState();
@@ -3945,6 +3948,11 @@ function newConversation() {
     if (conv._wiBudgetWarning) conv._wiBudgetWarning = false;
     conv._lastRenderedVisibleCount = 0;   // 新对话，增量状态重置
     conv._showAllMessages = false;
+
+    // 关键修复：切换到全新对话时立即清空消息容器 DOM，防止旧对话残留节点
+    // 配合 renderMessages 里的启发式检测 + requestRender 后的全量/增量重建
+    if (dom.messagesContainer) dom.messagesContainer.innerHTML = '';
+
     persistState();
 
     // 显式通知 activeConvId 变更，触发列表和消息渲染
@@ -3967,6 +3975,9 @@ function loadConversation(id) {
         newConv._showAllMessages = false;
         newConv._lastRenderedVisibleCount = 0;   // 关键：重置增量计数，避免跨对话污染
     }
+
+    // 关键修复：load 其它对话时立即清空消息容器，根除旧 DOM 残留
+    if (dom.messagesContainer) dom.messagesContainer.innerHTML = '';
 
     persistState();
 
@@ -4176,6 +4187,16 @@ function renderMessages() {
     var conv = getActiveConv();
     if (!conv) return;
     var container = dom.messagesContainer;
+    if (!container) return;
+
+    // 【关键修复】对话切换时强制清空 DOM
+    // newConversation / loadConversation 都会把目标 conv 的 _lastRenderedVisibleCount 显式重置为 0，
+    // 但 requestRender('activeConvId') 只触发 renderMessagesOnly()，增量分支不会清空旧对话的 DOM 节点。
+    // 这里用“count===0 但容器仍有子节点”作为切换特征，立即 innerHTML='' 避免旧消息视觉残留。
+    if ((conv._lastRenderedVisibleCount || 0) === 0 && container.children.length > 0) {
+        container.innerHTML = '';
+    }
+
     var allMessages = conv.messages.filter(function(m) { return m.role !== 'system'; });
 
     if (allMessages.length === 0) {
