@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OpenTavern — AI Character Chat</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+    darkMode: 'class',
+    theme: {
+        extend: {
+            fontFamily: { sans: ['"SF Pro Display"','"SF Pro"','-apple-system','BlinkMacSystemFont','"Segoe UI"','sans-serif'] },
+            animation: {
+                'fade-in': 'fadeIn 0.3s ease-out',
+                'slide-up': 'slideUp 0.4s cubic-bezier(0.4,0,0.2,1)',
+                'pulse-dot': 'pulseDot 1.4s ease-in-out infinite',
+            },
+            keyframes: {
+                fadeIn: { '0%': {opacity:'0',transform:'translateY(6px)'}, '100%': {opacity:'1',transform:'translateY(0)'} },
+                slideUp: { '0%': {opacity:'0',transform:'translateY(16px)'}, '100%': {opacity:'1',transform:'translateY(0)'} },
+                pulseDot: { '0%,100%': {opacity:1}, '50%': {opacity:0.3} },
+            }
+        }
+    }
+}
+</script>
+<style>
+:root {
+    --blur-intensity: 20px;
+    --glass-bg: rgba(14,14,18,0.42);
+    --glass-bg-hover: rgba(24,24,30,0.52);
+    --glass-bg-active: rgba(36,36,44,0.58);
+    --glass-border: rgba(255,255,255,0.10);
+    --glass-border-hover: rgba(255,255,255,0.16);
+    --accent: #f59e0b;
+    --accent-secondary: #ec4899;
+    --accent-glow: rgba(245,158,11,0.25);
+}
+
+*,*::before,*::after { box-sizing:border-box; }
+body {
+    font-family: '"SF Pro Display"','"SF Pro"',-apple-system,BlinkMacSystemFont,'"Segoe UI"',sans-serif;
+    background:#06060d;
+    color:#e4e4e7;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+    height:100vh;
+}
+
+#shaderCanvas { position:fixed; inset:0; z-index:0; pointer-events:none; width:100%; height:100%; }
+#vignetteOverlay {
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(4,4,10,0.55) 85%, rgba(2,2,6,0.82) 100%);
+}
+
+.glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur-intensity));
+    -webkit-backdrop-filter: blur(var(--blur-intensity));
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+.glass-hover:hover { background: var(--glass-bg-hover); border-color: var(--glass-border-hover); }
+.glass-active { background: var(--glass-bg-active); border-color: rgba(255,255,255,0.14); }
+
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.06); border-radius:999px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.12); }
+
+.conv-item { transition: all 0.22s cubic-bezier(0.4,0,0.2,1); border-left: 2px solid transparent; }
+.conv-item.active { border-left-color: var(--accent); background: rgba(245,158,11,0.06); }
+.conv-item:hover:not(.active) { background: rgba(255,255,255,0.03); }
+
+.msg-user .msg-bubble { background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.18); border-radius: 20px 20px 4px 20px; }
+.msg-assistant .msg-bubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px 20px 20px 4px; }
+.msg-bubble { padding: 14px 18px; line-height: 1.7; font-size: 0.925rem; white-space: pre-wrap; word-break: break-word; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+
+.msg-actions { display: flex; gap: 4px; margin-top: 6px; opacity: 0; transition: opacity 0.2s ease; }
+.msg-wrapper:hover .msg-actions { opacity: 1; }
+.msg-user .msg-actions { justify-content: flex-end; }
+.msg-action-btn {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    color: #71717a; font-size: 12px; cursor: pointer;
+    transition: all 0.2s ease;
+}
+.msg-action-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.14); color: #d4d4d8; }
+.msg-action-btn.copy-btn:hover { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
+.msg-action-btn.retry-btn:hover { color: #f59e0b; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
+.msg-action-btn.del-btn:hover { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); }
+
+/* Mobile responsive */
+@media (max-width: 767px) {
+    #sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0; z-index: 60;
+        width: 280px; max-width: 85vw;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        box-shadow: 8px 0 30px rgba(0,0,0,0.5);
+    }
+    #sidebar.open { transform: translateX(0); }
+
+    #sidebarBackdrop {
+        position: fixed; inset: 0; z-index: 55;
+        background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0; visibility: hidden; pointer-events: none;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    #sidebarBackdrop.open { opacity: 1; visibility: visible; pointer-events: auto; }
+
+    .msg-bubble { max-width: 100%; font-size: 0.875rem; padding: 12px 14px; }
+    .msg-wrapper { max-width: 92% !important; }
+
+    .msg-actions { opacity: 1; }
+    .msg-action-btn { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
+
+    #messagesContainer { padding: 12px 12px; }
+
+    #chatTopBar { padding: 8px 12px; }
+    #chatTopBar .topbar-actions { gap: 2px; }
+
+    .modal-overlay .glass.rounded-3xl {
+        width: 96%; max-width: 100%; border-radius: 20px; padding: 16px;
+        max-height: 92vh;
+    }
+
+    .hamburger-btn {
+        display: flex !important;
+    }
+    .hamburger-close-btn {
+        display: flex !important;
+    }
+    .mobile-hide-sm { display: none !important; }
+
+    /* Mobile: character editor single column */
+    #charEditorModal .grid.grid-cols-2 { grid-template-columns: 1fr; }
+
+    /* Mobile: lang switcher compact */
+    .lang-btn { padding-left: 8px; padding-right: 8px; padding-top: 6px; padding-bottom: 6px; font-size: 11px; }
+
+    /* Mobile: input area */
+    #messageInput { font-size: 16px; } /* prevent iOS zoom */
+}
+
+@media (min-width: 768px) {
+    #sidebar { transform: translateX(0) !important; }
+    #sidebarBackdrop { display: none !important; }
+    .hamburger-btn { display: none !important; }
+}
+
+.hamburger-btn {
+    display: none;
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    color: #a1a1aa; cursor: pointer;
+    align-items: center; justify-content: center;
+    transition: all 0.2s ease; flex-shrink: 0;
+}
+.hamburger-btn:hover { background: rgba(255,255,255,0.08); color: #d4d4d8; }
+.hamburger-btn svg { width: 18px; height: 18px; }
+
+.hamburger-close-btn { display: none; }
+
+input[type="range"] { -webkit-appearance:none; appearance:none; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; outline:none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background: var(--accent); cursor:pointer; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 0 10px var(--accent-glow); }
+
+#messageInput { resize: none; max-height: 160px; }
+#messageInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+.modal-overlay { transition: opacity 0.25s ease, visibility 0.25s ease; }
+.modal-overlay.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+
+.msg-enter { animation: fadeIn 0.3s ease-out; }
+.typing-cursor::after { content: '|'; animation: pulseDot 0.8s ease-in-out infinite; color: var(--accent); font-weight: 700; }
+.token-bar { transition: width 0.3s ease, background 0.3s ease; }
+.char-tag { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; padding: 3px 10px; font-size: 0.7rem; color: #a1a1aa; }
+
+/* Language switcher */
+.lang-btn {
+    transition: all 0.2s ease;
+}
+.lang-btn.active {
+    background: var(--accent);
+    color: #000;
+}
+</style>
+</head>
+<body class="shimmer-enabled">
+
+<canvas id="shaderCanvas"></canvas>
+<div id="vignetteOverlay"></div>
+
+<!-- ===== Settings Modal ===== -->
+<div id="settingsModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="settingsBackdrop"></div>
+    <div class="relative glass rounded-3xl w-[92%] max-w-lg p-7 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-lg font-bold text-zinc-100" data-i18n="settings_title">Settings</h2>
+            <button id="settingsCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+        </div>
+        <div class="space-y-5">
+            <div>
+                <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_api_endpoint">API Endpoint</label>
+                <input id="apiEndpoint" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="https://api.openai.com/v1/chat/completions">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_api_key">API Key</label>
+                <input id="apiKey" type="password" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="sk-...">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_model">Model</label>
+                <input id="modelName" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="gpt-4o">
+            </div>
+            <hr class="border-white/5">
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_context_length">Context Length (turns)</label>
+                    <span id="contextLenVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">10</span>
+                </div>
+                <input type="range" id="contextLength" min="1" max="50" value="10" class="w-full">
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_max_tokens">Max Response Tokens</label>
+                    <span id="maxTokensVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">1024</span>
+                </div>
+                <input type="range" id="maxTokens" min="64" max="8192" value="1024" class="w-full">
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_temperature">Temperature</label>
+                    <span id="tempVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">0.7</span>
+                </div>
+                <input type="range" id="temperature" min="0" max="2" step="0.05" value="0.7" class="w-full">
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_top_p">Top P</label>
+                    <span id="topPVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">0.9</span>
+                </div>
+                <input type="range" id="topP" min="0" max="1" step="0.05" value="0.9" class="w-full">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_user_name">Your Name (replaces {{user}})</label>
+                <input id="userName" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="User">
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider"><span data-i18n="settings_system_prompt">Custom System Prompt</span> <span class="text-zinc-600" data-i18n="settings_system_prompt_hint">(overrides character's system prompt)</span></label>
+                <textarea id="systemPrompt" rows="4" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none" data-i18n-placeholder="settings_system_prompt_placeholder"></textarea>
+            </div>
+            <hr class="border-white/5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="summary_auto_label">Auto-Summarize</label>
+                    <p class="text-[10px] text-zinc-600 mt-0.5" data-i18n="summary_auto_hint">Automatically summarize old messages when exceeding context length</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-3">
+                    <input type="checkbox" id="summaryEnabled" class="sr-only peer">
+                    <div class="w-9 h-5 bg-white/10 rounded-full peer-checked:bg-amber-500/60 peer-checked:ring-1 peer-checked:ring-amber-500/40 transition-all after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                </label>
+            </div>
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_summary_threshold">Auto-Summarize Threshold (msgs)</label>
+                    <span id="summaryThresholdVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">10</span>
+                </div>
+                <input type="range" id="summaryThreshold" min="1" max="20" value="10" class="w-full">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Full Prompt Viewer Modal ===== -->
+<div id="promptViewerModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="promptViewerBackdrop"></div>
+    <div class="relative glass rounded-3xl w-[92%] max-w-2xl p-7 shadow-2xl animate-fade-in max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between mb-4 flex-shrink-0">
+            <h2 class="text-lg font-bold text-zinc-100" data-i18n="prompt_viewer_title">Full Prompt (sent to API)</h2>
+            <div class="flex items-center gap-2">
+                <button id="copyPromptBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all" data-i18n="copy">Copy</button>
+                <button id="promptViewerCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+            </div>
+        </div>
+        <pre id="promptViewerContent" class="flex-1 overflow-y-auto glass rounded-2xl p-4 text-xs text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed"></pre>
+    </div>
+</div>
+
+<!-- ===== Character Import Modal ===== -->
+<div id="importModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="importBackdrop"></div>
+    <div class="relative glass rounded-3xl w-[92%] max-w-md p-7 shadow-2xl animate-fade-in">
+        <div class="flex items-center justify-between mb-5">
+            <h2 class="text-lg font-bold text-zinc-100" data-i18n="import_title">Import Character Card</h2>
+            <button id="importCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+        </div>
+        <p class="text-sm text-zinc-400 mb-4"><span data-i18n="import_desc">Supports SillyTavern</span> <code class="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">chara_card_v3</code> <span data-i18n="import_desc2">format JSON files.</span></p>
+        <label class="flex flex-col items-center gap-3 p-8 glass rounded-2xl border-dashed border-2 border-white/10 hover:border-amber-500/30 cursor-pointer transition-all">
+            <span class="text-3xl">📄</span>
+            <span class="text-sm text-zinc-400" data-i18n="import_click_hint">Click to select a .json character card</span>
+            <input type="file" id="importFileInput" accept=".json" class="hidden">
+        </label>
+        <p id="importStatus" class="text-xs text-zinc-500 mt-3 text-center hidden"></p>
+    </div>
+</div>
+
+<!-- ===== Character Editor Modal ===== -->
+<div id="charEditorModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="charEditorBackdrop"></div>
+    <div class="relative glass rounded-3xl w-[92%] max-w-2xl p-7 shadow-2xl animate-fade-in max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between mb-5 flex-shrink-0">
+            <h2 class="text-lg font-bold text-zinc-100" data-i18n="char_editor_title">Edit Character Card</h2>
+            <button id="charEditorCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+        </div>
+        <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_name">Name</label>
+                    <input id="charEditName" type="text" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all">
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_tags">Tags (comma separated)</label>
+                    <input id="charEditTags" type="text" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="tag1, tag2, tag3">
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_description">Description</label>
+                <textarea id="charEditDescription" rows="6" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_personality">Personality</label>
+                    <textarea id="charEditPersonality" rows="3" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+                </div>
+                <div>
+                    <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_scenario">Scenario</label>
+                    <textarea id="charEditScenario" rows="3" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_first_mes">First Message</label>
+                <textarea id="charEditFirstMes" rows="4" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+            </div>
+            <div>
+                <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_mes_example">Example Messages</label>
+                <textarea id="charEditMesExample" rows="4" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+            </div>
+            <div>
+                <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_system_prompt">System Prompt</label>
+                <textarea id="charEditSystemPrompt" rows="2" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+            </div>
+            <div>
+                <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_post_history">Post-History Instructions</label>
+                <textarea id="charEditPostHistory" rows="2" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+            </div>
+            <div>
+                <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_creator_notes">Creator Notes</label>
+                <textarea id="charEditCreatorNotes" rows="2" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+            </div>
+        </div>
+        <div class="flex gap-3 mt-5 flex-shrink-0">
+            <button id="charEditorCancelBtn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white/10 hover:bg-white/15 text-zinc-300 transition-all" data-i18n="char_editor_cancel">Cancel</button>
+            <button id="charEditorSaveBtn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white shadow-lg shadow-amber-500/20 transition-all" data-i18n="char_editor_save">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Summarize Dialog ===== -->
+<div id="summarizeModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="summarizeBackdrop"></div>
+    <div class="relative glass rounded-2xl w-[92%] max-w-sm p-6 shadow-2xl animate-fade-in">
+        <h3 class="text-base font-bold text-zinc-100 mb-4" data-i18n="summary_manual_title">Manual Summarize</h3>
+        <div class="flex items-center gap-3 mb-4">
+            <span class="text-xs text-zinc-400" data-i18n="summary_manual_desc">Summarize the last</span>
+            <input id="summarizeTurns" type="number" min="2" max="50" value="10" class="w-16 px-2.5 py-1.5 glass rounded-lg text-sm text-zinc-200 text-center focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all">
+            <span class="text-xs text-zinc-400" data-i18n="summary_manual_turns">turns</span>
+        </div>
+        <p id="summarizeStatus" class="text-xs text-zinc-500 mb-4 hidden"></p>
+        <div class="flex gap-3">
+            <button id="summarizeCancelBtn" class="flex-1 px-4 py-2 rounded-xl text-sm font-semibold bg-white/10 hover:bg-white/15 text-zinc-300 transition-all" data-i18n="summary_cancel">Cancel</button>
+            <button id="summarizeConfirmBtn" class="flex-1 px-4 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-white shadow-lg shadow-amber-500/20 transition-all" data-i18n="summary_save">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Summary History Modal ===== -->
+<div id="summaryHistoryModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="summaryHistoryBackdrop"></div>
+    <div class="relative glass rounded-3xl w-[92%] max-w-xl p-7 shadow-2xl animate-fade-in max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between mb-5 flex-shrink-0">
+            <h2 class="text-lg font-bold text-zinc-100" data-i18n="summary_history_title">Summary History</h2>
+            <button id="summaryHistoryCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+        </div>
+        <div id="summaryHistoryList" class="flex-1 overflow-y-auto space-y-3 pr-1">
+            <p id="summaryNoHistory" class="text-sm text-zinc-500 text-center py-12" data-i18n="summary_no_history">No summaries yet</p>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Main Layout ===== -->
+<div class="flex h-screen relative z-10">
+    <!-- Left Sidebar -->
+    <aside id="sidebar" class="w-[270px] flex-shrink-0 flex flex-col border-r border-white/5 bg-zinc-950/25 backdrop-blur-xl">
+        <div class="px-5 py-4 flex items-center gap-3 border-b border-white/5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xs font-bold tracking-tighter">OT</div>
+            <div class="flex-1">
+                <p class="text-sm font-bold text-zinc-100 leading-tight">OpenTavern</p>
+                <p class="text-[10px] text-zinc-500 leading-tight" data-i18n="app_subtitle">AI Character Chat</p>
+            </div>
+            <button id="sidebarCloseBtn" class="hamburger-close-btn w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-white/10 transition-all" aria-label="Close menu">&times;</button>
+        </div>
+        <div class="px-3 py-3 space-y-2 border-b border-white/5">
+            <button id="newChatBtn" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-300 glass hover:bg-white/10 active:bg-white/15 transition-all">
+                <span class="text-base">+</span> <span data-i18n="new_chat">New Chat</span>
+            </button>
+
+            <!-- Character Card Block -->
+            <div class="glass rounded-xl p-3 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-zinc-500 uppercase tracking-wider" data-i18n="char_card_title">Character Card</span>
+                    <div id="charCardActions" class="flex items-center gap-0.5">
+                        <button id="charEditBtn" class="w-6 h-6 rounded-lg flex items-center justify-center text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all text-xs hidden" data-i18n-title="char_edit_title">&#9998;</button>
+                        <button id="charExportBtn" class="w-6 h-6 rounded-lg flex items-center justify-center text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-xs hidden" data-i18n-title="char_export_title">&#128230;</button>
+                        <button id="charRemoveBtn" class="w-6 h-6 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all text-xs hidden" data-i18n-title="char_remove_title">&#10005;</button>
+                    </div>
+                </div>
+
+                <!-- Preview state -->
+                <div id="charCardPreview" class="hidden">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <div id="charCardAvatar" class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">?</div>
+                        <div class="min-w-0 flex-1">
+                            <p id="charCardName" class="text-xs font-medium text-zinc-200 truncate"></p>
+                            <p id="charCardTagCount" class="text-[9px] text-zinc-500"></p>
+                        </div>
+                    </div>
+                    <p id="charCardPersonality" class="text-[10px] text-zinc-500 leading-relaxed line-clamp-2 mb-2"></p>
+                </div>
+
+                <!-- Empty hint -->
+                <p id="charCardEmptyHint" class="text-[10px] text-zinc-500"><span data-i18n="char_card_empty">No character loaded</span></p>
+
+                <!-- Always-visible action buttons -->
+                <div class="flex gap-1.5">
+                    <button id="charImportBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium text-zinc-400 bg-white/5 hover:bg-white/10 transition-all">
+                        <span>&#128229;</span> <span data-i18n="char_btn_import">Import</span>
+                    </button>
+                    <button id="charCreateBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium text-zinc-500 bg-white/5 hover:bg-white/10 transition-all">
+                        <span>+</span> <span data-i18n="char_btn_create">Create</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="convList" class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+            <p id="noConvHint" class="text-xs text-zinc-500 text-center py-8 px-2" data-i18n="no_conversations">No saved conversations yet.<br>Start a new chat to begin.</p>
+        </div>
+        <div class="px-3 py-2 border-t border-white/5 space-y-1.5">
+            <div class="flex items-center gap-1.5">
+                <button id="exportAllBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all" data-i18n="conv_export_all_btn" data-i18n-title="conv_export_all_title">Export All</button>
+                <button id="importConvBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all" data-i18n="conv_import_btn" data-i18n-title="conv_import_title">Import</button>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button id="sidebarSettingsBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all">
+                    <span>⚙️</span> <span data-i18n="settings">Settings</span>
+                </button>
+                <button id="viewPromptBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all" data-i18n-title="view_prompt_title">
+                    <span>🔍</span>
+                </button>
+            </div>
+        </div>
+        <input type="file" id="convImportFile" accept=".json" class="hidden">
+    </aside>
+
+    <!-- Sidebar Backdrop (mobile only) -->
+    <div id="sidebarBackdrop"></div>
+
+    <!-- Main Chat Area -->
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Chat Top Bar -->
+        <div id="chatTopBar" class="flex-shrink-0 px-5 py-3 flex items-center justify-between border-b border-white/5 bg-zinc-950/15 backdrop-blur-2xl">
+            <div class="flex items-center gap-3 min-w-0">
+                <button id="hamburgerBtn" class="hamburger-btn" aria-label="Menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <div id="charAvatar" class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500 text-sm flex-shrink-0">💬</div>
+                <div class="min-w-0">
+                    <h3 id="chatTitle" class="text-sm font-semibold text-zinc-200 truncate" data-i18n="new_chat_title">New Chat</h3>
+                    <p id="chatSubtitle" class="text-[10px] text-zinc-500 truncate" data-i18n="no_character">No character loaded</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0 topbar-actions">
+                <!-- Language Switcher -->
+                <div class="flex items-center glass rounded-xl p-0.5 border-white/5">
+                    <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active text-zinc-900" data-lang="zh-CN">简</button>
+                    <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-zinc-400" data-lang="zh-TW">繁</button>
+                    <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-zinc-400" data-lang="en">EN</button>
+                </div>
+                <button id="summarizeBtn" class="mobile-hide-sm px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-500 glass hover:text-zinc-300 hover:bg-white/10 transition-all" data-i18n="summary_btn" data-i18n-title="summary_manual_title">🧠 Summarize</button>
+                <button id="archiveBtn" class="mobile-hide-sm px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-500 glass hover:text-zinc-300 hover:bg-white/10 transition-all" data-i18n="archive" data-i18n-title="archive_title">📋 Archive</button>
+                <button id="summaryHistoryBtn" class="w-8 h-8 rounded-xl glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors" data-i18n-title="summary_history_title" title="Summary History">🧠</button>
+                <button id="topSettingsBtn" class="w-8 h-8 rounded-xl glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">⚙️</button>
+            </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="messagesContainer" class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+            <div id="emptyState" class="flex flex-col items-center justify-center h-full text-center">
+                <div class="w-20 h-20 rounded-3xl glass flex items-center justify-center text-3xl mb-4">✨</div>
+                <p class="text-zinc-400 text-sm font-medium mb-1" data-i18n="welcome_title">Welcome to OpenTavern</p>
+                <p class="text-zinc-600 text-xs max-w-xs" data-i18n="welcome_hint">Import a character card to get started, or just type a message below.</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="flex-shrink-0 px-4 py-3 border-t border-white/5 bg-zinc-950/15 backdrop-blur-2xl">
+            <div id="tokenInfo" class="flex items-center justify-between mb-2 px-1 hidden">
+                <span class="text-[10px] text-zinc-500"><span data-i18n="context_label">Context:</span> <span id="tokenCount">0</span> <span data-i18n="msgs_label">msgs</span></span>
+                <div class="flex-1 mx-3 h-1 bg-white/5 rounded-full overflow-hidden">
+                    <div id="tokenBar" class="token-bar h-full bg-amber-500/60 rounded-full" style="width:0%"></div>
+                </div>
+                <span id="tokenMax" class="text-[10px] text-zinc-500">max 10</span>
+            </div>
+            <div class="flex items-end gap-2.5">
+                <textarea id="messageInput" rows="1"
+                          class="flex-1 px-4 py-3 glass rounded-2xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none transition-all"
+                          data-i18n-placeholder="input_placeholder"
+                          disabled></textarea>
+                <button id="sendBtn"
+                        class="flex-shrink-0 w-11 h-11 rounded-2xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white font-semibold shadow-lg shadow-amber-500/20 hover:shadow-amber-500/35 transition-all duration-200 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                </button>
+                <button id="stopBtn"
+                        class="flex-shrink-0 w-11 h-11 rounded-2xl glass text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 flex items-center justify-center hidden">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+// ==================== i18n ====================
+var i18n = {
+    'zh-CN': {
+        app_subtitle: 'AI 角色聊天',
+        settings: '设置',
+        settings_title: '设置',
+        settings_api_endpoint: 'API 端点',
+        settings_api_key: 'API 密钥',
+        settings_model: '模型',
+        settings_context_length: '上下文长度（对话轮数）',
+        settings_max_tokens: '最大回复 Token 数',
+        settings_temperature: '温度',
+        settings_top_p: 'Top P',
+        settings_user_name: '你的名字（替换 {{user}}）',
+        settings_system_prompt: '自定义系统提示词',
+        settings_system_prompt_hint: '（覆盖角色卡的系统提示词）',
+        settings_system_prompt_placeholder: '可选：自定义系统级指令...',
+        prompt_viewer_title: '完整提示词（发送给 API）',
+        copy: '复制',
+        copied: '已复制！',
+        delete_msg: '删除消息',
+        regenerate: '重新生成',
+        import_title: '导入角色卡',
+        import_desc: '支持 SillyTavern',
+        import_desc2: '格式的 JSON 文件。',
+        import_click_hint: '点击选择一个 .json 角色卡文件',
+        import_success: '已加载：',
+        import_error: '导入错误',
+        import_invalid_format: '无效的角色卡格式。需要 "spec": "chara_card_v3"。',
+        import_missing_name: '角色卡缺少必需的 "data.name" 字段。',
+        new_chat: '新对话',
+        new_chat_title: '新对话',
+        import_character: '导入角色',
+        char_btn_import: '导入',
+        char_btn_create: '新建',
+        char_remove_title: '移除角色卡',
+        char_remove_confirm: '确定移除此角色卡？对话消息将保留。',
+        conv_export_title: '导出此对话',
+        conv_export_all_title: '导出全部对话',
+        conv_import_title: '导入对话',
+        conv_export_all_btn: '全部导出',
+        conv_import_btn: '导入',
+        import_conv_error: '无效的对话导出文件。',
+        import_conv_success: '已导入',
+        import_conv_success_suffix: '个对话。',
+        import_conv_duplicate: '（已跳过重复）',
+        summary_btn: '🧠 总结',
+        summary_title: '对话总结',
+        summary_auto_label: '自动总结',
+        summary_auto_hint: '对话超过设定轮数后自动总结旧消息并注入上下文',
+        summary_manual_title: '手动总结',
+        summary_manual_desc: '总结最近的',
+        summary_manual_turns: '轮对话',
+        summary_generating: '正在生成总结...',
+        summary_history_title: '总结历史',
+        summary_edit: '编辑',
+        summary_save: '保存',
+        summary_cancel: '取消',
+        summary_no_history: '暂无总结记录',
+        summary_delete_confirm: '确定删除此总结？',
+        summary_auto_done: '自动总结已完成并注入上下文',
+        summary_covered: '覆盖第',
+        summary_to: '至',
+        summary_turns_suffix: '轮',
+        summary_inject_placeholder: '（总结内容将自动注入到上下文中）',
+        settings_summary_threshold: '自动总结触发阈值（条数）',
+        no_conversations: '暂无保存的对话。<br>开始新对话吧。',
+        no_character: '未加载角色',
+        view_prompt_title: '查看完整提示词',
+        archive: '📋 存档',
+        archive_title: '复制当前对话到历史记录',
+        welcome_title: '欢迎来到 OpenTavern',
+        welcome_hint: '导入角色卡开始对话，或直接在下方输入消息。',
+        context_label: '上下文：',
+        msgs_label: '条消息',
+        input_placeholder: '输入消息...',
+        input_placeholder_no_api: '请先配置 API 设置（点击 ⚙️）...',
+        input_placeholder_waiting: '等待回复中...',
+        no_api_error: '请先在设置中配置 API 端点和密钥。',
+        generation_abort_confirm: '正在生成回复，是否中止并切换？',
+        delete_confirm: '确定删除此对话？此操作不可撤销。',
+        nothing_to_archive: '没有可存档的内容，请先发送消息。',
+        chat_with: '与 ',
+        chat_title_default: '对话 ',
+        copy_of: '（副本）',
+        no_messages_to_send: '（没有要发送的消息）',
+        sender_you: '你',
+        sender_assistant: '助手',
+        title_new_chat_match: '新对话',
+        char_tag_separator: ' · ',
+        char_card_title: '角色卡',
+        char_card_empty: '未加载角色',
+        char_edit_title: '编辑角色卡',
+        char_export_title: '导出角色卡',
+        char_import_title: '导入新角色卡',
+        char_editor_title: '编辑角色卡',
+        char_editor_name: '名称',
+        char_editor_description: '描述',
+        char_editor_personality: '性格',
+        char_editor_scenario: '场景',
+        char_editor_first_mes: '开场白',
+        char_editor_mes_example: '示例对话',
+        char_editor_system_prompt: '系统提示词',
+        char_editor_post_history: '历史后指令',
+        char_editor_tags: '标签（逗号分隔）',
+        char_editor_creator_notes: '作者备注',
+        char_editor_save: '保存',
+        char_editor_cancel: '取消',
+        char_create_new: '创建新角色',
+        char_empty_name: '未命名角色'
+    },
+    'zh-TW': {
+        app_subtitle: 'AI 角色聊天',
+        settings: '設定',
+        settings_title: '設定',
+        settings_api_endpoint: 'API 端點',
+        settings_api_key: 'API 金鑰',
+        settings_model: '模型',
+        settings_context_length: '上下文長度（對話輪數）',
+        settings_max_tokens: '最大回覆 Token 數',
+        settings_temperature: '溫度',
+        settings_top_p: 'Top P',
+        settings_user_name: '你的名字（替換 {{user}}）',
+        settings_system_prompt: '自訂系統提示詞',
+        settings_system_prompt_hint: '（覆蓋角色卡的系統提示詞）',
+        settings_system_prompt_placeholder: '可選：自訂系統級指令...',
+        prompt_viewer_title: '完整提示詞（傳送給 API）',
+        copy: '複製',
+        copied: '已複製！',
+        delete_msg: '刪除訊息',
+        regenerate: '重新生成',
+        import_title: '匯入角色卡',
+        import_desc: '支援 SillyTavern',
+        import_desc2: '格式的 JSON 檔案。',
+        import_click_hint: '點擊選擇一個 .json 角色卡檔案',
+        import_success: '已載入：',
+        import_error: '匯入錯誤',
+        import_invalid_format: '無效的角色卡格式。需要 "spec": "chara_card_v3"。',
+        import_missing_name: '角色卡缺少必需的 "data.name" 欄位。',
+        new_chat: '新對話',
+        new_chat_title: '新對話',
+        import_character: '匯入角色',
+        char_btn_import: '匯入',
+        char_btn_create: '新建',
+        char_remove_title: '移除角色卡',
+        char_remove_confirm: '確定移除此角色卡？對話訊息將保留。',
+        conv_export_title: '匯出此對話',
+        conv_export_all_title: '匯出全部對話',
+        conv_import_title: '匯入對話',
+        conv_export_all_btn: '全部匯出',
+        conv_import_btn: '匯入',
+        import_conv_error: '無效的對話匯出檔案。',
+        import_conv_success: '已匯入',
+        import_conv_success_suffix: '個對話。',
+        import_conv_duplicate: '（已跳過重複）',
+        summary_btn: '🧠 總結',
+        summary_title: '對話總結',
+        summary_auto_label: '自動總結',
+        summary_auto_hint: '對話超過設定輪數後自動總結舊訊息並注入上下文',
+        summary_manual_title: '手動總結',
+        summary_manual_desc: '總結最近的',
+        summary_manual_turns: '輪對話',
+        summary_generating: '正在生成總結...',
+        summary_history_title: '總結歷史',
+        summary_edit: '編輯',
+        summary_save: '儲存',
+        summary_cancel: '取消',
+        summary_no_history: '暫無總結記錄',
+        summary_delete_confirm: '確定刪除此總結？',
+        summary_auto_done: '自動總結已完成並注入上下文',
+        summary_covered: '覆蓋第',
+        summary_to: '至',
+        summary_turns_suffix: '輪',
+        summary_inject_placeholder: '（總結內容將自動注入到上下文中）',
+        settings_summary_threshold: '自動總結觸發閾值（條數）',
+        no_conversations: '暫無儲存的對話。<br>開始新對話吧。',
+        no_character: '未載入角色',
+        view_prompt_title: '檢視完整提示詞',
+        archive: '📋 存檔',
+        archive_title: '複製當前對話到歷史記錄',
+        welcome_title: '歡迎來到 OpenTavern',
+        welcome_hint: '匯入角色卡開始對話，或直接在下方輸入訊息。',
+        context_label: '上下文：',
+        msgs_label: '條訊息',
+        input_placeholder: '輸入訊息...',
+        input_placeholder_no_api: '請先設定 API（點擊 ⚙️）...',
+        input_placeholder_waiting: '等待回覆中...',
+        no_api_error: '請先在設定中設定 API 端點和金鑰。',
+        generation_abort_confirm: '正在生成回覆，是否中止並切換？',
+        delete_confirm: '確定刪除此對話？此操作無法復原。',
+        nothing_to_archive: '沒有可存檔的內容，請先傳送訊息。',
+        chat_with: '與 ',
+        chat_title_default: '對話 ',
+        copy_of: '（副本）',
+        no_messages_to_send: '（沒有要傳送的訊息）',
+        sender_you: '你',
+        sender_assistant: '助手',
+        title_new_chat_match: '新對話',
+        char_tag_separator: ' · ',
+        char_card_title: '角色卡',
+        char_card_empty: '未載入角色',
+        char_edit_title: '編輯角色卡',
+        char_export_title: '匯出角色卡',
+        char_import_title: '匯入新角色卡',
+        char_editor_title: '編輯角色卡',
+        char_editor_name: '名稱',
+        char_editor_description: '描述',
+        char_editor_personality: '性格',
+        char_editor_scenario: '場景',
+        char_editor_first_mes: '開場白',
+        char_editor_mes_example: '示例對話',
+        char_editor_system_prompt: '系統提示詞',
+        char_editor_post_history: '歷史後指令',
+        char_editor_tags: '標籤（逗號分隔）',
+        char_editor_creator_notes: '作者備註',
+        char_editor_save: '儲存',
+        char_editor_cancel: '取消',
+        char_create_new: '创建新角色',
+        char_empty_name: '未命名角色'
+    },
+    'en': {
+        app_subtitle: 'AI Character Chat',
+        settings: 'Settings',
+        settings_title: 'Settings',
+        settings_api_endpoint: 'API Endpoint',
+        settings_api_key: 'API Key',
+        settings_model: 'Model',
+        settings_context_length: 'Context Length (turns)',
+        settings_max_tokens: 'Max Response Tokens',
+        settings_temperature: 'Temperature',
+        settings_top_p: 'Top P',
+        settings_user_name: 'Your Name (replaces {{user}})',
+        settings_system_prompt: 'Custom System Prompt',
+        settings_system_prompt_hint: '(overrides character\'s system prompt)',
+        settings_system_prompt_placeholder: 'Optional: Custom system-level instructions...',
+        prompt_viewer_title: 'Full Prompt (sent to API)',
+        copy: 'Copy',
+        copied: 'Copied!',
+        delete_msg: 'Delete message',
+        regenerate: 'Regenerate',
+        import_title: 'Import Character Card',
+        import_desc: 'Supports SillyTavern',
+        import_desc2: 'format JSON files.',
+        import_click_hint: 'Click to select a .json character card',
+        import_success: 'Loaded: ',
+        import_error: 'Import Error',
+        import_invalid_format: 'Invalid character card format. Expected "spec": "chara_card_v3".',
+        import_missing_name: 'Character card missing required "data.name" field.',
+        new_chat: 'New Chat',
+        new_chat_title: 'New Chat',
+        import_character: 'Import Character',
+        char_btn_import: 'Import',
+        char_btn_create: 'Create',
+        char_remove_title: 'Remove character card',
+        char_remove_confirm: 'Remove this character card? Messages will be kept.',
+        conv_export_title: 'Export this conversation',
+        conv_export_all_title: 'Export all conversations',
+        conv_import_title: 'Import conversations',
+        conv_export_all_btn: 'Export All',
+        conv_import_btn: 'Import',
+        import_conv_error: 'Invalid conversation export file.',
+        import_conv_success: 'Imported ',
+        import_conv_success_suffix: ' conversation(s).',
+        import_conv_duplicate: ' (duplicates skipped)',
+        summary_btn: '🧠 Summarize',
+        summary_title: 'Chat Summary',
+        summary_auto_label: 'Auto-Summarize',
+        summary_auto_hint: 'Automatically summarize old messages when exceeding context length',
+        summary_manual_title: 'Manual Summarize',
+        summary_manual_desc: 'Summarize the last',
+        summary_manual_turns: 'turns',
+        summary_generating: 'Generating summary...',
+        summary_history_title: 'Summary History',
+        summary_edit: 'Edit',
+        summary_save: 'Save',
+        summary_cancel: 'Cancel',
+        summary_no_history: 'No summaries yet',
+        summary_delete_confirm: 'Delete this summary?',
+        summary_auto_done: 'Auto-summary complete and injected into context',
+        summary_covered: 'Covering turns ',
+        summary_to: ' to ',
+        summary_turns_suffix: '',
+        summary_inject_placeholder: '(Summaries are automatically injected into context)',
+        settings_summary_threshold: 'Auto-Summarize Threshold (msgs)',
+        no_conversations: 'No saved conversations yet.<br>Start a new chat to begin.',
+        no_character: 'No character loaded',
+        view_prompt_title: 'View full prompt',
+        archive: '📋 Archive',
+        archive_title: 'Archive current conversation',
+        welcome_title: 'Welcome to OpenTavern',
+        welcome_hint: 'Import a character card to get started, or just type a message below.',
+        context_label: 'Context:',
+        msgs_label: 'msgs',
+        input_placeholder: 'Type a message...',
+        input_placeholder_no_api: 'Configure API settings first (click ⚙️)...',
+        input_placeholder_waiting: 'Waiting for response...',
+        no_api_error: 'Please configure API Endpoint and API Key in Settings.',
+        generation_abort_confirm: 'A response is being generated. Abort and switch?',
+        delete_confirm: 'Delete this conversation? This cannot be undone.',
+        nothing_to_archive: 'Nothing to archive. Send a message first.',
+        chat_with: 'Chat with ',
+        chat_title_default: 'Chat ',
+        copy_of: ' (copy)',
+        no_messages_to_send: '(No messages to send)',
+        sender_you: 'You',
+        sender_assistant: 'Assistant',
+        title_new_chat_match: 'New Chat',
+        char_tag_separator: ' · ',
+        char_card_title: 'Character Card',
+        char_card_empty: 'No character loaded',
+        char_edit_title: 'Edit character card',
+        char_export_title: 'Export character card',
+        char_import_title: 'Import new character card',
+        char_editor_title: 'Edit Character Card',
+        char_editor_name: 'Name',
+        char_editor_description: 'Description',
+        char_editor_personality: 'Personality',
+        char_editor_scenario: 'Scenario',
+        char_editor_first_mes: 'First Message',
+        char_editor_mes_example: 'Example Messages',
+        char_editor_system_prompt: 'System Prompt',
+        char_editor_post_history: 'Post-History Instructions',
+        char_editor_tags: 'Tags (comma separated)',
+        char_editor_creator_notes: 'Creator Notes',
+        char_editor_save: 'Save',
+        char_editor_cancel: 'Cancel',
+        char_empty_name: 'Unnamed Character'
+    }
+};
+
+function t(key) {
+    var lang = state.settings.lang || 'zh-CN';
+    var dict = i18n[lang];
+    if (!dict) dict = i18n['en'];
+    return dict[key] !== undefined ? dict[key] : (i18n['en'][key] || key);
+}
+
+// ==================== WebGL Background ====================
+var shaderCanvas = document.getElementById('shaderCanvas');
+var gl = shaderCanvas.getContext('webgl') || shaderCanvas.getContext('experimental-webgl');
+
+if (gl) {
+    var vertexShaderSource = [
+        'attribute vec2 a_position;',
+        'void main() {',
+        '  gl_Position = vec4(a_position, 0.0, 1.0);',
+        '}'
+    ].join('\n');
+
+    var fragmentShaderSource = [
+        'precision mediump float;',
+
+        '#define S(a,b,t) smoothstep(a,b,t)',
+
+        'mat2 Rot(float a) {',
+        '  float s = sin(a);',
+        '  float c = cos(a);',
+        '  return mat2(c, -s, s, c);',
+        '}',
+
+        'vec2 hash(vec2 p) {',
+        '  p = vec2(dot(p,vec2(2127.1,81.17)), dot(p,vec2(1269.5,283.37)));',
+        '  return fract(sin(p)*43758.5453);',
+        '}',
+
+        'float noise(in vec2 p) {',
+        '  vec2 i = floor(p);',
+        '  vec2 f = fract(p);',
+        '  vec2 u = f*f*(3.0-2.0*f);',
+        '  float n = mix(mix(dot(-1.0+2.0*hash(i+vec2(0.0,0.0)), f-vec2(0.0,0.0)),',
+        '                     dot(-1.0+2.0*hash(i+vec2(1.0,0.0)), f-vec2(1.0,0.0)), u.x),',
+        '               mix(dot(-1.0+2.0*hash(i+vec2(0.0,1.0)), f-vec2(0.0,1.0)),',
+        '                     dot(-1.0+2.0*hash(i+vec2(1.0,1.0)), f-vec2(1.0,1.0)), u.x), u.y);',
+        '  return 0.5 + 0.5*n;',
+        '}',
+
+        'uniform vec2 u_resolution;',
+        'uniform float u_time;',
+
+        'void mainImage(out vec4 fragColor, in vec2 fragCoord) {',
+        '  vec2 uv = fragCoord/u_resolution.xy;',
+        '  float ratio = u_resolution.x / u_resolution.y;',
+
+        '  vec2 tuv = uv;',
+        '  tuv -= .5;',
+
+        // Rotation driven by noise
+        '  float degree = noise(vec2(u_time*.1, tuv.x*tuv.y));',
+        '  tuv.y *= 1./ratio;',
+        '  tuv *= Rot(radians((degree-.5)*720.+180.));',
+        '  tuv.y *= ratio;',
+
+        // Sine wave warp
+        '  float frequency = 5.;',
+        '  float amplitude = 30.;',
+        '  float speed = u_time * 2.;',
+        '  tuv.x += sin(tuv.y*frequency+speed)/amplitude;',
+        '  tuv.y += sin(tuv.x*frequency*1.5+speed)/(amplitude*.5);',
+
+        // Layer 1: warm cream → deep blue
+        '  vec3 colorYellow = vec3(0.18, 0.11, 0.06);',
+        '  vec3 colorDeepBlue = vec3(0.09, 0.06, 0.04);',
+        '  vec3 layer1 = mix(colorYellow, colorDeepBlue, S(-.3, .2, (tuv*Rot(radians(-5.))).x));',
+
+        // Layer 2: pink → sky blue
+        '  vec3 colorRed = vec3(0.22, 0.08, 0.05);',
+        '  vec3 colorBlue = vec3(0.13, 0.09, 0.06);',
+        '  vec3 layer2 = mix(colorRed, colorBlue, S(-.3, .2, (tuv*Rot(radians(-5.))).x));',
+
+        // Blend layers vertically
+        '  vec3 finalComp = mix(layer1, layer2, S(.5, -.3, tuv.y));',
+
+        '  fragColor = vec4(finalComp, 1.0);',
+        '}',
+
+        'void main() {',
+        '  vec2 fragCoord = gl_FragCoord.xy;',
+        '  vec4 color;',
+        '  mainImage(color, fragCoord);',
+        '  gl_FragColor = color;',
+        '}'
+    ].join('\n');
+
+    function createShader(gl, type, source) {
+        var shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.warn('Shader compile error:', gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+        }
+        return shader;
+    }
+
+    var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    var program = (function() {
+        if (!vertexShader || !fragmentShader) return null;
+        var p = gl.createProgram();
+        gl.attachShader(p, vertexShader);
+        gl.attachShader(p, fragmentShader);
+        gl.linkProgram(p);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+            console.warn('Program link error:', gl.getProgramInfoLog(p));
+            gl.deleteProgram(p);
+            return null;
+        }
+        return p;
+    })();
+
+    if (program) {
+        gl.useProgram(program);
+        var positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+        var positionLocation = gl.getAttribLocation(program, 'a_position');
+        gl.enableVertexAttribArray(positionLocation);
+        gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+        var resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+        var timeLocation = gl.getUniformLocation(program, 'u_time');
+
+        function resizeShader() {
+            shaderCanvas.width = window.innerWidth;
+            shaderCanvas.height = window.innerHeight;
+            gl.viewport(0, 0, shaderCanvas.width, shaderCanvas.height);
+            if (resolutionLocation) gl.uniform2f(resolutionLocation, shaderCanvas.width, shaderCanvas.height);
+        }
+        window.addEventListener('resize', resizeShader);
+        resizeShader();
+
+        var shaderStartTime = performance.now();
+        function renderShader(now) {
+            if (timeLocation) gl.uniform1f(timeLocation, (now - shaderStartTime) / 1000.0);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+            requestAnimationFrame(renderShader);
+        }
+        requestAnimationFrame(renderShader);
+    }
+}
+
+// ==================== Storage Engine ====================
+var STORAGE_KEY = 'opentavern-data-v1';
+
+function loadAll() {
+    try { var raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; }
+    catch(e) { return null; }
+}
+
+function saveAll(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function makeId() {
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+// ==================== Default State ====================
+function defaultSettings() {
+    return {
+        apiEndpoint: 'https://api.openai.com/v1/chat/completions',
+        apiKey: '',
+        model: 'gpt-4o',
+        contextLength: 10,
+        maxTokens: 1024,
+        temperature: 0.7,
+        topP: 0.9,
+        userName: 'User',
+        systemPrompt: '',
+        lang: 'zh-CN',
+        summaryEnabled: true,
+        summaryThreshold: 10
+    };
+}
+
+function defaultConversation() {
+    return {
+        id: makeId(),
+        title: 'New Chat',
+        character: null,
+        messages: [],
+        summaries: [],
+        created: Date.now(),
+        updated: Date.now()
+    };
+}
+
+// ==================== App State ====================
+var state = {
+    settings: defaultSettings(),
+    conversations: {},
+    conversationOrder: [],
+    activeConvId: null,
+    isGenerating: false,
+    abortController: null
+};
+
+function initState() {
+    var saved = loadAll();
+    if (saved) {
+        if (saved.settings) Object.assign(state.settings, saved.settings);
+        if (saved.conversations) state.conversations = saved.conversations;
+        if (saved.conversationOrder) state.conversationOrder = saved.conversationOrder;
+        if (saved.activeConvId && state.conversations[saved.activeConvId]) {
+            state.activeConvId = saved.activeConvId;
+        }
+    }
+    // Ensure lang is set (migration from v1)
+    if (!state.settings.lang) state.settings.lang = 'zh-CN';
+    // If no active conversation, create one
+    if (!state.activeConvId || !state.conversations[state.activeConvId]) {
+        var conv = defaultConversation();
+        state.conversations[conv.id] = conv;
+        state.conversationOrder.unshift(conv.id);
+        state.activeConvId = conv.id;
+    }
+}
+
+function persistState() {
+    saveAll({
+        settings: state.settings,
+        conversations: state.conversations,
+        conversationOrder: state.conversationOrder,
+        activeConvId: state.activeConvId
+    });
+}
+
+function getActiveConv() {
+    return state.conversations[state.activeConvId];
+}
+
+// ==================== Translation DOM Updates ====================
+function applyTranslations() {
+    // data-i18n — text content
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var trans = t(key);
+        if (trans) el.textContent = trans;
+    });
+    // data-i18n-placeholder
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-placeholder');
+        var trans = t(key);
+        if (trans) el.placeholder = trans;
+    });
+    // data-i18n-title
+    document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-title');
+        var trans = t(key);
+        if (trans) el.title = trans;
+    });
+}
+
+function setLanguage(lang) {
+    state.settings.lang = lang;
+    document.documentElement.lang = lang;
+    // Update lang buttons
+    document.querySelectorAll('.lang-btn').forEach(function(btn) {
+        var btnLang = btn.getAttribute('data-lang');
+        if (btnLang === lang) {
+            btn.classList.add('active');
+            btn.classList.add('text-zinc-900');
+            btn.classList.remove('text-zinc-400');
+        } else {
+            btn.classList.remove('active');
+            btn.classList.remove('text-zinc-900');
+            btn.classList.add('text-zinc-400');
+        }
+    });
+    persistState();
+    applyTranslations();
+    renderAll();
+}
+
+// ==================== Character Import ====================
+function importCharacterCard(jsonData) {
+    if (!jsonData || jsonData.spec !== 'chara_card_v3') {
+        throw new Error(t('import_invalid_format'));
+    }
+    var d = jsonData.data;
+    if (!d || !d.name) {
+        throw new Error(t('import_missing_name'));
+    }
+    return {
+        name: d.name,
+        description: d.description || '',
+        personality: d.personality || '',
+        scenario: d.scenario || '',
+        first_mes: d.first_mes || '',
+        mes_example: d.mes_example || '',
+        system_prompt: d.system_prompt || '',
+        post_history_instructions: d.post_history_instructions || '',
+        creator_notes: d.creator_notes || '',
+        tags: d.tags || [],
+        alternate_greetings: d.alternate_greetings || []
+    };
+}
+
+function replacePlaceholders(text, charName, userName) {
+    if (!text) return '';
+    return text
+        .replace(/\{\{char\}\}/gi, charName)
+        .replace(/\{\{user\}\}/gi, userName || 'User');
+}
+
+function buildSystemPrompt(character) {
+    var parts = [];
+    var charName = character ? character.name : 'Assistant';
+    var userName = state.settings.userName || 'User';
+
+    var sysPrompt = state.settings.systemPrompt;
+    if (!sysPrompt && character && character.system_prompt) {
+        sysPrompt = character.system_prompt;
+    }
+    if (sysPrompt) {
+        parts.push(replacePlaceholders(sysPrompt, charName, userName));
+    }
+
+    if (character && character.post_history_instructions) {
+        parts.push(replacePlaceholders(character.post_history_instructions, charName, userName));
+    }
+
+    if (character) {
+        var charInfo = [];
+        if (character.personality) charInfo.push('Personality: ' + replacePlaceholders(character.personality, charName, userName));
+        if (character.scenario) charInfo.push('Scenario: ' + replacePlaceholders(character.scenario, charName, userName));
+        if (character.description) charInfo.push(replacePlaceholders(character.description, charName, userName));
+        if (charInfo.length > 0) parts.push(charInfo.join('\n\n'));
+    }
+
+    if (character && character.mes_example) {
+        parts.push('Example dialogues:\n' + replacePlaceholders(character.mes_example, charName, userName));
+    }
+
+    return parts.join('\n\n').trim();
+}
+
+function buildMessagesForAPI() {
+    var conv = getActiveConv();
+    var charName = conv.character ? conv.character.name : 'Assistant';
+    var userName = state.settings.userName || 'User';
+    var maxMsgs = state.settings.contextLength * 2;
+
+    var systemContent = buildSystemPrompt(conv.character);
+    var apiMessages = [];
+    if (systemContent) apiMessages.push({ role: 'system', content: systemContent });
+
+    // Inject summaries as a second system message if any exist
+    if (conv.summaries && conv.summaries.length > 0) {
+        var summaryText = conv.summaries.map(function(s) { return s.text; }).join('\n---\n');
+        var lang = state.settings.lang || 'zh-CN';
+        var header = lang === 'zh-TW'
+            ? '[以下是先前對話的自動摘要，供上下文參考]\n'
+            : lang === 'en'
+            ? '[Automatic summary of previous conversation for context]\n'
+            : '[以下是先前对话的自动摘要，供上下文参考]\n';
+        apiMessages.push({ role: 'system', content: header + summaryText });
+    }
+
+    var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
+    if (regularMsgs.length > maxMsgs) {
+        regularMsgs = regularMsgs.slice(regularMsgs.length - maxMsgs);
+    }
+    apiMessages = apiMessages.concat(regularMsgs);
+
+    return apiMessages.map(function(m) {
+        return { role: m.role, content: replacePlaceholders(m.content, charName, userName) };
+    });
+}
+
+// ==================== API Client ====================
+function streamChat(onToken, onComplete, onError) {
+    var settings = state.settings;
+    if (!settings.apiEndpoint || !settings.apiKey) {
+        onError(new Error(t('no_api_error')));
+        return;
+    }
+
+    var messages = buildMessagesForAPI();
+    var controller = new AbortController();
+    state.abortController = controller;
+    state.isGenerating = true;
+
+    var endpoint = settings.apiEndpoint;
+    if (!endpoint.includes('/chat/completions')) {
+        if (endpoint.endsWith('/v1')) endpoint += '/chat/completions';
+        else if (endpoint.endsWith('/')) endpoint += 'chat/completions';
+        else endpoint += '/chat/completions';
+    }
+
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + settings.apiKey
+        },
+        body: JSON.stringify({
+            model: settings.model,
+            messages: messages,
+            max_tokens: settings.maxTokens,
+            temperature: settings.temperature,
+            top_p: settings.topP,
+            stream: true
+        }),
+        signal: controller.signal
+    }).then(function(response) {
+        if (!response.ok) {
+            return response.text().then(function(text) {
+                var errMsg = 'API Error ' + response.status;
+                try {
+                    var errJson = JSON.parse(text);
+                    if (errJson.error && errJson.error.message) errMsg += ': ' + errJson.error.message;
+                } catch(e) {
+                    if (text) errMsg += ': ' + text.slice(0, 200);
+                }
+                onError(new Error(errMsg));
+            });
+        }
+
+        var reader = response.body.getReader();
+        var decoder = new TextDecoder();
+        var buffer = '';
+        var fullContent = '';
+
+        function pump() {
+            reader.read().then(function(result) {
+                if (result.done) {
+                    state.isGenerating = false;
+                    state.abortController = null;
+                    onComplete(fullContent);
+                    return;
+                }
+                buffer += decoder.decode(result.value, { stream: true });
+                var lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (!line || line.indexOf('data: ') !== 0) continue;
+                    var data = line.slice(6);
+                    if (data === '[DONE]') {
+                        state.isGenerating = false;
+                        state.abortController = null;
+                        onComplete(fullContent);
+                        return;
+                    }
+                    try {
+                        var json = JSON.parse(data);
+                        var delta = json.choices && json.choices[0] && json.choices[0].delta;
+                        if (delta && delta.content) {
+                            fullContent += delta.content;
+                            onToken(delta.content, fullContent);
+                        }
+                    } catch(e) { /* skip malformed */ }
+                }
+                pump();
+            }).catch(function(e) {
+                state.isGenerating = false;
+                state.abortController = null;
+                if (e.name === 'AbortError') onComplete(fullContent);
+                else onError(e);
+            });
+        }
+        pump();
+    }).catch(function(e) {
+        state.isGenerating = false;
+        state.abortController = null;
+        if (e.name === 'AbortError') onComplete('');
+        else onError(e);
+    });
+}
+
+function stopGeneration() {
+    if (state.abortController) {
+        state.abortController.abort();
+        state.abortController = null;
+        state.isGenerating = false;
+    }
+}
+
+// ==================== Conversation Management ====================
+function saveCurrentConversation() {
+    var conv = getActiveConv();
+    if (!conv) return;
+    var hasMessages = conv.messages.some(function(m) { return m.role !== 'system'; });
+    if (!hasMessages) return;
+    conv.updated = Date.now();
+    if (conv.title === t('title_new_chat_match')) {
+        var firstUser = conv.messages.find(function(m) { return m.role === 'user'; });
+        if (firstUser) {
+            conv.title = firstUser.content.slice(0, 50) + (firstUser.content.length > 50 ? '...' : '');
+        } else {
+            conv.title = t('chat_title_default') + new Date(conv.created).toLocaleDateString();
+        }
+    }
+    persistState();
+}
+
+// ==================== Summarization ====================
+function generateSummary(messages, callback) {
+    var settings = state.settings;
+    if (!settings.apiKey || !settings.apiEndpoint) {
+        callback(new Error(t('no_api_error')));
+        return;
+    }
+    var lang = settings.lang || 'zh-CN';
+    var summaryPrompt = lang === 'zh-TW'
+        ? '你是一位专业的故事复述助手。请以繁體中文將以下對話內容濃縮成簡潔的敘事摘要，重點記錄事件發展、人物關係變化和重要情節轉折。只輸出摘要文字，不要添加任何評論或解釋。'
+        : lang === 'en'
+        ? 'You are a professional story recap assistant. Condense the following conversation into a concise narrative summary, focusing on plot progression, character relationships, and key turning points. Output only the summary text with no commentary or explanation.'
+        : '你是一位专业的故事复述助手。请以简体中文将以下对话内容浓缩成简洁的叙事摘要，重点记录事件发展、人物关系变化和重要情节转折。只输出摘要文字，不要添加任何评论或解释。';
+
+    var summaryMessages = [
+        { role: 'system', content: summaryPrompt },
+        { role: 'user', content: messages.map(function(m, i) {
+            return (m.role === 'user' ? (settings.userName || 'User') : 'Assistant') + ': ' + m.content;
+        }).join('\n\n') }
+    ];
+
+    var endpoint = settings.apiEndpoint;
+    if (!endpoint.includes('/chat/completions')) {
+        if (endpoint.endsWith('/v1')) endpoint += '/chat/completions';
+        else if (endpoint.endsWith('/')) endpoint += 'chat/completions';
+        else endpoint += '/chat/completions';
+    }
+
+    fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + settings.apiKey },
+        body: JSON.stringify({ model: settings.model, messages: summaryMessages, max_tokens: 512, temperature: 0.3, stream: false })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+            callback(null, data.choices[0].message.content.trim());
+        } else {
+            callback(new Error('Unexpected API response'));
+        }
+    }).catch(function(e) { callback(e); });
+}
+
+function triggerSummarization(turns) {
+    var conv = getActiveConv();
+    if (!conv) return;
+    var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
+    if (regularMsgs.length < 2) return; // need at least 2 messages to summarize
+
+    turns = Math.min(turns, Math.floor(regularMsgs.length / 2));
+    if (turns < 1) turns = 1;
+    var turnCount = turns * 2; // each turn = user + assistant
+    var subset = regularMsgs.slice(-turnCount);
+    if (subset.length < 2) return;
+
+    var startIdx = regularMsgs.indexOf(subset[0]);
+    var endIdx = regularMsgs.indexOf(subset[subset.length - 1]);
+
+    dom.summarizeStatus.classList.remove('hidden');
+    dom.summarizeStatus.textContent = t('summary_generating');
+    dom.summarizeConfirmBtn.disabled = true;
+
+    generateSummary(subset, function(err, summaryText) {
+        dom.summarizeStatus.classList.add('hidden');
+        dom.summarizeConfirmBtn.disabled = false;
+        if (err) { alert('Summary error: ' + (err.message || err)); return; }
+        if (!summaryText) return;
+
+        conv.summaries.push({
+            id: makeId(),
+            text: summaryText,
+            coveredStart: startIdx,
+            coveredEnd: endIdx,
+            created: Date.now()
+        });
+        conv.updated = Date.now();
+        persistState();
+        dom.summarizeModal.classList.add('hidden');
+        renderSummaryHistory();
+    });
+}
+
+function autoSummarize() {
+    if (!state.settings.summaryEnabled) return;
+    var conv = getActiveConv();
+    if (!conv) return;
+    var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
+    var threshold = state.settings.summaryThreshold || 20;
+    if (regularMsgs.length < threshold) return;
+
+    // Calculate how many messages have already been summarized
+    var lastCovered = -1;
+    conv.summaries.forEach(function(s) {
+        if (s.coveredEnd > lastCovered) lastCovered = s.coveredEnd;
+    });
+
+    // Find unsummarized messages
+    var unsummarized = [];
+    for (var i = 0; i < regularMsgs.length; i++) {
+        if (i > lastCovered) unsummarized.push(regularMsgs[i]);
+    }
+    if (unsummarized.length < threshold) return;
+
+    // Summarize oldest unsummarized messages, leaving ~10 recent messages
+    var toSummarize = unsummarized.slice(0, unsummarized.length - 10);
+    if (toSummarize.length < 2) return;
+
+    var startIdx = regularMsgs.indexOf(toSummarize[0]);
+    var endIdx = regularMsgs.indexOf(toSummarize[toSummarize.length - 1]);
+
+    generateSummary(toSummarize, function(err, summaryText) {
+        if (err || !summaryText) return;
+        conv.summaries.push({
+            id: makeId(),
+            text: summaryText,
+            coveredStart: startIdx,
+            coveredEnd: endIdx,
+            created: Date.now()
+        });
+        conv.updated = Date.now();
+        persistState();
+    });
+}
+
+function renderSummaryHistory() {
+    var conv = getActiveConv();
+    if (!conv || !dom.summaryHistoryList) return;
+    var summaries = conv.summaries || [];
+
+    if (summaries.length === 0) {
+        dom.summaryHistoryList.innerHTML = '<p class="text-sm text-zinc-500 text-center py-12" data-i18n="summary_no_history">' + t('summary_no_history') + '</p>';
+        return;
+    }
+
+    var html = '';
+    for (var i = summaries.length - 1; i >= 0; i--) {
+        var s = summaries[i];
+        var rangeText = t('summary_covered') + (s.coveredStart + 1) + t('summary_to') + (s.coveredEnd + 1) + t('summary_turns_suffix');
+        var date = new Date(s.created).toLocaleString();
+        html += '<div class="glass rounded-xl p-4 group" data-summary-id="' + s.id + '">';
+        html += '<div class="flex items-center justify-between mb-2">';
+        html += '<span class="text-[10px] text-zinc-500">' + date + ' &middot; ' + rangeText + '</span>';
+        html += '<div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">';
+        html += '<button class="summary-edit-btn w-5 h-5 rounded-lg flex items-center justify-center text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all text-[10px]" data-edit-id="' + s.id + '" title="' + t('summary_edit') + '">&#9998;</button>';
+        html += '<button class="summary-del-btn w-5 h-5 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all text-xs" data-del-id="' + s.id + '" title="Delete">&times;</button>';
+        html += '</div></div>';
+        html += '<p class="text-xs text-zinc-300 leading-relaxed summary-text" data-text-id="' + s.id + '">' + escapeHtml(s.text) + '</p>';
+        html += '</div>';
+    }
+    dom.summaryHistoryList.innerHTML = html;
+
+    // Edit handlers
+    dom.summaryHistoryList.querySelectorAll('.summary-edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var id = btn.getAttribute('data-edit-id');
+            editSummary(id);
+        });
+    });
+    // Delete handlers
+    dom.summaryHistoryList.querySelectorAll('.summary-del-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var id = btn.getAttribute('data-del-id');
+            deleteSummary(id);
+        });
+    });
+}
+
+function editSummary(id) {
+    var conv = getActiveConv();
+    if (!conv) return;
+    var s = conv.summaries.find(function(s) { return s.id === id; });
+    if (!s) return;
+    var textEl = dom.summaryHistoryList.querySelector('[data-text-id="' + id + '"]');
+    if (!textEl) return;
+    var currentText = s.text;
+    textEl.innerHTML = '<textarea class="w-full min-h-[80px] px-3 py-2 glass rounded-xl text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none">' + escapeHtml(currentText) + '</textarea>';
+    var textarea = textEl.querySelector('textarea');
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    function save() {
+        s.text = textarea.value.trim();
+        conv.updated = Date.now();
+        persistState();
+        renderSummaryHistory();
+    }
+    textarea.addEventListener('blur', save);
+    textarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); }
+        if (e.key === 'Escape') { textarea.value = currentText; save(); }
+    });
+}
+
+function deleteSummary(id) {
+    if (!confirm(t('summary_delete_confirm'))) return;
+    var conv = getActiveConv();
+    if (!conv) return;
+    conv.summaries = conv.summaries.filter(function(s) { return s.id !== id; });
+    conv.updated = Date.now();
+    persistState();
+    renderSummaryHistory();
+}
+
+function archiveCurrentConversation() {
+    var conv = getActiveConv();
+    if (!conv) return;
+    var hasMessages = conv.messages.some(function(m) { return m.role !== 'system'; });
+    if (!hasMessages) { alert(t('nothing_to_archive')); return; }
+    var clone = JSON.parse(JSON.stringify(conv));
+    clone.id = makeId();
+    clone.title = conv.title + ' ' + t('copy_of');
+    clone.created = Date.now();
+    clone.updated = Date.now();
+    state.conversations[clone.id] = clone;
+    state.conversationOrder.unshift(clone.id);
+    persistState();
+    renderConversationList();
+}
+
+function newConversation() {
+    saveCurrentConversation();
+    var conv = defaultConversation();
+    var current = getActiveConv();
+    if (current && current.character) {
+        conv.character = JSON.parse(JSON.stringify(current.character));
+        var charName = conv.character.name;
+        var userName = state.settings.userName || 'User';
+        var firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
+        if (firstMes) {
+            conv.messages.push({ role: 'assistant', content: firstMes });
+        }
+        conv.title = t('chat_with') + conv.character.name;
+    }
+    state.conversations[conv.id] = conv;
+    state.conversationOrder.unshift(conv.id);
+    state.activeConvId = conv.id;
+    persistState();
+    renderAll();
+    if (isMobile()) closeSidebar();
+}
+
+function loadConversation(id) {
+    if (state.isGenerating) {
+        if (!confirm(t('generation_abort_confirm'))) return;
+        stopGeneration();
+    }
+    saveCurrentConversation();
+    state.activeConvId = id;
+    persistState();
+    renderAll();
+    if (isMobile()) closeSidebar();
+}
+
+function deleteConversation(id) {
+    if (!confirm(t('delete_confirm'))) return;
+    delete state.conversations[id];
+    state.conversationOrder = state.conversationOrder.filter(function(x) { return x !== id; });
+    if (state.activeConvId === id) {
+        if (state.conversationOrder.length > 0) {
+            state.activeConvId = state.conversationOrder[0];
+        } else {
+            var conv = defaultConversation();
+            state.conversations[conv.id] = conv;
+            state.conversationOrder.push(conv.id);
+            state.activeConvId = conv.id;
+        }
+    }
+    persistState();
+    renderAll();
+}
+
+// ==================== UI Rendering ====================
+var dom = {};
+function cacheDom() {
+    var ids = [
+        'sidebar','convList','noConvHint','chatTopBar','charAvatar','chatTitle','chatSubtitle',
+        'messagesContainer','emptyState','messageInput','sendBtn','stopBtn',
+        'settingsModal','settingsBackdrop','settingsCloseBtn',
+        'apiEndpoint','apiKey','modelName','contextLength','contextLenVal',
+        'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
+        'userName','systemPrompt',
+        'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
+        'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn',
+        'archiveBtn','tokenInfo','tokenCount','tokenBar','tokenMax','newChatBtn',
+        'sidebarSettingsBtn','topSettingsBtn','viewPromptBtn',
+        'exportAllBtn','importConvBtn','convImportFile',
+        'charCardEmpty','charCardPreview','charCardActions','charCardAvatar','charCardName',
+        'charCardTagCount','charCardPersonality','charCardEmptyHint',
+        'charImportBtn','charCreateBtn','charEditBtn','charExportBtn','charRemoveBtn',
+        'charEditorModal','charEditorBackdrop','charEditorCloseBtn','charEditorCancelBtn','charEditorSaveBtn',
+        'charEditName','charEditTags','charEditDescription','charEditPersonality','charEditScenario',
+        'charEditFirstMes','charEditMesExample','charEditSystemPrompt','charEditPostHistory','charEditCreatorNotes',
+        'summarizeBtn','summaryHistoryBtn','summarizeModal','summarizeBackdrop','summarizeTurns',
+        'summarizeStatus','summarizeCancelBtn','summarizeConfirmBtn',
+        'summaryHistoryModal','summaryHistoryBackdrop','summaryHistoryCloseBtn','summaryHistoryList',
+        'summaryNoHistory','summaryEnabled','summaryThreshold','summaryThresholdVal',
+        'hamburgerBtn','sidebarCloseBtn','sidebarBackdrop'
+    ];
+    ids.forEach(function(id) { dom[id] = document.getElementById(id); });
+}
+
+// ==================== Conversation Export / Import ====================
+function exportConversation(id) {
+    var conv = state.conversations[id];
+    if (!conv) return;
+    downloadJsonFile(
+        { version: 1, type: 'opentavern-export', exported_at: new Date().toISOString(), conversations: [conv] },
+        (conv.title || 'conversation').replace(/[^a-zA-Z0-9一-鿿]/g, '_') + '.json'
+    );
+}
+
+function exportAllConversations() {
+    var convs = state.conversationOrder.map(function(id) { return state.conversations[id]; }).filter(Boolean);
+    if (convs.length === 0) { alert(t('nothing_to_archive')); return; }
+    downloadJsonFile(
+        { version: 1, type: 'opentavern-export', exported_at: new Date().toISOString(), conversations: convs },
+        'opentavern_all_' + new Date().toISOString().slice(0, 10) + '.json'
+    );
+}
+
+function downloadJsonFile(data, filename) {
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function importConversations(file) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        try {
+            var data = JSON.parse(ev.target.result);
+            if (!data || data.type !== 'opentavern-export' || !Array.isArray(data.conversations)) {
+                alert(t('import_conv_error'));
+                return;
+            }
+            var imported = 0;
+            var skipped = 0;
+            data.conversations.forEach(function(conv) {
+                if (!conv.id || !Array.isArray(conv.messages)) return;
+                // If a conversation with this ID already exists, generate a new ID
+                if (state.conversations[conv.id]) {
+                    conv.id = makeId();
+                    skipped++;
+                }
+                state.conversations[conv.id] = conv;
+                // Avoid duplicates in the order list
+                if (state.conversationOrder.indexOf(conv.id) === -1) {
+                    state.conversationOrder.unshift(conv.id);
+                }
+                imported++;
+            });
+            if (imported > 0) {
+                persistState();
+                // Switch to the first imported conversation
+                var firstId = data.conversations[0].id;
+                // Re-read the possibly-renamed ID
+                if (data.conversations[0]._origId) {
+                    // not needed — we handle inline
+                }
+                state.activeConvId = state.conversationOrder[0];
+                persistState();
+                renderAll();
+            }
+            var msg = t('import_conv_success') + imported + t('import_conv_success_suffix');
+            if (skipped > 0) msg += ' ' + skipped + t('import_conv_duplicate');
+            alert(msg);
+        } catch(e) {
+            alert(t('import_conv_error'));
+        }
+    };
+    reader.readAsText(file);
+}
+
+function renderConversationList() {
+    if (!dom.convList) return;
+    var order = state.conversationOrder.slice();
+    if (order.length === 0) {
+        dom.convList.innerHTML = '<p class="text-xs text-zinc-500 text-center py-8 px-2">' + t('no_conversations').replace(/\n/g,'<br>') + '</p>';
+        return;
+    }
+    var html = '';
+    for (var i = 0; i < order.length; i++) {
+        var id = order[i], conv = state.conversations[id];
+        if (!conv) continue;
+        var isActive = id === state.activeConvId;
+        var charName = conv.character ? conv.character.name : '';
+        var title = conv.title || (charName ? t('chat_with') + charName : t('new_chat_title'));
+        var date = new Date(conv.updated || conv.created).toLocaleDateString();
+        html += '<div class="conv-item group flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer ' + (isActive ? 'active' : '') + '" data-conv-id="' + id + '">';
+        html += '<div class="flex-1 min-w-0" data-conv-id="' + id + '">';
+        html += '<p class="text-xs font-medium text-zinc-300 truncate">' + escapeHtml(title) + '</p>';
+        html += '<p class="text-[10px] text-zinc-500 truncate">' + (charName || t('no_character')) + ' &middot; ' + date + '</p>';
+        html += '</div>';
+        html += '<button class="conv-export-btn flex-shrink-0 w-5 h-5 rounded-lg flex items-center justify-center text-zinc-600 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-[10px] opacity-0 group-hover:opacity-100" data-exp-id="' + id + '" title="' + t('conv_export_title') + '">&#128229;</button>';
+        html += '<button class="conv-delete-btn flex-shrink-0 w-5 h-5 rounded-lg flex items-center justify-center text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-all text-xs opacity-0 group-hover:opacity-100" data-del-id="' + id + '" title="Delete">&times;</button>';
+        html += '</div>';
+    }
+    dom.convList.innerHTML = html;
+    dom.convList.querySelectorAll('[data-conv-id]').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            var id = el.getAttribute('data-conv-id');
+            if (id) loadConversation(id);
+        });
+    });
+    dom.convList.querySelectorAll('.conv-delete-btn').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var id = el.getAttribute('data-del-id');
+            if (id) deleteConversation(id);
+        });
+    });
+    dom.convList.querySelectorAll('.conv-export-btn').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var id = el.getAttribute('data-exp-id');
+            if (id) exportConversation(id);
+        });
+    });
+}
+
+function renderMessages() {
+    var conv = getActiveConv();
+    if (!conv) return;
+    var container = dom.messagesContainer;
+    var messages = conv.messages.filter(function(m) { return m.role !== 'system'; });
+
+    if (messages.length === 0) {
+        container.innerHTML = '';
+        dom.emptyState.style.display = '';
+        dom.tokenInfo.classList.add('hidden');
+        return;
+    }
+
+    dom.emptyState.style.display = 'none';
+    dom.tokenInfo.classList.remove('hidden');
+
+    var html = '';
+    for (var i = 0; i < messages.length; i++) {
+        var msg = messages[i];
+        var isUser = msg.role === 'user';
+        var senderName = isUser ? (state.settings.userName || t('sender_you')) : (conv.character ? conv.character.name : t('sender_assistant'));
+        // Find actual index in conv.messages (messages is filtered without system)
+        var actualIdx = conv.messages.indexOf(msg);
+        html += '<div class="msg-enter ' + (isUser ? 'msg-user flex justify-end' : 'msg-assistant flex justify-start') + '">';
+        html += '<div class="max-w-[80%] msg-wrapper">';
+        if (!isUser) html += '<p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(senderName) + '</p>';
+        html += '<div class="msg-bubble">' + escapeHtml(msg.content) + '</div>';
+        html += '<div class="msg-actions">';
+        html += '<button class="msg-action-btn copy-btn" data-action="copy" data-msg-idx="' + actualIdx + '" title="' + t('copy') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
+        if (!isUser) {
+            html += '<button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="' + actualIdx + '" title="' + t('regenerate') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>';
+        }
+        html += '<button class="msg-action-btn del-btn" data-action="delete" data-msg-idx="' + actualIdx + '" title="' + t('delete_msg') + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+        html += '</div>';
+        html += '</div></div>';
+    }
+
+    if (state.isGenerating) {
+        html += '<div id="streamingMsg" class="msg-assistant flex justify-start">';
+        html += '<div class="max-w-[80%]">';
+        html += '<p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(conv.character ? conv.character.name : t('sender_assistant')) + '</p>';
+        html += '<div class="msg-bubble typing-cursor" id="streamingContent"></div>';
+        html += '</div></div>';
+    }
+
+    container.innerHTML = html;
+    container.scrollTop = container.scrollHeight;
+}
+
+function renderTopBar() {
+    var conv = getActiveConv();
+    if (!conv) return;
+    dom.chatTitle.textContent = conv.title || t('new_chat_title');
+    if (conv.character) {
+        dom.charAvatar.textContent = conv.character.name.charAt(0).toUpperCase();
+        dom.charAvatar.className = 'w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0';
+        var sep = t('char_tag_separator');
+        dom.chatSubtitle.textContent = conv.character.tags ? conv.character.tags.slice(0,3).join(sep) : conv.character.name;
+    } else {
+        dom.charAvatar.textContent = '💬';
+        dom.charAvatar.className = 'w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500 text-sm flex-shrink-0';
+        dom.chatSubtitle.textContent = t('no_character');
+    }
+}
+
+function renderTokenBar() {
+    var conv = getActiveConv();
+    if (!conv) return;
+    var msgCount = conv.messages.filter(function(m) { return m.role !== 'system'; }).length;
+    var max = state.settings.contextLength * 2;
+    dom.tokenCount.textContent = msgCount;
+    dom.tokenMax.textContent = 'max ' + max + ' ' + t('msgs_label');
+    var pct = Math.min(100, (msgCount / max) * 100);
+    dom.tokenBar.style.width = pct + '%';
+    dom.tokenBar.style.background = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : 'rgba(245,158,11,0.5)';
+}
+
+function renderCharacterCard() {
+    var conv = getActiveConv();
+    var character = conv && conv.character;
+
+    if (character) {
+        dom.charCardPreview.classList.remove('hidden');
+        dom.charCardEmptyHint.classList.add('hidden');
+        dom.charEditBtn.classList.remove('hidden');
+        dom.charExportBtn.classList.remove('hidden');
+        dom.charRemoveBtn.classList.remove('hidden');
+        dom.charCardAvatar.textContent = character.name ? character.name.charAt(0).toUpperCase() : '?';
+        dom.charCardName.textContent = character.name || t('char_empty_name');
+        var tagCount = character.tags ? character.tags.length : 0;
+        dom.charCardTagCount.textContent = tagCount + ' tag' + (tagCount !== 1 ? 's' : '');
+        dom.charCardPersonality.textContent = character.personality || character.description ? (character.personality || character.description).slice(0, 120) : '';
+    } else {
+        dom.charCardPreview.classList.add('hidden');
+        dom.charCardEmptyHint.classList.remove('hidden');
+        dom.charEditBtn.classList.add('hidden');
+        dom.charExportBtn.classList.add('hidden');
+        dom.charRemoveBtn.classList.add('hidden');
+    }
+}
+
+function removeCharacter() {
+    if (!confirm(t('char_remove_confirm'))) return;
+    var conv = getActiveConv();
+    if (!conv) return;
+    conv.character = null;
+    if (conv.title.indexOf(t('chat_with')) === 0) {
+        conv.title = t('new_chat_title');
+    }
+    conv.updated = Date.now();
+    persistState();
+    renderAll();
+}
+
+function openCharacterEditor() {
+    var conv = getActiveConv();
+    var c = conv && conv.character;
+    dom.charEditName.value = c ? c.name : '';
+    dom.charEditTags.value = c && c.tags ? c.tags.join(', ') : '';
+    dom.charEditDescription.value = c ? c.description : '';
+    dom.charEditPersonality.value = c ? c.personality : '';
+    dom.charEditScenario.value = c ? c.scenario : '';
+    dom.charEditFirstMes.value = c ? c.first_mes : '';
+    dom.charEditMesExample.value = c ? c.mes_example : '';
+    dom.charEditSystemPrompt.value = c ? c.system_prompt : '';
+    dom.charEditPostHistory.value = c ? c.post_history_instructions : '';
+    dom.charEditCreatorNotes.value = c ? c.creator_notes : '';
+    dom.charEditorModal.classList.remove('hidden');
+}
+
+function saveCharacterEdits() {
+    var conv = getActiveConv();
+    if (!conv) return;
+
+    var tagsRaw = dom.charEditTags.value.trim();
+    var tags = tagsRaw ? tagsRaw.split(',').map(function(t) { return t.trim(); }).filter(Boolean) : [];
+
+    var character = {
+        name: dom.charEditName.value.trim() || 'Unnamed',
+        description: dom.charEditDescription.value,
+        personality: dom.charEditPersonality.value,
+        scenario: dom.charEditScenario.value,
+        first_mes: dom.charEditFirstMes.value,
+        mes_example: dom.charEditMesExample.value,
+        system_prompt: dom.charEditSystemPrompt.value,
+        post_history_instructions: dom.charEditPostHistory.value,
+        creator_notes: dom.charEditCreatorNotes.value,
+        tags: tags,
+        alternate_greetings: conv.character ? conv.character.alternate_greetings : []
+    };
+
+    var wasNew = !conv.character || !conv.character.name || conv.character.name === 'Unnamed';
+    conv.character = character;
+
+    if (wasNew && character.first_mes && conv.messages.length === 0) {
+        var charName = character.name;
+        var userName = state.settings.userName || 'User';
+        var firstMes = replacePlaceholders(character.first_mes, charName, userName);
+        if (firstMes) conv.messages.push({ role: 'assistant', content: firstMes });
+    }
+
+    if (conv.title === t('title_new_chat_match') || conv.title === t('new_chat_title') || (wasNew && conv.title.indexOf(t('chat_with')) === 0)) {
+        conv.title = t('chat_with') + character.name;
+    }
+    conv.updated = Date.now();
+    persistState();
+    dom.charEditorModal.classList.add('hidden');
+    renderAll();
+}
+
+function exportCharacter() {
+    var conv = getActiveConv();
+    var c = conv && conv.character;
+    if (!c) return;
+
+    var card = {
+        spec: 'chara_card_v3',
+        spec_version: '3.0',
+        data: {
+            name: c.name,
+            description: c.description,
+            personality: c.personality,
+            scenario: c.scenario,
+            first_mes: c.first_mes,
+            mes_example: c.mes_example,
+            system_prompt: c.system_prompt,
+            post_history_instructions: c.post_history_instructions,
+            creator_notes: c.creator_notes,
+            tags: c.tags || [],
+            creator: '',
+            character_version: '1.0',
+            alternate_greetings: c.alternate_greetings || [],
+            extensions: {}
+        },
+        create_date: new Date().toISOString()
+    };
+
+    var blob = new Blob([JSON.stringify(card, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = (c.name || 'character').replace(/[^a-zA-Z0-9一-鿿]/g, '_') + '_card.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function renderAll() {
+    renderConversationList();
+    renderCharacterCard();
+    renderMessages();
+    renderTopBar();
+    renderTokenBar();
+    updateInputState();
+}
+
+function updateInputState() {
+    var hasApiKey = !!(state.settings.apiKey && state.settings.apiEndpoint);
+    dom.messageInput.disabled = !hasApiKey || state.isGenerating;
+    dom.sendBtn.disabled = !hasApiKey || state.isGenerating;
+    if (state.isGenerating) {
+        dom.stopBtn.classList.remove('hidden');
+        dom.sendBtn.classList.add('hidden');
+    } else {
+        dom.stopBtn.classList.add('hidden');
+        dom.sendBtn.classList.remove('hidden');
+    }
+    if (!hasApiKey && !state.isGenerating) {
+        dom.messageInput.placeholder = t('input_placeholder_no_api');
+    } else if (state.isGenerating) {
+        dom.messageInput.placeholder = t('input_placeholder_waiting');
+    } else {
+        dom.messageInput.placeholder = t('input_placeholder');
+    }
+}
+
+// ==================== Mobile Sidebar ====================
+function isMobile() {
+    return window.innerWidth < 768;
+}
+
+function openSidebar() {
+    dom.sidebar.classList.add('open');
+    dom.sidebarBackdrop.classList.add('open');
+}
+
+function closeSidebar() {
+    dom.sidebar.classList.remove('open');
+    dom.sidebarBackdrop.classList.remove('open');
+}
+
+function toggleSidebar() {
+    if (dom.sidebar.classList.contains('open')) {
+        closeSidebar();
+    } else {
+        openSidebar();
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ==================== Message Actions ====================
+function deleteMessage(actualIdx) {
+    var conv = getActiveConv();
+    if (!conv) return;
+    var msg = conv.messages[actualIdx];
+    if (!msg) return;
+    if (msg.role === 'user') {
+        // Delete user message and the following AI response if it exists
+        if (actualIdx + 1 < conv.messages.length && conv.messages[actualIdx + 1].role === 'assistant') {
+            conv.messages.splice(actualIdx, 2);
+        } else {
+            conv.messages.splice(actualIdx, 1);
+        }
+    } else {
+        // Delete only this AI message
+        conv.messages.splice(actualIdx, 1);
+    }
+    conv.updated = Date.now();
+    persistState();
+    renderAll();
+}
+
+function regenerateMessage(actualIdx) {
+    if (state.isGenerating) return;
+    var conv = getActiveConv();
+    if (!conv) return;
+    var msg = conv.messages[actualIdx];
+    if (!msg || msg.role !== 'assistant') return;
+    // Remove this AI message
+    conv.messages.splice(actualIdx, 1);
+    conv.updated = Date.now();
+    persistState();
+    renderAll();
+
+    // Re-send to API (the last message should be from user now)
+    var lastMsg = conv.messages[conv.messages.length - 1];
+    if (!lastMsg || lastMsg.role !== 'user') return;
+
+    streamChat(
+        function onToken(token, fullContent) {
+            var streamingEl = document.getElementById('streamingContent');
+            if (streamingEl) {
+                streamingEl.textContent = fullContent;
+            } else {
+                var div = document.createElement('div');
+                div.id = 'streamingMsg';
+                div.className = 'msg-assistant flex justify-start msg-enter';
+                div.innerHTML = '<div class="max-w-[80%]"><p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' +
+                    escapeHtml(conv.character ? conv.character.name : t('sender_assistant')) +
+                    '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
+                    escapeHtml(fullContent) + '</div></div>';
+                dom.messagesContainer.appendChild(div);
+            }
+            dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+        },
+        function onComplete(fullContent) {
+            var streamingEl = document.getElementById('streamingMsg');
+            if (streamingEl) streamingEl.remove();
+            var c = getActiveConv();
+            if (c && fullContent) {
+                c.messages.push({ role: 'assistant', content: fullContent });
+                c.updated = Date.now();
+                persistState();
+            }
+            state.isGenerating = false;
+            renderAll();
+            setTimeout(function() { autoSummarize(); }, 500);
+        },
+        function onError(err) {
+            var streamingEl = document.getElementById('streamingMsg');
+            if (streamingEl) streamingEl.remove();
+            state.isGenerating = false;
+            renderAll();
+            alert('Error: ' + (err.message || err));
+        }
+    );
+    updateInputState();
+}
+
+function copyMessageText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            // Brief visual feedback could be added here
+        });
+    }
+}
+
+// ==================== Send Message ====================
+function sendMessage() {
+    if (state.isGenerating) return;
+    var text = dom.messageInput.value.trim();
+    if (!text) return;
+    var conv = getActiveConv();
+    if (!conv) return;
+
+    conv.messages.push({ role: 'user', content: text });
+    conv.updated = Date.now();
+    if (conv.title === t('title_new_chat_match')) {
+        conv.title = text.slice(0, 50) + (text.length > 50 ? '...' : '');
+    }
+    dom.messageInput.value = '';
+    dom.messageInput.style.height = 'auto';
+    persistState();
+    renderAll();
+
+    streamChat(
+        function onToken(token, fullContent) {
+            var streamingEl = document.getElementById('streamingContent');
+            if (streamingEl) {
+                streamingEl.textContent = fullContent;
+            } else {
+                var div = document.createElement('div');
+                div.id = 'streamingMsg';
+                div.className = 'msg-assistant flex justify-start msg-enter';
+                div.innerHTML = '<div class="max-w-[80%]"><p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' +
+                    escapeHtml(conv.character ? conv.character.name : t('sender_assistant')) +
+                    '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
+                    escapeHtml(fullContent) + '</div></div>';
+                dom.messagesContainer.appendChild(div);
+            }
+            dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+        },
+        function onComplete(fullContent) {
+            var streamingEl = document.getElementById('streamingMsg');
+            if (streamingEl) streamingEl.remove();
+            var conv = getActiveConv();
+            if (conv && fullContent) {
+                conv.messages.push({ role: 'assistant', content: fullContent });
+                conv.updated = Date.now();
+                persistState();
+            }
+            state.isGenerating = false;
+            renderAll();
+            setTimeout(function() { autoSummarize(); }, 500);
+        },
+        function onError(err) {
+            var streamingEl = document.getElementById('streamingMsg');
+            if (streamingEl) streamingEl.remove();
+            state.isGenerating = false;
+            renderAll();
+            alert('Error: ' + (err.message || err));
+        }
+    );
+    updateInputState();
+}
+
+// ==================== Event Bindings ====================
+function bindEvents() {
+    dom.sendBtn.addEventListener('click', sendMessage);
+    dom.messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    dom.messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 160) + 'px';
+    });
+
+    dom.stopBtn.addEventListener('click', function() { stopGeneration(); });
+    dom.newChatBtn.addEventListener('click', newConversation);
+    dom.archiveBtn.addEventListener('click', archiveCurrentConversation);
+
+    // Mobile sidebar
+    dom.hamburgerBtn.addEventListener('click', toggleSidebar);
+    dom.sidebarCloseBtn.addEventListener('click', closeSidebar);
+    dom.sidebarBackdrop.addEventListener('click', closeSidebar);
+    window.addEventListener('resize', function() {
+        if (!isMobile()) closeSidebar();
+    });
+
+    // Message action buttons (event delegation)
+    dom.messagesContainer.addEventListener('click', function(e) {
+        var btn = e.target.closest('.msg-action-btn');
+        if (!btn) return;
+        var action = btn.getAttribute('data-action');
+        var idx = parseInt(btn.getAttribute('data-msg-idx'));
+        if (isNaN(idx)) return;
+        if (action === 'copy') {
+            var conv = getActiveConv();
+            if (conv && conv.messages[idx]) {
+                copyMessageText(conv.messages[idx].content);
+            }
+        } else if (action === 'delete') {
+            deleteMessage(idx);
+        } else if (action === 'retry') {
+            if (state.isGenerating) return;
+            regenerateMessage(idx);
+        }
+    });
+
+    // Language switcher
+    document.querySelectorAll('.lang-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            setLanguage(this.getAttribute('data-lang'));
+        });
+    });
+
+    // Create new character from scratch
+    dom.charCreateBtn.addEventListener('click', openCharacterEditor);
+
+    // Import character — always-visible import button
+    dom.charImportBtn.addEventListener('click', function() {
+        dom.importModal.classList.remove('hidden');
+        dom.importStatus.classList.add('hidden');
+        dom.importFileInput.value = '';
+    });
+
+    // Character editor
+    dom.charEditBtn.addEventListener('click', openCharacterEditor);
+    dom.charEditorCloseBtn.addEventListener('click', function() { dom.charEditorModal.classList.add('hidden'); });
+    dom.charEditorBackdrop.addEventListener('click', function() { dom.charEditorModal.classList.add('hidden'); });
+    dom.charEditorCancelBtn.addEventListener('click', function() { dom.charEditorModal.classList.add('hidden'); });
+    dom.charEditorSaveBtn.addEventListener('click', saveCharacterEdits);
+
+    // Conversation export all
+    dom.exportAllBtn.addEventListener('click', exportAllConversations);
+
+    // Conversation import
+    dom.importConvBtn.addEventListener('click', function() { dom.convImportFile.click(); });
+    dom.convImportFile.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (file) importConversations(file);
+        dom.convImportFile.value = '';
+    });
+
+    // Character remove
+    dom.charRemoveBtn.addEventListener('click', removeCharacter);
+
+    // Character export
+    dom.charExportBtn.addEventListener('click', exportCharacter);
+
+    // Settings modal
+    function openSettings() {
+        dom.apiEndpoint.value = state.settings.apiEndpoint;
+        dom.apiKey.value = state.settings.apiKey;
+        dom.modelName.value = state.settings.model;
+        dom.contextLength.value = state.settings.contextLength;
+        dom.contextLenVal.textContent = state.settings.contextLength;
+        dom.maxTokens.value = state.settings.maxTokens;
+        dom.maxTokensVal.textContent = state.settings.maxTokens;
+        dom.temperature.value = state.settings.temperature;
+        dom.tempVal.textContent = state.settings.temperature;
+        dom.topP.value = state.settings.topP;
+        dom.topPVal.textContent = state.settings.topP;
+        dom.userName.value = state.settings.userName;
+        dom.systemPrompt.value = state.settings.systemPrompt;
+        dom.summaryEnabled.checked = state.settings.summaryEnabled !== false;
+        dom.summaryThreshold.value = state.settings.summaryThreshold || 20;
+        dom.summaryThresholdVal.textContent = state.settings.summaryThreshold || 20;
+        dom.settingsModal.classList.remove('hidden');
+    }
+    function closeSettings() {
+        state.settings.apiEndpoint = dom.apiEndpoint.value.trim();
+        state.settings.apiKey = dom.apiKey.value.trim();
+        state.settings.model = dom.modelName.value.trim() || 'gpt-4o';
+        state.settings.contextLength = parseInt(dom.contextLength.value) || 10;
+        state.settings.maxTokens = parseInt(dom.maxTokens.value) || 1024;
+        state.settings.temperature = parseFloat(dom.temperature.value) || 0.7;
+        state.settings.topP = parseFloat(dom.topP.value) || 0.9;
+        state.settings.userName = dom.userName.value.trim() || 'User';
+        state.settings.systemPrompt = dom.systemPrompt.value.trim();
+        state.settings.summaryEnabled = dom.summaryEnabled.checked;
+        state.settings.summaryThreshold = parseInt(dom.summaryThreshold.value) || 20;
+        persistState();
+        dom.settingsModal.classList.add('hidden');
+        updateInputState();
+        renderAll();
+    }
+    dom.sidebarSettingsBtn.addEventListener('click', openSettings);
+    dom.topSettingsBtn.addEventListener('click', openSettings);
+    dom.settingsCloseBtn.addEventListener('click', closeSettings);
+    dom.settingsBackdrop.addEventListener('click', closeSettings);
+
+    // Settings sliders
+    function bindSlider(slider, valEl, format) {
+        slider.addEventListener('input', function() { valEl.textContent = format ? format(this.value) : this.value; });
+    }
+    bindSlider(dom.contextLength, dom.contextLenVal);
+    bindSlider(dom.maxTokens, dom.maxTokensVal);
+    bindSlider(dom.temperature, dom.tempVal);
+    bindSlider(dom.topP, dom.topPVal);
+
+    // Import modal close
+    dom.importCloseBtn.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
+    dom.importBackdrop.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
+
+    // File import
+    dom.importFileInput.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                var json = JSON.parse(ev.target.result);
+                var character = importCharacterCard(json);
+                var conv = getActiveConv();
+                if (!conv) { newConversation(); conv = getActiveConv(); }
+
+                var hasMsgs = conv.messages.some(function(m) { return m.role !== 'system'; });
+                if (hasMsgs) {
+                    saveCurrentConversation();
+                    var newConv = defaultConversation();
+                    state.conversations[newConv.id] = newConv;
+                    state.conversationOrder.unshift(newConv.id);
+                    state.activeConvId = newConv.id;
+                    conv = newConv;
+                }
+
+                conv.character = character;
+                conv.title = t('chat_with') + character.name;
+                conv.messages = [];
+
+                var charName = character.name;
+                var userName = state.settings.userName || 'User';
+                var firstMes = replacePlaceholders(character.first_mes, charName, userName);
+                if (firstMes) {
+                    conv.messages.push({ role: 'assistant', content: firstMes });
+                }
+
+                conv.updated = Date.now();
+                persistState();
+                renderAll();
+                dom.importModal.classList.add('hidden');
+                dom.importStatus.classList.remove('hidden');
+                dom.importStatus.textContent = t('import_success') + character.name;
+                dom.importStatus.className = 'text-xs text-emerald-400 mt-3 text-center';
+                setTimeout(function() { dom.importStatus.classList.add('hidden'); }, 2500);
+            } catch(err) {
+                dom.importStatus.classList.remove('hidden');
+                dom.importStatus.textContent = t('import_error') + ': ' + err.message;
+                dom.importStatus.className = 'text-xs text-red-400 mt-3 text-center';
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // Prompt viewer
+    function showFullPrompt() {
+        var messages = buildMessagesForAPI();
+        var text = '';
+        for (var i = 0; i < messages.length; i++) {
+            text += '=== ' + messages[i].role.toUpperCase() + ' ===\n';
+            text += messages[i].content + '\n\n';
+        }
+        dom.promptViewerContent.textContent = text || t('no_messages_to_send');
+        dom.promptViewerModal.classList.remove('hidden');
+    }
+    dom.viewPromptBtn.addEventListener('click', showFullPrompt);
+    dom.promptViewerCloseBtn.addEventListener('click', function() { dom.promptViewerModal.classList.add('hidden'); });
+    dom.promptViewerBackdrop.addEventListener('click', function() { dom.promptViewerModal.classList.add('hidden'); });
+
+    // Copy prompt
+    dom.copyPromptBtn.addEventListener('click', function() {
+        var text = dom.promptViewerContent.textContent;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                dom.copyPromptBtn.textContent = t('copied');
+                setTimeout(function() { dom.copyPromptBtn.textContent = t('copy'); }, 1500);
+            });
+        }
+    });
+
+    // Summarize dialog
+    dom.summarizeBtn.addEventListener('click', function() {
+        var conv = getActiveConv();
+        if (!conv) return;
+        var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
+        if (regularMsgs.length < 2) { alert(t('nothing_to_archive')); return; }
+        dom.summarizeTurns.value = Math.min(10, Math.floor(regularMsgs.length / 2));
+        dom.summarizeStatus.classList.add('hidden');
+        dom.summarizeConfirmBtn.disabled = false;
+        dom.summarizeModal.classList.remove('hidden');
+    });
+    dom.summarizeCancelBtn.addEventListener('click', function() { dom.summarizeModal.classList.add('hidden'); });
+    dom.summarizeBackdrop.addEventListener('click', function() { dom.summarizeModal.classList.add('hidden'); });
+    dom.summarizeConfirmBtn.addEventListener('click', function() {
+        var turns = parseInt(dom.summarizeTurns.value) || 10;
+        triggerSummarization(turns);
+    });
+
+    // Summary history
+    dom.summaryHistoryBtn.addEventListener('click', function() {
+        renderSummaryHistory();
+        dom.summaryHistoryModal.classList.remove('hidden');
+    });
+    dom.summaryHistoryCloseBtn.addEventListener('click', function() { dom.summaryHistoryModal.classList.add('hidden'); });
+    dom.summaryHistoryBackdrop.addEventListener('click', function() { dom.summaryHistoryModal.classList.add('hidden'); });
+
+    // Summary threshold slider in settings
+    bindSlider(dom.summaryThreshold, dom.summaryThresholdVal);
+
+    // Escape to close modals / sidebar
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (isMobile() && dom.sidebar.classList.contains('open')) { closeSidebar(); return; }
+            if (!dom.settingsModal.classList.contains('hidden')) closeSettings();
+            if (!dom.charEditorModal.classList.contains('hidden')) dom.charEditorModal.classList.add('hidden');
+            if (!dom.importModal.classList.contains('hidden')) dom.importModal.classList.add('hidden');
+            if (!dom.promptViewerModal.classList.contains('hidden')) dom.promptViewerModal.classList.add('hidden');
+            if (!dom.summarizeModal.classList.contains('hidden')) dom.summarizeModal.classList.add('hidden');
+            if (!dom.summaryHistoryModal.classList.contains('hidden')) dom.summaryHistoryModal.classList.add('hidden');
+        }
+    });
+}
+
+// ==================== Initialize ====================
+function init() {
+    cacheDom();
+    initState();
+    bindEvents();
+
+    // Apply initial language
+    document.documentElement.lang = state.settings.lang;
+    document.querySelectorAll('.lang-btn').forEach(function(btn) {
+        if (btn.getAttribute('data-lang') === state.settings.lang) {
+            btn.classList.add('active', 'text-zinc-900');
+            btn.classList.remove('text-zinc-400');
+        }
+    });
+
+    applyTranslations();
+    renderAll();
+
+    if (!state.settings.apiKey || !state.settings.apiEndpoint) {
+        dom.messageInput.placeholder = t('input_placeholder_no_api');
+        dom.messageInput.disabled = true;
+        dom.sendBtn.disabled = true;
+    } else {
+        dom.messageInput.disabled = false;
+        dom.sendBtn.disabled = false;
+    }
+
+    // Migrate empty active conversation with character's first_mes
+    var conv = getActiveConv();
+    if (conv && conv.character && conv.messages.length === 0 && conv.character.first_mes) {
+        var charName = conv.character.name;
+        var userName = state.settings.userName || 'User';
+        var firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
+        if (firstMes) {
+            conv.messages.push({ role: 'assistant', content: firstMes });
+            persistState();
+            renderAll();
+        }
+    }
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>
