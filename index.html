@@ -358,10 +358,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <hr class="border-white/5">
             <div>
                 <div class="flex items-center justify-between mb-1.5">
-                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_context_length">Context Length (turns)</label>
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_context_length">上下文长度（消息条数）</label>
                     <span id="contextLenVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">10</span>
                 </div>
                 <input type="range" id="contextLength" min="1" max="50" value="10" class="w-full">
+                <p class="mt-1 text-[10px] text-zinc-500">
+                    建议值：至少设为 <strong>12~20</strong> 以上。数值太小会导致自动总结很难正常工作（需要给最近消息留缓冲空间）。
+                </p>
             </div>
             <div>
                 <div class="flex items-center justify-between mb-1.5">
@@ -393,10 +396,11 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 <textarea id="systemPrompt" rows="4" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none" data-i18n-placeholder="settings_system_prompt_placeholder"></textarea>
             </div>
             <hr class="border-white/5">
+            <!-- 自动总结设置（清晰分离） -->
             <div class="flex items-center justify-between">
                 <div>
-                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="summary_auto_label">Auto-Summarize</label>
-                    <p class="text-[10px] text-zinc-600 mt-0.5" data-i18n="summary_auto_hint">Automatically summarize old messages when exceeding context length</p>
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="summary_auto_label">启用自动总结</label>
+                    <p class="text-[10px] text-zinc-600 mt-0.5" data-i18n="summary_auto_hint">开启后，当消息数量达到下方“触发阈值”时自动总结旧内容并移除原始注入。</p>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-3">
                     <input type="checkbox" id="summaryEnabled" class="sr-only peer">
@@ -404,24 +408,20 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 </label>
             </div>
 
-            <!-- 新增：回复后自动生成总结（独立于主开关，默认关闭） -->
-            <div class="flex items-center justify-between mt-3">
-                <div>
-                    <label class="text-xs font-semibold text-zinc-400" data-i18n="auto_summarize_on_reply_label">回复后自动生成总结</label>
-                    <p class="text-[10px] text-zinc-600 mt-0.5" data-i18n="auto_summarize_on_reply_hint">开启后，每次回复时会自动检查是否需要总结旧消息（默认关闭）</p>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-3">
-                    <input type="checkbox" id="autoSummarizeOnReply" class="sr-only peer">
-                    <div class="w-9 h-5 bg-white/10 rounded-full peer-checked:bg-amber-500/60 peer-checked:ring-1 peer-checked:ring-amber-500/40 transition-all after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-                </label>
-            </div>
-
+            <!-- 触发阈值 + 警告 -->
             <div class="mt-3">
-                <div class="flex items-center justify-between mb-1.5">
-                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_summary_threshold">Auto-Summarize Threshold (msgs)</label>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-semibold text-zinc-400" data-i18n="settings_summary_threshold">自动总结触发阈值（消息条数）</label>
                     <span id="summaryThresholdVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">10</span>
                 </div>
-                <input type="range" id="summaryThreshold" min="1" max="20" value="10" class="w-full">
+                <input type="range" id="summaryThreshold" min="1" max="100" value="10" class="w-full">
+                <div id="summaryThresholdWarning" class="mt-1 text-[10px] text-amber-400 hidden">
+                    触发阈值高于当前上下文长度，部分早期消息可能因上下文裁剪而无法被总结。
+                </div>
+                <p class="mt-1 text-[10px] text-zinc-500">
+                    建议值：设为上下文长度的 <strong>50%~70%</strong> 左右（例如上下文 20 条，阈值建议 10~14）。
+                    阈值太接近或超过上下文长度，自动总结会很难触发或效果很差。
+                </p>
             </div>
 
             <!-- Summarization API Settings -->
@@ -1093,7 +1093,7 @@ var i18n = {
         settings_api_endpoint: 'API 端点',
         settings_api_key: 'API 密钥',
         settings_model: '模型',
-        settings_context_length: '上下文长度（对话轮数）',
+        settings_context_length: '上下文长度（消息条数）',
         settings_max_tokens: '最大回复 Token 数',
         settings_temperature: '温度',
         settings_top_p: 'Top P',
@@ -1132,10 +1132,10 @@ var i18n = {
         import_conv_duplicate: '（已跳过重复）',
         summary_btn: '🧠 总结',
         summary_title: '对话总结',
-        summary_auto_label: '自动总结（超过轮数时）',
-        summary_auto_hint: '开启后，对话超过设定轮数时会自动总结旧消息并注入上下文（默认开启）',
+        summary_auto_label: '启用自动总结',
+        summary_auto_hint: '当消息数量达到下方“触发阈值”时自动总结。建议上下文长度 ≥12，阈值设为上下文的 50%~70% 效果最佳。',
         auto_summarize_on_reply_label: '回复后自动生成总结',
-        auto_summarize_on_reply_hint: '开启后，每次 AI 回复时自动检查阈值并生成总结（默认关闭）',
+        auto_summarize_on_reply_hint: '（进阶）控制是否在回复后执行自动总结检查。核心“超过轮数自动总结”由上方开关独立控制（默认开启）',
         summary_manual_title: '手动总结',
         summary_manual_desc: '总结最近的',
         summary_manual_turns: '轮对话',
@@ -1164,7 +1164,7 @@ var i18n = {
         summary_generate: '生成总结',
         summary_range_invalid: '范围无效，请检查起始与结束轮次',
         summary_covered_legacy: '（创建时索引）',
-        settings_summary_threshold: '自动总结触发阈值（条数）',
+        settings_summary_threshold: '自动总结触发阈值（消息条数）',
         no_conversations: '暂无保存的对话。<br>开始新对话吧。',
         no_character: '未加载角色',
         view_prompt_title: '查看完整提示词',
@@ -1296,7 +1296,7 @@ var i18n = {
         settings_api_endpoint: 'API 端點',
         settings_api_key: 'API 金鑰',
         settings_model: '模型',
-        settings_context_length: '上下文長度（對話輪數）',
+        settings_context_length: '上下文長度（訊息條數）',
         settings_max_tokens: '最大回覆 Token 數',
         settings_temperature: '溫度',
         settings_top_p: 'Top P',
@@ -1335,10 +1335,10 @@ var i18n = {
         import_conv_duplicate: '（已跳過重複）',
         summary_btn: '🧠 總結',
         summary_title: '對話總結',
-        summary_auto_label: '自動總結（超過輪數時）',
-        summary_auto_hint: '開啟後，對話超過設定輪數時會自動總結舊訊息並注入上下文（預設開啟）',
+        summary_auto_label: '啟用自動總結',
+        summary_auto_hint: '當訊息數量達到下方「觸發閾值」時自動總結。建議上下文長度 ≥12，閾值設為上下文的 50%~70% 效果最佳。',
         auto_summarize_on_reply_label: '回覆後自動產生總結',
-        auto_summarize_on_reply_hint: '開啟後，每次 AI 回覆時自動檢查閾值並產生總結（預設關閉）',
+        auto_summarize_on_reply_hint: '（進階）控制是否在回覆後執行自動總結檢查。核心「超過輪數自動總結」由上方開關獨立控制（預設開啟）',
         summary_manual_title: '手動總結',
         summary_manual_desc: '總結最近的',
         summary_manual_turns: '輪對話',
@@ -1367,7 +1367,7 @@ var i18n = {
         summary_generate: '產生總結',
         summary_range_invalid: '範圍無效，請檢查起始與結束輪次',
         summary_covered_legacy: '（建立時索引）',
-        settings_summary_threshold: '自動總結觸發閾值（條數）',
+        settings_summary_threshold: '自動總結觸發閾值（訊息條數）',
         no_conversations: '暫無儲存的對話。<br>開始新對話吧。',
         no_character: '未載入角色',
         view_prompt_title: '檢視完整提示詞',
@@ -1499,7 +1499,7 @@ var i18n = {
         settings_api_endpoint: 'API Endpoint',
         settings_api_key: 'API Key',
         settings_model: 'Model',
-        settings_context_length: 'Context Length (turns)',
+        settings_context_length: 'Context Length (messages)',
         settings_max_tokens: 'Max Response Tokens',
         settings_temperature: 'Temperature',
         settings_top_p: 'Top P',
@@ -1538,10 +1538,10 @@ var i18n = {
         import_conv_duplicate: ' (duplicates skipped)',
         summary_btn: '🧠 Summarize',
         summary_title: 'Chat Summary',
-        summary_auto_label: 'Auto-Summarize (when over limit)',
-        summary_auto_hint: 'When enabled, automatically summarizes old messages and injects them into context once the conversation exceeds the set turns (on by default)',
+        summary_auto_label: 'Enable Auto-Summarize',
+        summary_auto_hint: 'When messages reach the trigger threshold below, auto-summarize. Recommended: Context Length ≥12, Threshold = 50~70% of context for best results.',
         auto_summarize_on_reply_label: 'Auto-generate summary after reply',
-        auto_summarize_on_reply_hint: 'When enabled, automatically checks threshold and generates summary after each AI reply (off by default)',
+        auto_summarize_on_reply_hint: '(Advanced) Controls whether to run auto-summary check after replies. Core "summarize when over limit" is controlled by the switch above (on by default).',
         summary_manual_title: 'Manual Summarize',
         summary_manual_desc: 'Summarize the last',
         summary_manual_turns: 'turns',
@@ -1570,7 +1570,7 @@ var i18n = {
         summary_generate: 'Generate Summary',
         summary_range_invalid: 'Invalid range. Please check start and end turns.',
         summary_covered_legacy: ' (index at creation)',
-        settings_summary_threshold: 'Auto-Summarize Threshold (msgs)',
+        settings_summary_threshold: 'Auto-Summarize Trigger Threshold (messages)',
         no_conversations: 'No saved conversations yet.<br>Start a new chat to begin.',
         no_character: 'No character loaded',
         view_prompt_title: 'View full prompt',
@@ -2349,7 +2349,7 @@ function buildMessagesForAPI() {
     var conv = getActiveConv();
     var charName = conv.character ? conv.character.name : 'Assistant';
     var userName = state.settings.userName || 'User';
-    var maxMsgs = state.settings.contextLength * 2;
+    var maxMsgs = state.settings.contextLength;
 
     // Activate World Info for this conversation
     var wiResult = getActivatedWorldInfo(conv);
@@ -3923,22 +3923,20 @@ function performSummarization(subset, startIdx, endIdx, onDone) {
         });
         conv.updated = Date.now();
 
-        // 【最关键修复】使用对象引用精确移除已被总结的消息，释放上下文
-        var toRemove = new Set(subset);
-        conv.messages = conv.messages.filter(function(m) {
-            return m.role === 'system' || !toRemove.has(m);
-        });
+        // 【重要调整 - 符合用户期望】不再物理删除 conv.messages 中的消息
+        // 聊天界面将保留完整历史对话（用户可以一直看到之前的内容）
+        // 仅依靠 buildMessagesForAPI 中的 summary 注入 + lastCovered 切片逻辑，
+        // 在实际发送给模型的 prompt 中移除已总结的原始消息。
+        // 这样既能控制上下文大小，又不会让聊天记录在界面上消失。
 
-        // 重置聊天渲染状态，避免增量渲染显示已被裁剪掉的消息
+        // 只重置增量渲染状态（因为可能插入了新摘要）
         conv._lastRenderedVisibleCount = 0;
-        conv._showAllMessages = false;
 
-        // 【重要修复】消息被大量裁剪后，必须清除世界书激活缓存，否则可能返回过时的空结果
+        // 清理世界书缓存（因为消息结构虽然没变，但摘要增加了）
         conv._wiCache = null;
 
-        // 世界书定时效果（sticky/cooldown）基于消息计数，裁剪后计数下降会导致状态异常，这里做保守重置
+        // 保守重置世界书定时效果状态
         if (conv._wiTimedEffects) {
-            // 简单策略：清掉定时状态，让下次激活重新计算（用户可接受的折中）
             conv._wiTimedEffects = {};
         }
 
@@ -3979,32 +3977,40 @@ function triggerSummarization(turns) {
     });
 }
 
+// 简化后的上下文压力检测：直接使用“上下文长度（消息条数）”作为上限
+function isUnderContextPressure(messageCount) {
+    var contextMax = state.settings.contextLength || 20;
+    return messageCount > contextMax;
+}
+
 function autoSummarize() {
-    // 只受 summaryEnabled 控制（“自动总结（超过轮数时）”主开关，默认开启）
     if (!state.settings.summaryEnabled) return;
+
     var conv = getActiveConv();
     if (!conv) return;
+
     var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
     var threshold = state.settings.summaryThreshold || 20;
+
+    // 主要由用户自由设置的触发阈值控制
     if (regularMsgs.length < threshold) return;
 
-    // 【核心修复1 简化版】prune 后当前消息数组本身就是“未总结的尾部”
-    // 不再依赖旧的 coveredEnd 索引计算（旧索引在 prune 后已失效）
-    var KEEP_RECENT = 10;
+    // 更符合用户期望的总结范围计算：
+    // 达到“触发阈值”后，总结超出合理最近窗口的旧消息。
+    // 保留窗口大小 = min(6, max(3, 阈值/2))，让小阈值也能及时总结。
+    var KEEP_RECENT = Math.min(6, Math.max(3, Math.floor(threshold / 2)));
     var MIN_TO_SUMMARIZE = 2;
 
-    if (regularMsgs.length < threshold + KEEP_RECENT) return;
-
-    // 总结当前最旧的部分，保留最近 KEEP_RECENT 条
     var toSummarize = regularMsgs.slice(0, Math.max(0, regularMsgs.length - KEEP_RECENT));
     if (toSummarize.length < MIN_TO_SUMMARIZE) return;
 
     var startIdx = regularMsgs.indexOf(toSummarize[0]);
     var endIdx = regularMsgs.indexOf(toSummarize[toSummarize.length - 1]);
 
-    // 使用统一函数（自动完成裁剪 + persist）
     performSummarization(toSummarize, startIdx, endIdx, function() {
-        // 自动总结静默完成，不需要任何 UI 提示
+        // 自动总结静默完成
+        // 立即刷新进度条，反映总结后的实际上下文大小
+        renderTokenBar();
     });
 }
 
@@ -4340,6 +4346,9 @@ function newConversation() {
     // 显式通知 activeConvId 变更，触发列表和消息渲染
     requestRender('activeConvId');
 
+    // 修复：新对话时强制刷新进度条（之前存在缓存/订阅未触发的问题）
+    renderTokenBar();
+
     if (isMobile()) closeSidebar();
 }
 
@@ -4366,6 +4375,9 @@ function loadConversation(id) {
 
     // 显式通知 activeConvId 变更
     requestRender('activeConvId');
+
+    // 确保切换对话时进度条也实时更新
+    renderTokenBar();
 
     if (isMobile()) closeSidebar();
 }
@@ -4420,8 +4432,7 @@ function cacheDom() {
         'modeRecentBtn','modeRangeBtn','modeRecentPanel','modeRangePanel',
         'summaryRecentTurns','rangeStart','rangeEnd','previewRangeBtn','rangePreview',
         'summaryGenerateBtn','summaryManagerStatus',
-        'summaryEnabled','summaryThreshold','summaryThresholdVal',
-        'autoSummarizeOnReply',
+        'summaryEnabled', 'summaryThreshold', 'summaryThresholdVal', 'summaryThresholdWarning',
         'hamburgerBtn','sidebarCloseBtn','sidebarBackdrop',
         'worldBookModal','worldBookBackdrop','worldBookBtn','wiEntryCount',
         'wiImportBtn','wiExportBtn','wiDeleteAllBtn','wiAddEntryBtn','wiCloseBtn',
@@ -4772,7 +4783,7 @@ function renderTokenBar() {
     // 【核心修复2】必须使用 buildMessagesForAPI 的实际输出，而不是存储层消息总数
     var apiMessages = buildMessagesForAPI();
     var msgCount = apiMessages.filter(function(m) { return m.role !== 'system'; }).length;
-    var max = state.settings.contextLength * 2;
+    var max = state.settings.contextLength;
     dom.tokenCount.textContent = msgCount;
     dom.tokenMax.textContent = 'max ' + max + ' ' + t('msgs_label');
     var pct = Math.min(100, (msgCount / max) * 100);
@@ -5064,8 +5075,8 @@ function regenerateMessage(actualIdx) {
             // 使用增量追加而不是全量渲染，避免用户浏览历史时被强制滚到底部
             appendFinalAssistantMessage(c, fullContent);
             renderTokenBar();                     // lightweight
-            // 仅在同时开启「自动总结（超过轮数时）」和「回复后自动生成总结」时才在回复后自动触发
-            if (state.settings.summaryEnabled && state.settings.autoSummarizeOnReply) {
+            // 只要「启用自动总结」开启，回复后就会检查是否达到上下文长度并自动总结
+            if (state.settings.summaryEnabled) {
                 setTimeout(function() { autoSummarize(); }, 500);
             }
         },
@@ -5139,8 +5150,8 @@ function sendMessage() {
             // 使用增量追加而不是全量渲染，避免用户浏览历史时被强制滚到底部
             appendFinalAssistantMessage(conv, fullContent);
             renderTokenBar();
-            // 仅在同时开启「自动总结（超过轮数时）」和「回复后自动生成总结」时才在回复后自动触发
-            if (state.settings.summaryEnabled && state.settings.autoSummarizeOnReply) {
+            // 只要「启用自动总结」开启，回复后就会检查是否达到上下文长度并自动总结
+            if (state.settings.summaryEnabled) {
                 setTimeout(function() { autoSummarize(); }, 500);
             }
         },
@@ -5259,12 +5270,12 @@ function bindEvents() {
         dom.userName.value = state.settings.userName;
         dom.systemPrompt.value = state.settings.systemPrompt;
         dom.summaryEnabled.checked = state.settings.summaryEnabled !== false;
-        dom.summaryThreshold.value = state.settings.summaryThreshold || 20;
-        dom.summaryThresholdVal.textContent = state.settings.summaryThreshold || 20;
-
-        // 新增开关：回复后自动生成总结
-        if (dom.autoSummarizeOnReply) {
-            dom.autoSummarizeOnReply.checked = !!state.settings.autoSummarizeOnReply;
+        if (dom.summaryThreshold) {
+            dom.summaryThreshold.value = state.settings.summaryThreshold || 20;
+            if (dom.summaryThresholdVal) {
+                dom.summaryThresholdVal.textContent = state.settings.summaryThreshold || 20;
+            }
+            updateSummaryThresholdWarning();
         }
 
         // World Info Budget
@@ -5294,11 +5305,8 @@ function bindEvents() {
         state.settings.userName = dom.userName.value.trim() || 'User';
         state.settings.systemPrompt = dom.systemPrompt.value.trim();
         state.settings.summaryEnabled = dom.summaryEnabled.checked;
-        state.settings.summaryThreshold = parseInt(dom.summaryThreshold.value) || 20;
-
-        // 新增开关
-        if (dom.autoSummarizeOnReply) {
-            state.settings.autoSummarizeOnReply = dom.autoSummarizeOnReply.checked;
+        if (dom.summaryThreshold) {
+            state.settings.summaryThreshold = parseInt(dom.summaryThreshold.value) || 20;
         }
 
         // World Info Budget
@@ -5314,7 +5322,14 @@ function bindEvents() {
         persistState();
         dom.settingsModal.classList.add('hidden');
 
-        // 显式通知 settings 变更（因为已移除自动响应式）
+        // 设置变更后清理相关缓存，确保 token 条和世界书激活正确刷新
+        var conv = getActiveConv();
+        if (conv) {
+            conv._wiCache = null;
+        }
+        renderTokenBar();
+
+        // 显式通知 settings 变更
         appStore.notify('settings');
     }
     dom.sidebarSettingsBtn.addEventListener('click', openSettings);
@@ -5331,6 +5346,28 @@ function bindEvents() {
     bindSlider(dom.temperature, dom.tempVal);
     bindSlider(dom.topP, dom.topPVal);
     bindSlider(dom.worldInfoBudget, dom.worldInfoBudgetVal);
+
+    // 实时更新“触发阈值高于上下文长度”的警告
+    function updateSummaryThresholdWarning() {
+        if (!dom.summaryThreshold || !dom.contextLength) return;
+        var warning = document.getElementById('summaryThresholdWarning');
+        if (!warning) return;
+
+        var threshold = parseInt(dom.summaryThreshold.value) || 0;
+        var ctxLen = parseInt(dom.contextLength.value) || 0;
+        if (threshold > ctxLen) {
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+
+    if (dom.contextLength) {
+        dom.contextLength.addEventListener('input', updateSummaryThresholdWarning);
+    }
+    if (dom.summaryThreshold) {
+        dom.summaryThreshold.addEventListener('input', updateSummaryThresholdWarning);
+    }
 
     // Import modal close
     dom.importCloseBtn.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
@@ -5476,6 +5513,7 @@ function bindEvents() {
 
     // Summary threshold slider in settings
     bindSlider(dom.summaryThreshold, dom.summaryThresholdVal);
+    updateSummaryThresholdWarning();
 
     // Summarization API section toggle helper
     function toggleSummarizeCustomSection() {
@@ -5514,10 +5552,16 @@ function init() {
 
     // Apply initial language
     document.documentElement.lang = state.settings.lang;
+
+    // 修复：初始化时正确清理所有语言按钮的 active 状态，避免硬编码 active 导致显示错乱
     document.querySelectorAll('.lang-btn').forEach(function(btn) {
-        if (btn.getAttribute('data-lang') === state.settings.lang) {
+        var btnLang = btn.getAttribute('data-lang');
+        if (btnLang === state.settings.lang) {
             btn.classList.add('active', 'text-zinc-900');
             btn.classList.remove('text-zinc-400');
+        } else {
+            btn.classList.remove('active', 'text-zinc-900');
+            btn.classList.add('text-zinc-400');
         }
     });
 
