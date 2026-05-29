@@ -350,6 +350,15 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_api_key">API Key</label>
                 <input id="apiKey" type="password" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="sk-...">
+                <div class="mt-1.5">
+                    <label class="flex items-center gap-2 text-[11px] text-zinc-300 cursor-pointer select-none">
+                        <input type="checkbox" id="saveApiKey" class="accent-amber-500 w-3.5 h-3.5 flex-shrink-0">
+                        <span data-i18n="settings_save_api_key">将 API Key 保存到浏览器本地存储</span>
+                    </label>
+                    <div class="mt-1 ml-5 text-[10px] text-amber-400/90 leading-snug" data-i18n="settings_save_api_key_warn">
+                        ⚠️ 请仅在您完全信任的私人设备上启用此选项。API Key 将以明文形式存储在浏览器 localStorage 中，存在被他人访问或脚本窃取的风险。在公共电脑、网吧或共享设备上请勿勾选！
+                    </div>
+                </div>
             </div>
             <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_model">Model</label>
@@ -1298,7 +1307,9 @@ var i18n = {
         settings_summarize_use_main: '使用主 API 进行总结（推荐大多数用户）',
         settings_summarize_api_endpoint: 'API Endpoint',
         settings_summarize_api_key: 'API Key',
-        settings_summarize_model: 'Model'
+        settings_summarize_model: 'Model',
+        settings_save_api_key: '将 API Key 保存到浏览器本地存储',
+        settings_save_api_key_warn: '⚠️ 请仅在您完全信任的私人设备上启用此选项。API Key 将以明文形式存储在浏览器 localStorage 中，存在被他人访问或脚本窃取的风险。在公共电脑、网吧或共享设备上请勿勾选！'
     },
     'zh-TW': {
         app_subtitle: 'AI 角色聊天',
@@ -1502,7 +1513,9 @@ var i18n = {
         settings_summarize_use_main: '使用主 API 進行總結（推薦大多數用戶）',
         settings_summarize_api_endpoint: 'API Endpoint',
         settings_summarize_api_key: 'API Key',
-        settings_summarize_model: 'Model'
+        settings_summarize_model: 'Model',
+        settings_save_api_key: '將 API Key 儲存到瀏覽器本地',
+        settings_save_api_key_warn: '⚠️ 請僅在您完全信任的私人裝置上啟用此選項。API Key 將以明文形式儲存在瀏覽器 localStorage 中，存在被他人存取或腳本竊取的風險。在公共電腦、網吧或共享裝置上請勿勾選！'
     },
     'en': {
         app_subtitle: 'AI Character Chat',
@@ -1705,7 +1718,9 @@ var i18n = {
         settings_summarize_use_main: 'Use main API for summarization (recommended for most users)',
         settings_summarize_api_endpoint: 'API Endpoint',
         settings_summarize_api_key: 'API Key',
-        settings_summarize_model: 'Model'
+        settings_summarize_model: 'Model',
+        settings_save_api_key: 'Save API Key to browser local storage',
+        settings_save_api_key_warn: '⚠️ Only enable on devices you fully trust. The API Key will be stored in plaintext in browser localStorage and can be read by anyone with physical access or via XSS attacks. Do NOT enable on public computers, internet cafes, or shared devices!'
     }
 };
 
@@ -1894,6 +1909,17 @@ function saveAll(data) {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
 }
 
+// Returns a copy of settings with API keys stripped unless user explicitly opted in.
+// This prevents accidental persistence of secrets in localStorage.
+function getSafeSettingsForPersist() {
+    var s = JSON.parse(JSON.stringify(state.settings || {}));
+    if (!s.saveApiKey) {
+        s.apiKey = '';
+        s.summarizeApiKey = '';
+    }
+    return s;
+}
+
 function makeId() {
     return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
@@ -1966,6 +1992,7 @@ function defaultSettings() {
     return {
         apiEndpoint: 'https://api.openai.com/v1/chat/completions',
         apiKey: '',
+        saveApiKey: false,
         model: 'gpt-4o',
         contextLength: 10,
         maxTokens: 1024,
@@ -2159,6 +2186,18 @@ function initState() {
     // Ensure lang is set (migration from v1)
     if (!state.settings.lang) state.settings.lang = 'zh-CN';
 
+    // Security migration for API key persistence (prevents accidental secret storage)
+    // If legacy data had an apiKey saved without the explicit flag, treat it as opt-in so users don't lose existing config.
+    // Then, if the flag is false, force-strip any keys from memory (defensive).
+    var hadApiKey = !!(state.settings && state.settings.apiKey);
+    if (typeof state.settings.saveApiKey === 'undefined') {
+        state.settings.saveApiKey = hadApiKey;
+    }
+    if (!state.settings.saveApiKey) {
+        state.settings.apiKey = '';
+        state.settings.summarizeApiKey = '';
+    }
+
     // If no active conversation, create one
     if (!state.activeConvId || !state.conversations[state.activeConvId]) {
         var conv = defaultConversation();
@@ -2178,7 +2217,7 @@ function persistState(immediate) {
             _persistTimeout = null;
         }
         saveAll({
-            settings: state.settings,
+            settings: getSafeSettingsForPersist(),
             conversations: state.conversations,
             conversationOrder: state.conversationOrder,
             activeConvId: state.activeConvId
@@ -2190,7 +2229,7 @@ function persistState(immediate) {
 
     _persistTimeout = setTimeout(function() {
         saveAll({
-            settings: state.settings,
+            settings: getSafeSettingsForPersist(),
             conversations: state.conversations,
             conversationOrder: state.conversationOrder,
             activeConvId: state.activeConvId
@@ -4435,7 +4474,7 @@ function cacheDom() {
         'sidebar','convList','noConvHint','chatTopBar','charAvatar','chatTitle','chatSubtitle',
         'messagesContainer','emptyState','messageInput','sendBtn','stopBtn',
         'settingsModal','settingsBackdrop','settingsCloseBtn',
-        'apiEndpoint','apiKey','modelName','contextLength','contextLenVal',
+        'apiEndpoint','apiKey','saveApiKey','modelName','contextLength','contextLenVal',
         'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
         'userName','systemPrompt',
         'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
@@ -5286,6 +5325,7 @@ function bindEvents() {
     function openSettings() {
         dom.apiEndpoint.value = state.settings.apiEndpoint;
         dom.apiKey.value = state.settings.apiKey;
+        if (dom.saveApiKey) dom.saveApiKey.checked = !!state.settings.saveApiKey;
         dom.modelName.value = state.settings.model;
         dom.contextLength.value = state.settings.contextLength;
         dom.contextLenVal.textContent = state.settings.contextLength;
@@ -5328,6 +5368,7 @@ function bindEvents() {
     function closeSettings() {
         state.settings.apiEndpoint = dom.apiEndpoint.value.trim();
         state.settings.apiKey = dom.apiKey.value.trim();
+        state.settings.saveApiKey = dom.saveApiKey ? !!dom.saveApiKey.checked : false;
         state.settings.model = dom.modelName.value.trim() || 'gpt-4o';
         state.settings.contextLength = parseInt(dom.contextLength.value) || 10;
         state.settings.maxTokens = parseInt(dom.maxTokens.value) || 1024;
