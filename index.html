@@ -179,35 +179,73 @@ body {
         font-size: 16px;
     }
 
-    /* 总结管理器移动端适配：上下布局 + 操作按钮常显 */
+    /* 总结管理器移动端适配（大幅改进历史列表可用性） */
     @media (max-width: 767px) {
+        /* 让模态框在手机上尽量占满高度 */
+        #summaryManagerModal > .relative.glass.rounded-3xl,
+        #summaryManagerModal .relative.glass.rounded-3xl {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 94vh !important;
+            max-height: 94vh !important;
+            border-radius: 16px !important;
+            margin: 3vh auto !important;
+        }
+
         #summaryManagerModal .flex-1.flex.overflow-hidden {
             flex-direction: column !important;
+            min-height: 0;
         }
+
+        /* 历史总结列表：给足够空间，不再死限高 */
         #summaryManagerModal .w-5/12 {
             width: 100% !important;
             border-right: none !important;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            max-height: 220px;
-        }
-        #summaryManagerModal .w-7/12 {
-            width: 100% !important;
+            flex: 1 1 55% !important;     /* 历史列表占据更多空间 */
+            min-height: 280px;
+            max-height: none !important;
+            padding: 12px !important;
         }
 
-        /* 移动端让编辑/删除按钮更容易点到 */
+        /* 新建总结区域：放在下方，紧凑一些 */
+        #summaryManagerModal .w-7/12 {
+            width: 100% !important;
+            flex: 0 0 auto !important;
+            padding: 14px 12px !important;
+            max-height: 46% !important;   /* 避免把历史列表挤没 */
+            overflow-y: auto;
+        }
+
+        /* 历史列表里的卡片更易读和操作 */
+        #summaryManagerList .glass.rounded-xl {
+            padding: 10px 12px !important;
+        }
+        #summaryManagerList .text-xs {
+            font-size: 13px !important;
+            line-height: 1.5 !important;
+        }
+
+        /* 编辑/删除按钮常显 + 更大触区 */
         #summaryManagerList .group .flex.items-center.gap-1,
         #summaryHistoryList .group .flex.items-center.gap-1 {
             opacity: 1 !important;
         }
         .summary-edit-btn, .summary-del-btn {
-            width: 32px !important;
-            height: 32px !important;
-            font-size: 15px !important;
-            background: rgba(255,255,255,0.06);
-            border-radius: 8px;
+            width: 34px !important;
+            height: 34px !important;
+            font-size: 16px !important;
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
         }
         .summary-edit-btn:active, .summary-del-btn:active {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.18);
+        }
+
+        /* 让 summary 文字在编辑时有足够高度 */
+        #summaryManagerList textarea {
+            min-height: 110px !important;
+            font-size: 14px !important;
         }
     }
 
@@ -377,7 +415,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
         <div class="space-y-5">
             <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_api_endpoint">API Endpoint</label>
-                <input id="apiEndpoint" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="https://api.openai.com/v1/chat/completions">
+                <input id="apiEndpoint" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="https://api.openai.com/v1 （或直接粘贴完整地址）">
+                <div class="mt-1.5">
+                    <div class="text-[10px] text-zinc-500 mb-1" data-i18n="settings_api_presets">一键填入 DeepSeek 地址（推荐）</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="applyMainApiPreset('deepseek')" class="px-3 py-1 text-xs rounded-lg bg-white/5 hover:bg-amber-500/20 active:bg-amber-500/30 text-zinc-300 hover:text-amber-300 transition-all border border-white/10 font-medium">DeepSeek</button>
+                    </div>
+                </div>
             </div>
             <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_api_key">API Key</label>
@@ -491,7 +535,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                     <div id="summarizeCustomApiSection" class="ml-6 space-y-2 border-l border-white/10 pl-3">
                         <div>
                             <label class="text-xs font-semibold text-zinc-400" data-i18n="settings_summarize_api_endpoint">API Endpoint</label>
-                            <input id="summarizeApiEndpoint" type="text" class="w-full mt-1 px-3 py-2 text-sm glass rounded-xl" placeholder="https://api.deepseek.com/v1/chat/completions">
+                            <input id="summarizeApiEndpoint" type="text" class="w-full mt-1 px-3 py-2 text-sm glass rounded-xl" placeholder="https://api.deepseek.com （推荐）">
+                            <div class="mt-1">
+                                <div class="text-[9px] text-zinc-500 mb-0.5" data-i18n="settings_api_presets_short">推荐：</div>
+                                <div class="flex flex-wrap gap-1">
+                                    <button type="button" onclick="applySummarizeApiPreset('deepseek')" class="px-2 py-px text-[9px] rounded-md bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 transition-all border border-white/10">DeepSeek</button>
+                                </div>
+                            </div>
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-zinc-400" data-i18n="settings_summarize_api_key">API Key</label>
@@ -1218,6 +1268,8 @@ var i18n = {
         settings: '设置',
         settings_title: '设置',
         settings_api_endpoint: 'API 端点',
+        settings_api_presets: '一键填入 DeepSeek 地址（推荐）',
+        settings_api_presets_short: '推荐：',
         settings_api_key: 'API 密钥',
         settings_model: '模型',
         settings_context_length: '上下文长度（消息条数）',
@@ -1439,6 +1491,8 @@ var i18n = {
         settings: '設定',
         settings_title: '設定',
         settings_api_endpoint: 'API 端點',
+        settings_api_presets: '一鍵填入 DeepSeek 地址（推薦）',
+        settings_api_presets_short: '推薦：',
         settings_api_key: 'API 金鑰',
         settings_model: '模型',
         settings_context_length: '上下文長度（訊息條數）',
@@ -1660,6 +1714,8 @@ var i18n = {
         settings: 'Settings',
         settings_title: 'Settings',
         settings_api_endpoint: 'API Endpoint',
+        settings_api_presets: 'Quick fill DeepSeek address (recommended)',
+        settings_api_presets_short: 'Recommended:',
         settings_api_key: 'API Key',
         settings_model: 'Model',
         settings_context_length: 'Context Length (messages)',
@@ -2170,6 +2226,72 @@ function defaultSettings() {
         summarizeApiKey: '',
         summarizeModel: 'deepseek-chat'
     };
+}
+
+// ==================== API Presets (常用接口地址) ====================
+(function() {
+    var MAIN_PRESETS = {
+        'deepseek':    { endpoint: 'https://api.deepseek.com',            model: 'deepseek-chat' }
+    };
+
+    var SUMMARIZE_PRESETS = {
+        'deepseek':    { endpoint: 'https://api.deepseek.com',            model: 'deepseek-chat' }
+    };
+
+    window.applyMainApiPreset = function(key) {
+        var p = MAIN_PRESETS[key];
+        if (!p) return;
+        var ep = document.getElementById('apiEndpoint');
+        var md = document.getElementById('modelName');
+        if (ep) ep.value = p.endpoint;
+        if (md && p.model) {
+            // 只在用户还没手动改过或为空时建议填充，避免覆盖用户自定义模型
+            if (!md.value || md.value === 'gpt-4o' || md.value === 'gpt-4o-mini') {
+                md.value = p.model;
+            }
+        }
+    };
+
+    window.applySummarizeApiPreset = function(key) {
+        var p = SUMMARIZE_PRESETS[key];
+        if (!p) return;
+        var ep = document.getElementById('summarizeApiEndpoint');
+        var md = document.getElementById('summarizeModel');
+        if (ep) ep.value = p.endpoint;
+        if (md && p.model) {
+            md.value = p.model;
+        }
+    };
+})();
+
+// 统一的 API Endpoint 规范化（支持 DeepSeek 无 /v1、智谱 /v4、Groq /openai/v1 等各种变体）
+function normalizeApiEndpoint(raw) {
+    if (!raw) return raw;
+    var url = String(raw).trim().replace(/\/+$/, ''); // 去掉末尾斜杠
+
+    if (url.includes('/chat/completions')) return url;
+
+    // 已知需要直接追加 /chat/completions 的情况
+    // DeepSeek 官方就是 https://api.deepseek.com （无 v1）
+    if (/^https?:\/\/api\.deepseek\.com(\/.*)?$/.test(url)) {
+        return url.replace(/\/$/, '') + '/chat/completions';
+    }
+
+    // 智谱 GLM 特殊路径
+    if (url.includes('bigmodel.cn/api/paas/v4') || url.includes('z.ai/api/paas/v4')) {
+        return url + '/chat/completions';
+    }
+
+    // 标准 OpenAI 兼容：以 /v1 或 /openai/v1 结尾
+    if (/\/(v[0-9]+|openai\/v1)$/.test(url)) {
+        return url + '/chat/completions';
+    }
+
+    // 其他情况：如果没有版本号就补 /v1，否则直接补
+    if (!/\/v[0-9]/.test(url) && !url.includes('/paas/')) {
+        url += '/v1';
+    }
+    return url + '/chat/completions';
 }
 
 function defaultConversation() {
@@ -3938,12 +4060,7 @@ function streamChat(onToken, onComplete, onError) {
     state.abortController = controller;
     state.isGenerating = true;
 
-    var endpoint = settings.apiEndpoint;
-    if (!endpoint.includes('/chat/completions')) {
-        if (endpoint.endsWith('/v1')) endpoint += '/chat/completions';
-        else if (endpoint.endsWith('/')) endpoint += 'chat/completions';
-        else endpoint += '/chat/completions';
-    }
+    var endpoint = normalizeApiEndpoint(settings.apiEndpoint);
 
     fetch(endpoint, {
         method: 'POST',
@@ -4101,12 +4218,7 @@ function generateSummary(messages, callback) {
         }).join('\n\n') }
     ];
 
-    var endpoint = apiEndpoint;
-    if (!endpoint.includes('/chat/completions')) {
-        if (endpoint.endsWith('/v1')) endpoint += '/chat/completions';
-        else if (endpoint.endsWith('/')) endpoint += 'chat/completions';
-        else endpoint += '/chat/completions';
-    }
+    var endpoint = normalizeApiEndpoint(apiEndpoint);
 
     fetch(endpoint, {
         method: 'POST',
@@ -5541,6 +5653,7 @@ function bindEvents() {
 
     // Settings modal
     function openSettings() {
+        applyTranslations(); // 确保设置弹窗内的 data-i18n 标签（包括新增的预设标签）被正确翻译
         dom.apiEndpoint.value = state.settings.apiEndpoint;
         dom.apiKey.value = state.settings.apiKey;
         if (dom.saveApiKey) dom.saveApiKey.checked = !!state.settings.saveApiKey;
