@@ -179,9 +179,9 @@ body {
         font-size: 16px;
     }
 
-    /* 总结管理器移动端适配（大幅改进历史列表可用性） */
+    /* 总结管理器移动端适配：上方历史总结 + 下方新建总结（历史为主） */
     @media (max-width: 767px) {
-        /* 让模态框在手机上尽量占满高度 */
+        /* 模态框尽量占满手机屏幕 */
         #summaryManagerModal > .relative.glass.rounded-3xl,
         #summaryManagerModal .relative.glass.rounded-3xl {
             width: 100% !important;
@@ -192,60 +192,73 @@ body {
             margin: 3vh auto !important;
         }
 
+        /* 强制上下布局 */
         #summaryManagerModal .flex-1.flex.overflow-hidden {
             flex-direction: column !important;
-            min-height: 0;
+            height: 100% !important;
+            min-height: 0 !important;
         }
 
-        /* 历史总结列表：给足够空间，不再死限高 */
+        /* ===== 上方：历史总结（占据主要空间，可滚动） ===== */
         #summaryManagerModal .w-5/12 {
             width: 100% !important;
             border-right: none !important;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            flex: 1 1 55% !important;     /* 历史列表占据更多空间 */
-            min-height: 280px;
+            flex: 1 1 0% !important;           /* 关键：占据所有剩余空间 */
+            min-height: 0 !important;          /* 允许 flex 子元素正确滚动 */
             max-height: none !important;
-            padding: 12px !important;
+            overflow-y: auto !important;
+            padding: 12px 10px !important;
+            order: 1 !important;               /* 确保在新建总结上方 */
         }
 
-        /* 新建总结区域：放在下方，紧凑一些 */
+        /* ===== 下方：新建总结（紧凑，限制高度） ===== */
         #summaryManagerModal .w-7/12 {
             width: 100% !important;
-            flex: 0 0 auto !important;
-            padding: 14px 12px !important;
-            max-height: 46% !important;   /* 避免把历史列表挤没 */
-            overflow-y: auto;
+            flex: 0 0 auto !important;         /* 不拉伸，只占自己需要的高度 */
+            padding: 12px 10px !important;
+            max-height: 38vh !important;       /* 限制新建区域高度，让历史列表有更多空间 */
+            overflow-y: auto !important;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            order: 2 !important;
         }
 
-        /* 历史列表里的卡片更易读和操作 */
+        /* 历史列表卡片优化 */
         #summaryManagerList .glass.rounded-xl {
-            padding: 10px 12px !important;
+            padding: 11px 12px !important;
+            margin-bottom: 8px !important;
         }
         #summaryManagerList .text-xs {
             font-size: 13px !important;
-            line-height: 1.5 !important;
+            line-height: 1.55 !important;
         }
 
-        /* 编辑/删除按钮常显 + 更大触区 */
+        /* 编辑/删除按钮更大更好点 */
         #summaryManagerList .group .flex.items-center.gap-1,
         #summaryHistoryList .group .flex.items-center.gap-1 {
             opacity: 1 !important;
         }
         .summary-edit-btn, .summary-del-btn {
-            width: 34px !important;
-            height: 34px !important;
-            font-size: 16px !important;
-            background: rgba(255,255,255,0.08);
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 17px !important;
+            background: rgba(255,255,255,0.09);
             border-radius: 10px;
         }
         .summary-edit-btn:active, .summary-del-btn:active {
-            background: rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.2);
         }
 
-        /* 让 summary 文字在编辑时有足够高度 */
+        /* 编辑总结时的文本框 */
         #summaryManagerList textarea {
-            min-height: 110px !important;
+            min-height: 120px !important;
             font-size: 14px !important;
+            padding: 10px !important;
+        }
+
+        /* 新建区域标题和控件更紧凑 */
+        #summaryManagerModal .w-7/12 .text-xs.font-semibold {
+            margin-bottom: 6px !important;
         }
     }
 
