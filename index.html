@@ -2899,11 +2899,11 @@ function defaultSettings() {
 // ==================== API Presets (常用接口地址) ====================
 (function() {
     var MAIN_PRESETS = {
-        'deepseek':    { endpoint: 'https://api.deepseek.com',            model: 'deepseek-chat' }
+        'deepseek':    { endpoint: 'https://api.deepseek.com',            model: 'deepseek-v4-flash' }
     };
 
     var SUMMARIZE_PRESETS = {
-        'deepseek':    { endpoint: 'https://api.deepseek.com',            model: 'deepseek-chat' }
+        'deepseek':    { endpoint: 'https://api.deepseek.com',            model: 'deepseek-v4-flash' }
     };
 
     window.applyMainApiPreset = function(key) {
@@ -6817,7 +6817,7 @@ function bindEvents() {
         dom.summarizeUseMainAPI.checked = state.settings.summarizeUseMainAPI !== false;
         dom.summarizeApiEndpoint.value = state.settings.summarizeApiEndpoint || '';
         dom.summarizeApiKey.value = state.settings.summarizeApiKey || '';
-        dom.summarizeModel.value = state.settings.summarizeModel || 'deepseek-chat';
+        dom.summarizeModel.value = state.settings.summarizeModel || 'deepseek-v4-flash';
 
         // Toggle custom section visibility
         toggleSummarizeCustomSection();
@@ -6911,7 +6911,7 @@ function bindEvents() {
         state.settings.summarizeUseMainAPI = dom.summarizeUseMainAPI.checked;
         state.settings.summarizeApiEndpoint = dom.summarizeApiEndpoint.value.trim();
         state.settings.summarizeApiKey = dom.summarizeApiKey.value.trim();
-        state.settings.summarizeModel = dom.summarizeModel.value.trim() || 'deepseek-chat';
+        state.settings.summarizeModel = dom.summarizeModel.value.trim() || 'deepseek-v4-flash';
 
         persistState();
         dom.settingsModal.classList.add('hidden');
