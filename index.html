@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OpenTavern — AI Character Chat</title>
+<link rel="stylesheet" href="css/style.css">
 <script src="https://cdn.tailwindcss.com"></script>
+
+<!-- 
+  Phase 4 模块化进行中
+  当前仍为单入口 index.html，后续将逐步拆分 JS
+  推荐本地开发使用: npx serve 或 VS Code Live Server
+-->
 <script>
 tailwind.config = {
     darkMode: 'class',
@@ -25,18 +32,7 @@ tailwind.config = {
     }
 }
 </script>
-<style>
-:root {
-    --blur-intensity: 20px;
-    --glass-bg: rgba(14,14,18,0.42);
-    --glass-bg-hover: rgba(24,24,30,0.52);
-    --glass-bg-active: rgba(36,36,44,0.58);
-    --glass-border: rgba(255,255,255,0.10);
-    --glass-border-hover: rgba(255,255,255,0.16);
-    --accent: #f59e0b;
-    --accent-secondary: #ec4899;
-    --accent-glow: rgba(245,158,11,0.25);
-}
+<!-- 原内联样式已迁移至 css/style.css（Phase 4 拆分） -->
 
 *,*::before,*::after { box-sizing:border-box; }
 body {
@@ -415,10 +411,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
     min-width: 28px;
     text-align: center;
 }
-.announce-lang-btn.active {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-</style>
+
 </head>
 <body class="shimmer-enabled">
 
