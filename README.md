@@ -19,7 +19,7 @@
 
 ## ✨ Key Features & Major Updates
 
-OpenTavern has undergone significant evolution. The latest version introduces enterprise-grade local storage, intelligent context management, and a completely redesigned summarization system while keeping the zero-setup philosophy.
+OpenTavern continues to evolve with cutting-edge browser storage technology. The latest version introduces **OPFS (Origin Private File System)** as the default storage backend — delivering significantly higher capacity, better performance, and long-term reliability compared to IndexedDB or localStorage.
 
 ### Core Strengths
 - **Zero Setup** — Single HTML file. Double-click to run. Works offline after first load.
@@ -27,7 +27,7 @@ OpenTavern has undergone significant evolution. The latest version introduces en
 - **Advanced Memory System** — Automatic + manual summarization with history, edit, delete, and custom range support.
 - **Separate Summarization API** — Use a different (cheaper / uncensored) model for long-term memory compression.
 - **Modern Glassmorphism UI** — Beautiful dark theme with animated WebGL background, smooth animations, and mobile-first design.
-- **IndexedDB Storage** — Major upgrade from localStorage. Supports much larger conversations, multiple characters, and World Books with real-time usage statistics.
+- **OPFS Storage (New)** — Origin Private File System for massive capacity (often hundreds of MB to GB), superior performance, and future-proofing. Real-time usage statistics included.
 - **Full Transparency** — View the exact prompt sent to the API at any time.
 - **Multilingual** — English, 简体中文, 繁體中文 (with in-app language switcher and onboarding modal).
 - **Privacy First** — Everything stays in your browser. Nothing is sent except to your chosen API provider.
@@ -75,20 +75,20 @@ OpenTavern has undergone significant evolution. The latest version introduces en
 - Built-in full editor (name, description, personality, scenario, first message, example dialogues, system prompt, post-history instructions, creator notes, tags)
 - One-click export back to SillyTavern format
 - Automatic first message injection when starting a new chat
+- **New Character Picker** when creating fresh conversations
 
 ### 2. World Book / World Info (Lorebook)
 Complete SillyTavern implementation with modern UI:
 - Searchable entry list
 - Rich editor: Memo, Primary Keys (supports regex `/pattern/i`), Secondary Keys, Selective Logic (AND ANY / AND ALL / NOT ANY / NOT ALL)
 - Strategy: Constant (always active) or Keyword-triggered
-- Probability, Insertion Order, Group scoring
-- Disable toggle per entry
+- Probability, Insertion Order, Group scoring, Timed effects (Sticky / Cooldown / Delay)
 - **Token Budget Control** — Limit total tokens injected per generation (prevents context overflow)
-- Full mobile-optimized editor
+- Full mobile-optimized editor with advanced filters
 
-### 3. Intelligent Summarization System (Major New Feature)
+### 3. Intelligent Summarization System
 - **Auto Summarize**: Automatically compresses old messages when threshold is reached (configurable, with safety warnings)
-- **Summary Manager** (new dedicated modal):
+- **Summary Manager** (dedicated modal):
   - Two modes: **Recent Messages** or **Custom Range** (start–end turn)
   - Live preview before generating
   - Summary History list with edit / delete
@@ -105,12 +105,15 @@ Complete SillyTavern implementation with modern UI:
 - Dialogue highlighting for Chinese quotes 「」 “”
 - Responsive input area with auto-resize
 
-### 5. Data Management & Storage
+### 5. Data Management & Storage (Major Upgrade)
 - Export single conversation or **all conversations** (JSON)
 - Import previously exported chats
-- **IndexedDB backend** (default for large data) + localStorage fallback
+- **OPFS (Origin Private File System)** — Default backend offering:
+  - Much higher capacity (often 100MB–several GB)
+  - Better performance than IndexedDB
+  - Private to the origin (more secure)
 - Real-time storage usage display in Settings (used MB / quota with progress bar)
-- Automatic migration from old localStorage on first run
+- Automatic migration handling
 - Backup reminder system
 
 ### 6. Settings & Customization
@@ -121,7 +124,7 @@ Complete SillyTavern implementation with modern UI:
 - World Info token budget + enable toggle
 - Summarization threshold, max words, separate API settings
 - Language switcher (affects entire UI instantly)
-- Storage backend status and usage statistics
+- Storage backend status and usage statistics (now prominently shows **OPFS**)
 
 ### 7. Mobile Experience
 - Hamburger sidebar
@@ -136,7 +139,7 @@ Complete SillyTavern implementation with modern UI:
 OpenTavern uses the standard **OpenAI-compatible** chat completions API (`/v1/chat/completions`).
 
 ### Popular Supported Providers
-- **DeepSeek** (recommended — one-click preset)
+- **DeepSeek** (recommended — one-click preset, including `deepseek-v4-flash`)
 - OpenAI (GPT-4o, GPT-4o-mini, o1, etc.)
 - SiliconFlow, Together.ai, Fireworks, Groq
 - Local servers: Ollama, LM Studio, llama.cpp (with OpenAI compatibility layer)
@@ -153,7 +156,7 @@ OpenTavern uses the standard **OpenAI-compatible** chat completions API (`/v1/ch
 
 - **Frontend**: Pure Vanilla JavaScript + Tailwind CSS (CDN) + extensive custom CSS
 - **Graphics**: Custom WebGL shader for animated background + vignette overlay
-- **Storage**: IndexedDB (primary) + localStorage (fallback) with usage monitoring
+- **Storage**: **OPFS (Origin Private File System)** — primary backend (recommended for long-term use) + localStorage fallback
 - **i18n**: Built-in translation system with instant language switching
 - **Streaming**: Fetch + ReadableStream for real-time token streaming
 - **No external dependencies** — everything is self-contained in one HTML file
@@ -165,8 +168,11 @@ OpenTavern uses the standard **OpenAI-compatible** chat completions API (`/v1/ch
 **Q: Do I really need nothing installed?**  
 A: Correct. Just open the HTML file in a modern browser.
 
-**Q: How much data can I store?**  
-A: With IndexedDB, typically 100MB–several GB depending on your browser/device (far more than the old ~5–10MB localStorage limit). The app shows real-time usage.
+**Q: How much data can I store now?**  
+A: With **OPFS**, capacity is significantly higher than before — often hundreds of MB to several GB depending on your browser and device. The app shows real-time usage with a progress bar.
+
+**Q: Why OPFS instead of IndexedDB?**  
+A: OPFS offers better performance, larger practical limits, and is designed specifically for private, high-capacity file storage in the browser. It is now the recommended long-term backend.
 
 **Q: Can I use it completely offline?**  
 A: Yes — after the first load and API configuration, all chats, characters, and World Books work offline.
@@ -175,7 +181,7 @@ A: Yes — after the first load and API configuration, all chats, characters, an
 A: Yes. Use a permissive model and consider the separate summarization API to avoid refusals on long contexts.
 
 **Q: What happens if I update the HTML file?**  
-A: Your data remains safe in browser storage. Just replace the file.
+A: Your data remains safe in browser storage (OPFS). Just replace the file.
 
 **Q: Why is there a separate summarization API?**  
 A: Long conversations can become expensive or hit content filters. A dedicated summarization model (often cheaper or uncensored) keeps memory efficient without affecting your main chat model.
@@ -187,8 +193,8 @@ A: Open an issue on the GitHub repository.
 
 ## 🔄 Version History Highlights
 
-- **Latest**: IndexedDB storage, Summary Manager with history & custom range, separate summarization API, World Info token budget, full prompt viewer, major mobile UI fixes, onboarding announcement modal.
-- Previous versions focused on core SillyTavern compatibility and glassmorphism UI.
+- **Latest**: Switched primary storage to **OPFS** for superior capacity and performance. Added New Chat Character Picker modal. Refined summary manager, mobile layouts, and World Book editor. Default summarization model updated to `deepseek-v4-flash`.
+- Previous: IndexedDB storage, Summary Manager with history & custom range, separate summarization API, World Info token budget, full prompt viewer, major mobile UI fixes.
 
 ---
 
@@ -222,7 +228,7 @@ MIT License — Free for personal and commercial use.
 ---
 
 **OpenTavern** — Powerful character chat, made simple.  
-Now with professional-grade memory and storage.
+Now powered by OPFS for the best possible local experience.
 
 ---
 
