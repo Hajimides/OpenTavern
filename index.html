@@ -1174,7 +1174,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
     <div class="absolute inset-0 bg-black/60 backdrop-blur-md" id="groupMentionBackdrop"></div>
     <div class="relative glass rounded-t-3xl sm:rounded-3xl w-full sm:w-[92%] sm:max-w-md p-4 sm:p-6 shadow-2xl animate-fade-in max-h-[70vh] sm:max-h-[80vh] flex flex-col">
         <div class="flex items-center justify-between mb-3 px-1">
-            <h2 class="text-base sm:text-lg font-bold text-zinc-100">选择要提及的角色</h2>
+            <h2 class="text-base sm:text-lg font-bold text-zinc-100" data-i18n="group_mention_title">选择要提及的角色</h2>
             <button id="groupMentionCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-xl leading-none text-zinc-400 hover:text-zinc-200 active:bg-white/10 transition-colors">&times;</button>
         </div>
 
@@ -1182,7 +1182,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <!-- 动态填充角色列表 -->
         </div>
 
-        <div class="mt-4 pt-3 border-t border-white/10 text-[11px] text-zinc-500 px-1">
+        <div class="mt-4 pt-3 border-t border-white/10 text-[11px] text-zinc-500 px-1" data-i18n="group_mention_hint">
             选择后将自动插入 @角色名
         </div>
     </div>
@@ -1352,8 +1352,8 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 <!-- @ 按钮移到左侧，与输入框高度对齐（手机端优化） -->
                 <button id="mentionBtn"
                         class="flex-shrink-0 w-11 h-11 rounded-xl glass text-zinc-400 hover:text-amber-300 hover:bg-white/10 active:bg-white/15 transition-all flex items-center justify-center text-xl font-bold touch-manipulation"
-                        title="提及角色 (@)"
-                        aria-label="提及群组角色">
+                        data-i18n-title="mention_button_title"
+                        aria-label="Mention Character">
                     @
                 </button>
                 <textarea id="messageInput" rows="1"
@@ -1636,7 +1636,14 @@ var i18n = {
         // New Chat Character Picker (Phase 4)
         new_chat_picker_title: '选择角色卡开始新对话',
         new_chat_no_character: '不使用角色卡（空白对话）',
-        new_chat_import_character: '导入新角色卡'
+        new_chat_import_character: '导入新角色卡',
+
+        // Group Chat @ Mention Feature
+        mention_button_title: '提及角色 (@)',
+        group_mention_title: '选择要提及的角色',
+        group_mention_hint: '选择后将让该角色在本轮回复',
+        group_mention_no_group: '当前不是群组聊天',
+        group_mention_insert: '插入 @'
     },
     'zh-TW': {
         app_subtitle: 'AI 角色聊天',
@@ -2136,7 +2143,14 @@ var i18n = {
         // New Chat Character Picker (Phase 4)
         new_chat_picker_title: 'Choose a Character Card to Start New Chat',
         new_chat_no_character: 'Start without a character (blank chat)',
-        new_chat_import_character: 'Import New Character Card'
+        new_chat_import_character: 'Import New Character Card',
+
+        // Group Chat @ Mention Feature
+        mention_button_title: 'Mention Character (@)',
+        group_mention_title: 'Select Character to Mention',
+        group_mention_hint: 'The selected character will reply this turn',
+        group_mention_no_group: 'Not currently in a group chat',
+        group_mention_insert: 'Insert @'
     }
 };
 
@@ -7443,7 +7457,7 @@ function bindEvents() {
         dom.mentionBtn.addEventListener('click', function() {
             const conv = getActiveConv();
             if (!isGroupChat(conv)) {
-                alert('当前不是群组聊天，无法提及角色');
+                alert(t('group_mention_no_group'));
                 return;
             }
             showGroupMentionPanel(conv);

@@ -1,9 +1,9 @@
 # OpenTavern
 
-**A lightweight yet powerful single-file AI character chat application**  
-**with full SillyTavern compatibility and advanced memory management**
+**A lightweight, powerful, single-file AI character chat app**  
+with full SillyTavern compatibility, advanced memory, and **Group Chat support**.
 
-> Run a professional-grade role-playing experience instantly — no installation, no backend, just open one HTML file.
+> Open one HTML file and enjoy professional role-playing with multiple characters. No backend, no installation required.
 
 ---
 
@@ -29,7 +29,7 @@ OpenTavern continues to evolve with cutting-edge browser storage technology. The
 - **Modern Glassmorphism UI** — Beautiful dark theme with animated WebGL background, smooth animations, and mobile-first design.
 - **OPFS Storage (New)** — Origin Private File System for massive capacity (often hundreds of MB to GB), superior performance, and future-proofing. Real-time usage statistics included.
 - **Full Transparency** — View the exact prompt sent to the API at any time.
-- **Multilingual** — English, 简体中文, 繁體中文 (with in-app language switcher and onboarding modal).
+- **Three Languages** — 简体中文 / 繁體中文 / English (full UI translation with instant switching).
 - **Privacy First** — Everything stays in your browser. Nothing is sent except to your chosen API provider.
 
 ---
@@ -65,6 +65,30 @@ OpenTavern continues to evolve with cutting-edge browser storage technology. The
 - Use **DeepSeek** (fast, cheap, excellent Chinese/English performance)
 - Set **Context Length** to 20–30
 - Enable **Auto Summarize** with threshold ~12–18
+
+---
+
+## 👥 Group Chat & @ Mention Guide
+
+### How to Start a Group Chat
+1. Click **New Chat**
+2. In the character picker, **long-press or use multi-select** to choose multiple characters
+3. Start chatting
+
+### Using @ Mention (Recommended)
+- Click the **@** button to the left of the input box
+- Select a character from the popup panel (beautiful glassmorphism design with blur)
+- Or manually type `@角色名` in the input
+
+The selected character will be the one who replies this turn, and their full character card will be injected into the prompt.
+
+### No @ Behavior
+If you send a message without @ anyone, the **last character who spoke** will automatically reply (great for natural back-and-forth).
+
+### Tips
+- Only the mentioned character's detailed information is sent (efficient context usage)
+- You can still have rich multi-character scenes by @ switching between them
+- Works great on mobile
 
 ---
 
@@ -126,11 +150,21 @@ Complete SillyTavern implementation with modern UI:
 - Language switcher (affects entire UI instantly)
 - Storage backend status and usage statistics (now prominently shows **OPFS**)
 
-### 7. Mobile Experience
+### 7. Group Chat with @ Mention (New)
+- Create conversations with **multiple characters** at once.
+- Use the **@ button** (left of input) to open a beautiful character selection panel.
+- Explicitly @ a character (e.g. `@普拉娜` or via panel) to make them reply this turn.
+- If you don't @ anyone, the **last replying character** will automatically continue the conversation.
+- Full Switch-mode prompt injection — only the mentioned character's complete card is sent.
+- Clean, mobile-friendly UI with backdrop blur.
+
+This provides precise control in multi-character scenes while keeping prompts efficient.
+
+### 8. Mobile Experience
 - Hamburger sidebar
-- Fully optimized modals (World Book, Summary Manager, Character Editor, etc.)
-- Touch-friendly buttons and inputs
-- No horizontal scroll issues on small screens
+- Fully optimized modals
+- Touch-friendly design
+- Excellent @ mention panel on phones
 
 ---
 
@@ -232,4 +266,4 @@ Now powered by OPFS for the best possible local experience.
 
 ---
 
-*Last updated: May 2026*
+*Last updated: 2026*
