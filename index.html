@@ -7587,6 +7587,9 @@ function bindEvents() {
         }
         if (dom.summaryMaxWords) {
             dom.summaryMaxWords.value = (state.settings.summaryMaxWords != null ? state.settings.summaryMaxWords : 0);
+            dom.summaryMaxWords.addEventListener('input', function() {
+                state.settings.summaryMaxWords = parseInt(this.value) || 0;
+            });
         }
 
         // World Info Budget
@@ -7786,7 +7789,21 @@ function bindEvents() {
         dom.contextLength.addEventListener('input', updateSummaryThresholdWarning);
     }
     if (dom.summaryThreshold) {
-        dom.summaryThreshold.addEventListener('input', updateSummaryThresholdWarning);
+        dom.summaryThreshold.addEventListener('input', function() {
+            // 方案 A：实时更新 state.settings，让已打开对话的下一次 AI 回复能立刻使用新阈值
+            state.settings.summaryThreshold = parseInt(this.value) || 20;
+            if (dom.summaryThresholdVal) {
+                dom.summaryThresholdVal.textContent = state.settings.summaryThreshold;
+            }
+            updateSummaryThresholdWarning();
+        });
+    }
+
+    // 实时更新 summaryEnabled（复选框）
+    if (dom.summaryEnabled) {
+        dom.summaryEnabled.addEventListener('change', function() {
+            state.settings.summaryEnabled = this.checked;
+        });
     }
 
     // Import modal close
