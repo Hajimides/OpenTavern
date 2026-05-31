@@ -1417,6 +1417,8 @@ var i18n = {
         char_btn_create: '新建',
         char_remove_title: '移除角色卡',
         char_remove_confirm: '确定移除此角色卡？对话消息将保留。',
+        char_delete_from_library: '从角色库删除',
+        char_delete_confirm_library: '确定从角色库彻底删除「{name}」？已有对话不会受影响。',
         conv_export_title: '导出此对话',
         conv_export_all_title: '导出全部对话',
         conv_import_title: '导入对话',
@@ -1682,6 +1684,8 @@ var i18n = {
         char_btn_create: '新建',
         char_remove_title: '移除角色卡',
         char_remove_confirm: '確定移除此角色卡？對話訊息將保留。',
+        char_delete_from_library: '從角色庫刪除',
+        char_delete_confirm_library: '確定從角色庫徹底刪除「{name}」？已有對話不會受影響。',
         conv_export_title: '匯出此對話',
         conv_export_all_title: '匯出全部對話',
         conv_import_title: '匯入對話',
@@ -1930,6 +1934,8 @@ var i18n = {
         char_btn_create: 'Create',
         char_remove_title: 'Remove character card',
         char_remove_confirm: 'Remove this character card? Messages will be kept.',
+        char_delete_from_library: 'Delete from library',
+        char_delete_confirm_library: 'Delete "{name}" from character library? Existing chats will not be affected.',
         conv_export_title: 'Export this conversation',
         conv_export_all_title: 'Export all conversations',
         conv_import_title: 'Import conversations',
@@ -3426,6 +3432,7 @@ var appStore = createReactiveStore({
     conversationOrder: [],
     activeConvId: null,
     worldBooks: {},           // Phase 2+: 全局可复用世界书 { [id]: WorldBook }
+    characters: {},           // 全局角色卡库（解决编辑不传播 + 无法删除的问题）
     isGenerating: false,
     abortController: null
 });
@@ -3621,6 +3628,9 @@ async function initState() {
         if (saved.worldBooks) {
             state.worldBooks = saved.worldBooks;
         }
+        if (saved.characters) {
+            state.characters = saved.characters;
+        }
     } else {
         console.log('[Storage] No previous data found, starting fresh');
     }
@@ -3651,6 +3661,10 @@ async function initState() {
         state.settings.apiKey = '';
         state.settings.summarizeApiKey = '';
     }
+
+    // === 角色卡全局库迁移（解决编辑不生效 + 无法删除问题） ===
+    if (!state.characters) state.characters = {};
+    migrateCharactersToRegistry(state.conversations || {});
 
     // === 更健壮的默认对话处理（防止加载好数据后却被重置为默认） ===
     const hasAnyConv = Object.keys(state.conversations || {}).length > 0;
@@ -3694,6 +3708,7 @@ function persistState(immediate) {
         conversationOrder: state.conversationOrder,
         activeConvId: state.activeConvId,
         worldBooks: state.worldBooks || {},   // Phase 2: persist global world books
+        characters: state.characters || {},   // 全局角色卡库
         lastSaved: Date.now()                  // 用于双后端冲突解决和判断新鲜度（关键）
     };
 
@@ -4213,20 +4228,66 @@ function getConversationWorldBooks(conv) {
         .filter(Boolean);
 }
 
-// Phase 4: Collect unique characters from all conversations for the new chat picker
+/**
+ * 迁移：从现有对话（含群组成员）中收集角色卡，填充到全局 registry
+ * - 幂等、安全，不会覆盖已存在的 registry 条目
+ * - 不修改任何旧 conv.character（保留历史快照）
+ */
+function migrateCharactersToRegistry(conversations) {
+    if (!state.characters) state.characters = {};
+
+    Object.values(conversations || {}).forEach(conv => {
+        // 单角色
+        if (conv.character && conv.character.name) {
+            const key = conv.character.name.trim().toLowerCase();
+            if (!state.characters[key]) {
+                state.characters[key] = JSON.parse(JSON.stringify(conv.character));
+            }
+        }
+
+        // 群组成员
+        if (conv.group && Array.isArray(conv.group.members)) {
+            conv.group.members.forEach(member => {
+                const ch = member && member.character;
+                if (ch && ch.name) {
+                    const key = ch.name.trim().toLowerCase();
+                    if (!state.characters[key]) {
+                        state.characters[key] = JSON.parse(JSON.stringify(ch));
+                    }
+                }
+            });
+        }
+    });
+}
+
+// Phase 4: Collect unique characters from the global registry (with legacy fallback)
 function getAllAvailableCharacters() {
     const chars = [];
     const seen = new Set();
 
-    Object.values(state.conversations || {}).forEach(conv => {
-        if (conv.character && conv.character.name) {
-            const key = conv.character.name.trim().toLowerCase();
-            if (!seen.has(key)) {
-                seen.add(key);
-                chars.push(JSON.parse(JSON.stringify(conv.character))); // deep clone
+    // 优先从全局角色库读取（新架构）
+    if (state.characters && Object.keys(state.characters).length > 0) {
+        Object.values(state.characters).forEach(ch => {
+            if (ch && ch.name) {
+                const key = ch.name.trim().toLowerCase();
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    chars.push(JSON.parse(JSON.stringify(ch)));
+                }
             }
-        }
-    });
+        });
+    } else {
+        // 兜底：从旧对话数据扫描（首次迁移或极端情况）
+        Object.values(state.conversations || {}).forEach(conv => {
+            if (conv.character && conv.character.name) {
+                const key = conv.character.name.trim().toLowerCase();
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    chars.push(JSON.parse(JSON.stringify(conv.character)));
+                }
+            }
+        });
+    }
 
     // Sort by name
     chars.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -6413,7 +6474,7 @@ function showNewChatCharacterPicker() {
             const isSelected = selectedKeys.has(key);
 
             const card = document.createElement('div');
-            card.className = `glass rounded-2xl p-3 cursor-pointer flex flex-col items-center text-center gap-2 border transition-all relative
+            card.className = `glass rounded-2xl p-3 cursor-pointer flex flex-col items-center text-center gap-2 border transition-all relative group
                 ${isSelected ? 'border-amber-400 bg-amber-500/10' : 'border-white/5 hover:border-white/10 hover:bg-white/5'}`;
 
             const avatar = character.name ? character.name.charAt(0).toUpperCase() : '?';
@@ -6430,7 +6491,9 @@ function showNewChatCharacterPicker() {
                         ${isSelected ? 'bg-amber-400 border-amber-300 text-black' : 'border-white/40 bg-black/30'}">
                         ${isSelected ? '✓' : ''}
                     </div>
-                ` : ''}
+                ` : `
+                    <button class="char-delete-btn absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 hover:bg-red-500/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all" title="删除角色卡">×</button>
+                `}
             `;
 
             card.addEventListener('click', () => {
@@ -6450,6 +6513,19 @@ function showNewChatCharacterPicker() {
                 renderCards();           // 刷新选中态
                 updateMultiBar();
             });
+
+            // 删除按钮（仅非多选模式下存在）
+            const delBtn = card.querySelector('.char-delete-btn');
+            if (delBtn) {
+                delBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const displayName = character.name || '该角色卡';
+                    if (!confirm(`确定从角色库中删除「${displayName}」？\n已有对话中的角色卡数据不会受影响。`)) {
+                        return;
+                    }
+                    deleteCharacterFromLibrary(key);
+                });
+            }
 
             listContainer.appendChild(card);
         });
@@ -7058,6 +7134,26 @@ function removeCharacter() {
     requestFullRender();
 }
 
+/**
+ * 从全局角色库彻底删除一个角色卡（不影响任何已有对话的嵌入副本）
+ */
+function deleteCharacterFromLibrary(nameOrKey) {
+    if (!nameOrKey) return;
+    const key = nameOrKey.trim().toLowerCase();
+
+    if (!state.characters || !state.characters[key]) return;
+
+    delete state.characters[key];
+    persistState();
+
+    // 如果当前正在显示选择器，刷新它
+    const pickerList = document.getElementById('newChatPickerList');
+    if (pickerList && !document.getElementById('newChatPickerModal').classList.contains('hidden')) {
+        // 简单粗暴刷新整个选择器
+        showNewChatCharacterPicker();
+    }
+}
+
 function openCharacterEditor() {
     var conv = getActiveConv();
     var c = conv && conv.character;
@@ -7097,6 +7193,13 @@ function saveCharacterEdits() {
 
     var wasNew = !conv.character || !conv.character.name || conv.character.name === 'Unnamed';
     conv.character = character;
+
+    // 同步写入全局角色库（让新对话和选择器立即拿到最新版本）
+    if (character.name) {
+        const key = character.name.trim().toLowerCase();
+        if (!state.characters) state.characters = {};
+        state.characters[key] = JSON.parse(JSON.stringify(character));
+    }
 
     if (wasNew && character.first_mes && conv.messages.length === 0) {
         var charName = character.name;
@@ -7899,6 +8002,13 @@ function bindEvents() {
                 conv.character = character;
                 conv.title = t('chat_with') + character.name;
                 conv.messages = [];
+
+                // 注册到全局角色库
+                if (character.name) {
+                    const key = character.name.trim().toLowerCase();
+                    if (!state.characters) state.characters = {};
+                    state.characters[key] = JSON.parse(JSON.stringify(character));
+                }
 
                 var charName = character.name;
                 var userName = state.settings.userName || 'User';
