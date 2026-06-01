@@ -2,7 +2,7 @@
 <html lang="zh-CN" class="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>OpenTavern — AI Character Chat</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -46,6 +46,7 @@ body {
     -webkit-font-smoothing:antialiased;
     overflow:hidden;
     height:100vh;
+    touch-action: manipulation;
 }
 
 #shaderCanvas { position:fixed; inset:0; z-index:0; pointer-events:none; width:100%; height:100%; }
@@ -78,6 +79,22 @@ body {
 .msg-bubble { padding: 14px 18px; line-height: 1.7; font-size: 0.925rem; white-space: pre-wrap; word-break: break-word; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
 .dialogue-highlight { color: #f59e0b; }
+
+/* StatusBlock — rendered status panel inside chat messages */
+.status-block { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 12px 14px; margin: 10px 0; font-size: 0.7rem; }
+.status-block .status-header { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; color: rgba(245,158,11,0.7); }
+.status-block .status-header span:first-child { font-size: 0.85rem; }
+.status-block .status-section { color: rgba(245,158,11,0.65); font-weight: 500; font-size: 0.65rem; padding-top: 3px; }
+.status-block .status-row { display: flex; align-items: center; gap: 5px; padding-left: 2px; color: #d1d5db; }
+.status-block .status-row .status-icon { color: #6b7280; width: 14px; text-align: center; flex-shrink: 0; font-size: 0.65rem; }
+.status-block .status-row .status-label { font-size: 0.7rem; }
+.status-block .status-info { color: #d1d5db; font-size: 0.7rem; padding-left: 2px; }
+.status-block .status-badge { font-size: 0.55rem; padding: 1px 6px; border-radius: 99px; background: rgba(245,158,11,0.15); color: rgba(245,158,11,0.7); margin-left: auto; }
+.status-block.status-placeholder { border-style: dashed; opacity: 0.7; }
+.status-block .status-row b { color: #d1d5db; font-weight: 500; }
+.status-block.script-rendered { padding: 0; background: transparent; border: 1px solid rgba(255,255,255,0.06); overflow: hidden; max-height: 420px; overflow-y: auto; }
+.status-block.script-rendered > * { max-width: 100%; }
+.status-block.script-rendered style { display: block; }
 
 .msg-actions { display: flex; gap: 4px; margin-top: 6px; opacity: 0; transition: opacity 0.2s ease; }
 .msg-wrapper:hover .msg-actions { opacity: 1; }
@@ -119,6 +136,26 @@ body {
 
     .msg-actions { opacity: 1; }
     .msg-action-btn { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
+
+    /* Mobile: always show sidebar action buttons (hidden behind hover on desktop) */
+    .conv-export-btn,
+    .conv-delete-btn {
+        opacity: 1 !important;
+        width: 28px !important; height: 28px !important;
+    }
+    .conv-export-btn { font-size: 13px; }
+    .conv-delete-btn { font-size: 14px; }
+
+    /* Mobile: always show character picker delete button */
+    .char-delete-btn {
+        opacity: 1 !important;
+        width: 28px !important; height: 28px !important;
+        font-size: 14px !important;
+    }
+
+    /* Mobile: world book delete buttons always visible */
+    .wi-book-del,
+    .wi-list-del { min-width: 32px !important; min-height: 32px !important; }
 
     #messagesContainer { padding: 12px 12px; }
 
@@ -418,6 +455,18 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
 .announce-lang-btn.active {
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
+
+/* Preset provider buttons */
+.preset-btn {
+    background: rgba(255,255,255,0.04) !important;
+    color: #52525b !important;
+    border-color: rgba(255,255,255,0.06) !important;
+}
+.preset-btn.active {
+    background: rgba(245,158,11,0.2) !important;
+    color: #f59e0b !important;
+    border-color: rgba(245,158,11,0.4) !important;
+}
 </style>
 </head>
 <body class="shimmer-enabled">
@@ -438,9 +487,14 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_api_endpoint">API Endpoint</label>
                 <input id="apiEndpoint" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="https://api.openai.com/v1 （或直接粘贴完整地址）">
                 <div class="mt-1.5">
-                    <div class="text-[10px] text-zinc-500 mb-1" data-i18n="settings_api_presets">一键填入 DeepSeek 地址（推荐）</div>
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] text-zinc-500">Provider — click to switch, auto-load saved config</span>
+                        <button type="button" id="saveProviderBtn" class="text-[10px] px-2 py-0.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 transition-all border border-amber-500/20">Save Current Config</button>
+                    </div>
                     <div class="flex flex-wrap gap-1.5">
-                        <button type="button" onclick="applyMainApiPreset('deepseek')" class="px-3 py-1 text-xs rounded-lg bg-white/5 hover:bg-amber-500/20 active:bg-amber-500/30 text-zinc-300 hover:text-amber-300 transition-all border border-white/10 font-medium">DeepSeek</button>
+                        <button type="button" id="presetDeepseek" class="preset-btn px-2 sm:px-3 py-1.5 sm:py-1 text-xs rounded-lg border font-medium transition-colors">DeepSeek</button>
+                        <button type="button" id="presetGrok" class="preset-btn px-2 sm:px-3 py-1.5 sm:py-1 text-xs rounded-lg border font-medium transition-colors">Grok</button>
+                        <button type="button" id="presetOpenrouter" class="preset-btn px-2 sm:px-3 py-1.5 sm:py-1 text-xs rounded-lg border font-medium transition-colors">OpenRouter</button>
                     </div>
                 </div>
             </div>
@@ -458,8 +512,14 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 </div>
             </div>
             <div>
-                <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_model">Model</label>
-                <input id="modelName" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="gpt-4o">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_model">Model</label>
+                    <button type="button" id="fetchModelsBtn" class="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-zinc-500 hover:text-amber-300 transition-all border border-white/10">Fetch Models</button>
+                </div>
+                <div class="relative mt-1.5">
+                    <input id="modelName" type="text" autocomplete="off" class="w-full px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="gpt-4o">
+                    <div id="modelDropdown" class="absolute left-0 right-0 top-full mt-1 glass rounded-xl border border-white/10 max-h-48 overflow-y-auto z-50 hidden"></div>
+                </div>
             </div>
             <hr class="border-white/5">
             <div>
@@ -558,9 +618,11 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                             <label class="text-xs font-semibold text-zinc-400" data-i18n="settings_summarize_api_endpoint">API Endpoint</label>
                             <input id="summarizeApiEndpoint" type="text" class="w-full mt-1 px-3 py-2 text-sm glass rounded-xl" placeholder="https://api.deepseek.com （推荐）">
                             <div class="mt-1">
-                                <div class="text-[9px] text-zinc-500 mb-0.5" data-i18n="settings_api_presets_short">推荐：</div>
+                                <div class="text-[9px] text-zinc-500 mb-0.5">Quick Setup:</div>
                                 <div class="flex flex-wrap gap-1">
-                                    <button type="button" onclick="applySummarizeApiPreset('deepseek')" class="px-2 py-px text-[9px] rounded-md bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 transition-all border border-white/10">DeepSeek</button>
+                                    <button type="button" onclick="applySummarizePreset('deepseek')" class="px-2 py-px text-[9px] rounded-md bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 transition-all border border-white/10">DeepSeek</button>
+                                    <button type="button" onclick="applySummarizePreset('grok')" class="px-2 py-px text-[9px] rounded-md bg-white/5 hover:bg-blue-500/20 text-zinc-400 hover:text-blue-300 transition-all border border-white/10">Grok</button>
+                                    <button type="button" onclick="applySummarizePreset('openrouter')" class="px-2 py-px text-[9px] rounded-md bg-white/5 hover:bg-purple-500/20 text-zinc-400 hover:text-purple-300 transition-all border border-white/10">OpenRouter</button>
                                 </div>
                             </div>
                         </div>
@@ -718,6 +780,19 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <button id="charEditorCancelBtn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-white/10 hover:bg-white/15 text-zinc-300 transition-all" data-i18n="char_editor_cancel">Cancel</button>
             <button id="charEditorSaveBtn" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white shadow-lg shadow-amber-500/20 transition-all" data-i18n="char_editor_save">Save</button>
         </div>
+    </div>
+</div>
+
+<!-- ===== Greeting Selector Modal ===== -->
+<div id="greetingModal" class="modal-overlay fixed inset-0 z-[120] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="greetingBackdrop"></div>
+    <div class="relative glass rounded-3xl w-[92%] max-w-lg p-6 shadow-2xl animate-fade-in max-h-[88vh] flex flex-col">
+        <div class="flex items-center justify-between mb-4 flex-shrink-0">
+            <h2 class="text-lg font-bold text-zinc-100">选择开场白</h2>
+            <button id="greetingCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+        </div>
+        <p class="text-xs text-zinc-500 mb-3 flex-shrink-0" id="greetingCharName"></p>
+        <div id="greetingList" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
     </div>
 </div>
 
@@ -1208,54 +1283,71 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             </div>
             <button id="sidebarCloseBtn" class="hamburger-close-btn w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-white/10 transition-all" aria-label="Close menu">&times;</button>
         </div>
-        <div class="px-3 py-3 space-y-2 border-b border-white/5">
-            <button id="newChatBtn" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-300 glass hover:bg-white/10 active:bg-white/15 transition-all">
-                <span class="text-base">+</span> <span data-i18n="new_chat">New Chat</span>
+        <div class="px-3 py-3 space-y-3 border-b border-white/5">
+            <!-- New Chat Button -->
+            <button id="newChatBtn" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-zinc-300 bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/5 hover:border-white/10 transition-all">
+                <span class="text-base">💬</span>
+                <span data-i18n="new_chat">New Chat</span>
             </button>
 
-            <!-- Character Card Block -->
-            <div class="glass rounded-xl p-3 space-y-2">
-                <div class="flex items-center justify-between">
-                    <span class="text-[10px] text-zinc-500 uppercase tracking-wider" data-i18n="char_card_title">Character Card</span>
-                    <div id="charCardActions" class="flex items-center gap-0.5">
-                        <button id="charEditBtn" class="w-6 h-6 rounded-lg flex items-center justify-center text-zinc-500 hover:text-amber-400 hover:bg-amber-500/10 transition-all text-xs hidden" data-i18n-title="char_edit_title">&#9998;</button>
-                        <button id="charExportBtn" class="w-6 h-6 rounded-lg flex items-center justify-center text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all text-xs hidden" data-i18n-title="char_export_title">&#128230;</button>
-                        <button id="charRemoveBtn" class="w-6 h-6 rounded-lg flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all text-xs hidden" data-i18n-title="char_remove_title">&#10005;</button>
-                    </div>
-                </div>
+            <!-- ═══════ Section 1: Character Card Display ═══════ -->
+            <div class="glass rounded-2xl overflow-hidden transition-all duration-300 border border-white/5 hover:border-white/10">
+                <!-- Card top accent bar (visible only when character loaded) -->
+                <div id="charCardAccent" class="h-0.5 bg-gradient-to-r from-amber-400 via-rose-400 to-purple-400 opacity-0 transition-opacity duration-300"></div>
 
-                <!-- Preview state -->
+                <!-- Loaded Character Preview -->
                 <div id="charCardPreview" class="hidden">
-                    <div class="flex items-center gap-2 mb-1.5">
-                        <div id="charCardAvatar" class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">?</div>
-                        <div class="min-w-0 flex-1">
-                            <p id="charCardName" class="text-xs font-medium text-zinc-200 truncate"></p>
-                            <p id="charCardTagCount" class="text-[9px] text-zinc-500"></p>
+                    <div class="p-3.5">
+                        <div class="flex items-start gap-3">
+                            <!-- Avatar -->
+                            <div id="charCardAvatar" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-amber-500/10 ring-1 ring-white/10">?</div>
+                            <!-- Info -->
+                            <div class="min-w-0 flex-1 pt-0.5">
+                                <p id="charCardName" class="text-sm font-semibold text-zinc-100 truncate leading-tight"></p>
+                                <p id="charCardTagCount" class="text-[10px] text-zinc-500 mt-0.5"></p>
+                            </div>
+                            <!-- Actions -->
+                            <div id="charCardActions" class="flex items-center gap-1 flex-shrink-0">
+                                <button id="charEditBtn" class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 active:bg-amber-500/20 transition-all text-xs hidden" data-i18n-title="char_edit_title" title="Edit">&#9998;</button>
+                                <button id="charExportBtn" class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 active:bg-emerald-500/20 transition-all text-xs hidden" data-i18n-title="char_export_title" title="Export">&#128230;</button>
+                                <button id="charRemoveBtn" class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-red-400 hover:bg-red-500/10 active:bg-red-500/20 transition-all text-xs hidden" data-i18n-title="char_remove_title" title="Remove">&#10005;</button>
+                            </div>
                         </div>
+                        <!-- Personality / Description snippet -->
+                        <p id="charCardPersonality" class="text-[11px] text-zinc-400 leading-relaxed line-clamp-2 mt-2.5 pl-[3.25rem]"></p>
                     </div>
-                    <p id="charCardPersonality" class="text-[10px] text-zinc-500 leading-relaxed line-clamp-2 mb-2"></p>
                 </div>
 
-                <!-- Empty hint -->
-                <p id="charCardEmptyHint" class="text-[10px] text-zinc-500"><span data-i18n="char_card_empty">No character loaded</span></p>
-
-                <!-- Always-visible action buttons -->
-                <div class="flex gap-1.5">
-                    <button id="charImportBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium text-zinc-400 bg-white/5 hover:bg-white/10 transition-all">
-                        <span>&#128229;</span> <span data-i18n="char_btn_import">Import</span>
-                    </button>
-                    <button id="charCreateBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium text-zinc-500 bg-white/5 hover:bg-white/10 transition-all">
-                        <span>+</span> <span data-i18n="char_btn_create">Create</span>
-                    </button>
+                <!-- Empty State -->
+                <div id="charCardEmpty" class="p-5 flex flex-col items-center justify-center text-center">
+                    <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-2.5 ring-1 ring-white/5">
+                        <span class="text-xl opacity-50">👤</span>
+                    </div>
+                    <p id="charCardEmptyHint" class="text-xs text-zinc-400 font-medium">
+                        <span data-i18n="char_card_empty">No character loaded</span>
+                    </p>
+                    <p class="text-[10px] text-zinc-600 mt-1 leading-relaxed">Import a card or create one to start</p>
                 </div>
             </div>
 
-            <!-- World Book quick access (below Character Card) -->
-            <div class="glass rounded-xl px-3 py-2 flex items-center gap-2 text-xs">
-                <span class="text-zinc-400 flex-shrink-0">📖</span>
-                <span class="flex-1 text-zinc-300 truncate" data-i18n="world_book">World Book</span>
+            <!-- ═══════ Section 2: Import & Create ═══════ -->
+            <div class="flex gap-2">
+                <button id="charImportBtn" class="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/5 hover:bg-white/10 active:bg-white/15 border border-dashed border-white/10 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all group">
+                    <span class="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">📥</span>
+                    <span class="text-zinc-300" data-i18n="char_btn_import">Import</span>
+                </button>
+                <button id="charCreateBtn" class="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/5 hover:bg-white/10 active:bg-white/15 border border-dashed border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all group">
+                    <span class="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">✨</span>
+                    <span class="text-zinc-300" data-i18n="char_btn_create">Create</span>
+                </button>
+            </div>
+
+            <!-- World Book quick access -->
+            <div class="glass rounded-xl px-3 py-2.5 flex items-center gap-2.5 text-xs border border-white/5">
+                <span class="text-zinc-400 flex-shrink-0 text-base">📖</span>
+                <span class="flex-1 text-zinc-300 truncate text-[11px] font-medium" data-i18n="world_book">World Book</span>
                 <span id="wiEntryCount" class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 flex-shrink-0"></span>
-                <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="world_book_btn">管理</button>
+                <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="world_book_btn">Edit</button>
             </div>
         </div>
         <div id="convList" class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
@@ -1408,8 +1500,8 @@ var i18n = {
         import_click_hint: '点击选择一个 .json 角色卡文件',
         import_success: '已加载：',
         import_error: '导入错误',
-        import_invalid_format: '无效的角色卡格式。需要 "spec": "chara_card_v3"。',
-        import_missing_name: '角色卡缺少必需的 "data.name" 字段。',
+        import_invalid_format: '无效的角色卡格式。需要 SillyTavern 角色卡 (V1/V2/V3)。',
+        import_missing_name: '角色卡缺少必需的 "name" 字段。',
         new_chat: '新对话',
         new_chat_title: '新对话',
         import_character: '导入角色',
@@ -1524,6 +1616,8 @@ var i18n = {
         world_book_no_selection: '选择左侧条目进行编辑，或点击“新建条目”',
         world_book_entry: '条目',
         world_book_confirm_delete_all: '确定删除此世界书的所有条目？此操作不可撤销。',
+        world_book_delete_book: '删除世界书',
+        world_book_confirm_delete_book: '确定删除世界书「{name}」及其所有条目？此操作不可撤销。',
         wi_comment: '备注 (Memo)',
         wi_keys: '激活关键字 (Keys)',
         wi_keys_hint: '逗号或换行分隔；支持正则如 /pattern/flags',
@@ -1675,8 +1769,8 @@ var i18n = {
         import_click_hint: '點擊選擇一個 .json 角色卡檔案',
         import_success: '已載入：',
         import_error: '匯入錯誤',
-        import_invalid_format: '無效的角色卡格式。需要 "spec": "chara_card_v3"。',
-        import_missing_name: '角色卡缺少必需的 "data.name" 欄位。',
+        import_invalid_format: '無效的角色卡格式。需要 SillyTavern 角色卡 (V1/V2/V3)。',
+        import_missing_name: '角色卡缺少必需的 "name" 欄位。',
         new_chat: '新對話',
         new_chat_title: '新對話',
         import_character: '匯入角色',
@@ -1791,6 +1885,8 @@ var i18n = {
         world_book_no_selection: '選擇左側條目進行編輯，或點擊「新建條目」',
         world_book_entry: '條目',
         world_book_confirm_delete_all: '確定刪除此世界書的所有條目？此操作無法復原。',
+        world_book_delete_book: '刪除世界書',
+        world_book_confirm_delete_book: '確定刪除世界書「{name}」及其所有條目？此操作無法復原。',
         wi_comment: '備註 (Memo)',
         wi_keys: '啟動關鍵字 (Keys)',
         wi_keys_hint: '逗號或換行分隔；支援正則如 /pattern/flags',
@@ -1925,8 +2021,8 @@ var i18n = {
         import_click_hint: 'Click to select a .json character card',
         import_success: 'Loaded: ',
         import_error: 'Import Error',
-        import_invalid_format: 'Invalid character card format. Expected "spec": "chara_card_v3".',
-        import_missing_name: 'Character card missing required "data.name" field.',
+        import_invalid_format: 'Invalid character card format. Expected a SillyTavern card (V1/V2/V3).',
+        import_missing_name: 'Character card missing required "name" field.',
         new_chat: 'New Chat',
         new_chat_title: 'New Chat',
         import_character: 'Import Character',
@@ -2040,6 +2136,8 @@ var i18n = {
         world_book_no_selection: 'Select an entry on the left to edit, or click "+ New Entry"',
         world_book_entry: 'entry',
         world_book_confirm_delete_all: 'Delete ALL entries in this World Book? This cannot be undone.',
+        world_book_delete_book: 'Delete World Book',
+        world_book_confirm_delete_book: 'Delete world book "{name}" and all its entries? This cannot be undone.',
         wi_comment: 'Memo / Title',
         wi_keys: 'Activation Keys',
         wi_keys_hint: 'Comma or newline separated. Regex supported: /pattern/flags',
@@ -2532,7 +2630,6 @@ var StorageService = {
                 const oldData = JSON.parse(raw);
                 // 检测到旧数据，自动迁移到 OPFS
                 if (oldData && (Object.keys(oldData.conversations || {}).length > 0 || oldData.lastSaved)) {
-                    console.log('[Storage] Detected old localStorage data, migrating to OPFS...');
                     await OPFSStorage.saveAll(oldData);
                     // 可选：迁移成功后清理旧 localStorage（保守起见先注释）
                     // localStorage.removeItem(STORAGE_KEY);
@@ -2566,7 +2663,6 @@ var StorageService = {
 
     async enableOPFS() {
         this._useOPFS = true;
-        console.log('[Storage] Switched to OPFS backend');
         return true;
     },
 
@@ -2601,7 +2697,6 @@ var StorageService = {
                     }
                 }
             });
-            console.log('[Storage] IndexedDB initialized successfully');
             return this._idbDB;
         } catch (err) {
             console.error('[Storage] Failed to init IndexedDB:', err);
@@ -2764,7 +2859,6 @@ var StorageService = {
             delete conv.worldInfo;
         });
 
-        console.log(`[Storage] Phase 2 migration: converted ${Object.keys(worldBooks).length} world books to global reusable resources.`);
         return worldBooks;
     },
 
@@ -3051,40 +3145,186 @@ function defaultSettings() {
 }
 
 // ==================== API Presets (常用接口地址) ====================
-(function() {
-    var MAIN_PRESETS = {
-        'deepseek':    { endpoint: 'https://api.deepseek.com',            model: 'deepseek-v4-flash' }
-    };
+var API_PRESETS = {
+    'deepseek':   { endpoint: 'https://api.deepseek.com',            defaultModel: 'deepseek-chat',       label: 'DeepSeek' },
+    'grok':       { endpoint: 'https://api.x.ai',                   defaultModel: 'grok-3',              label: 'Grok' },
+    'openrouter': { endpoint: 'https://openrouter.ai/api',          defaultModel: 'openai/gpt-4o',       label: 'OpenRouter' }
+};
 
-    var SUMMARIZE_PRESETS = {
-        'deepseek':    { endpoint: 'https://api.deepseek.com',            model: 'deepseek-v4-flash' }
-    };
+// ==================== Per-Provider Config Storage ====================
+var PROVIDER_STORE_KEY = 'opentavern_provider_configs';
 
-    window.applyMainApiPreset = function(key) {
-        var p = MAIN_PRESETS[key];
-        if (!p) return;
-        var ep = document.getElementById('apiEndpoint');
-        var md = document.getElementById('modelName');
-        if (ep) ep.value = p.endpoint;
-        if (md && p.model) {
-            // 只在用户还没手动改过或为空时建议填充，避免覆盖用户自定义模型
-            if (!md.value || md.value === 'gpt-4o' || md.value === 'gpt-4o-mini') {
-                md.value = p.model;
-            }
+function loadProviderConfigs() {
+    try { return JSON.parse(localStorage.getItem(PROVIDER_STORE_KEY)) || {}; }
+    catch(e) { return {}; }
+}
+
+function saveProviderConfig(key, config) {
+    var all = loadProviderConfigs();
+    all[key] = { endpoint: config.endpoint, apiKey: config.apiKey, model: config.model, savedAt: Date.now() };
+    localStorage.setItem(PROVIDER_STORE_KEY, JSON.stringify(all));
+}
+
+function getProviderConfig(key) {
+    return loadProviderConfigs()[key] || null;
+}
+
+function detectCurrentProvider() {
+    var ep = (dom.apiEndpoint.value || '').trim();
+    for (var k in API_PRESETS) {
+        if (ep.indexOf(API_PRESETS[k].endpoint.replace(/\/+$/, '')) === 0) return k;
+    }
+    return null;
+}
+
+// Load saved config for a provider into the form
+function applySavedProviderConfig(key) {
+    var saved = getProviderConfig(key);
+    if (saved) {
+        dom.apiEndpoint.value = saved.endpoint;
+        if (dom.apiKey) dom.apiKey.value = saved.apiKey || '';
+        dom.modelName.value = saved.model || API_PRESETS[key].defaultModel;
+        return true;
+    }
+    // No saved config → clear API key to avoid carrying over from previous provider
+    if (dom.apiKey) dom.apiKey.value = '';
+    return false;
+}
+
+// Save current form values for the current provider
+function saveCurrentProviderConfig() {
+    var key = detectCurrentProvider();
+    if (!key) { alert('Cannot detect provider from current endpoint. Select a provider first.'); return; }
+    saveProviderConfig(key, {
+        endpoint: dom.apiEndpoint.value.trim(),
+        apiKey: dom.apiKey.value.trim(),
+        model: dom.modelName.value.trim()
+    });
+    updateProviderBadges();
+    showToast('✓ Config saved for ' + API_PRESETS[key].label);
+}
+
+// Simple toast notification
+function showToast(msg) {
+    var existing = document.getElementById('settingsToast');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.id = 'settingsToast';
+    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-2 rounded-xl bg-emerald-500/90 text-white text-sm font-medium shadow-lg transition-all duration-300';
+    toast.textContent = msg;
+    toast.style.opacity = '0';
+    toast.style.transform = 'translate(-50%, 10px)';
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translate(-50%, 0)';
+    });
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translate(-50%, -10px)';
+        setTimeout(function() { toast.remove(); }, 300);
+    }, 2000);
+}
+
+// Apply preset: load saved config if exists, otherwise use defaults
+function applyMainApiPreset(key) {
+    var p = API_PRESETS[key];
+    if (!p) return;
+    var found = applySavedProviderConfig(key);
+    if (!found) {
+        dom.apiEndpoint.value = p.endpoint;
+        dom.modelName.value = p.defaultModel;
+    }
+    updateProviderBadges();
+}
+
+function applySummarizePreset(key) {
+    var p = API_PRESETS[key];
+    if (!p) return;
+    var ep = document.getElementById('summarizeApiEndpoint');
+    var md = document.getElementById('summarizeModel');
+    if (ep) ep.value = p.endpoint;
+    if (md && p.defaultModel) md.value = p.defaultModel;
+}
+
+// Update preset button indicators (active highlight + saved config tooltip)
+function updateProviderBadges() {
+    var configs = loadProviderConfigs();
+    var activeKey = detectCurrentProvider();
+    Object.keys(API_PRESETS).forEach(function(k) {
+        var btn = document.getElementById('preset' + k.charAt(0).toUpperCase() + k.slice(1));
+        if (!btn) return;
+
+        // --- Reset ---
+        btn.classList.remove('active');
+
+        // --- Saved config tooltip ---
+        if (configs[k]) {
+            btn.title = 'Saved: ' + configs[k].model + ' | ' + new Date(configs[k].savedAt).toLocaleString();
+        } else {
+            btn.title = '';
         }
-    };
 
-    window.applySummarizeApiPreset = function(key) {
-        var p = SUMMARIZE_PRESETS[key];
-        if (!p) return;
-        var ep = document.getElementById('summarizeApiEndpoint');
-        var md = document.getElementById('summarizeModel');
-        if (ep) ep.value = p.endpoint;
-        if (md && p.model) {
-            md.value = p.model;
+        // --- Active ---
+        if (k === activeKey) {
+            btn.classList.add('active');
         }
-    };
-})();
+    });
+}
+
+// Fetch available models from the current API endpoint
+function fetchModels() {
+    var endpoint = dom.apiEndpoint.value.trim();
+    var apiKey = dom.apiKey.value.trim();
+    if (!endpoint) { alert('Please fill in the API Endpoint first.'); return; }
+    if (!apiKey) { alert('Please fill in the API Key first.'); return; }
+
+    var base = endpoint.replace(/\/+$/, '').replace(/\/chat\/completions$/, '').replace(/\/v1$/, '');
+    var url = base + '/v1/models';
+
+    var btn = dom.fetchModelsBtn;
+    var origText = btn.textContent;
+    btn.textContent = 'Loading...';
+    btn.disabled = true;
+
+    fetch(url, { headers: { 'Authorization': 'Bearer ' + apiKey } })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var models = (data.data || []).map(function(m) { return m.id; }).sort();
+            if (models.length === 0) { alert('No models found. Check your API endpoint and key.'); return; }
+            // Cache models
+            state._cachedModels = models;
+            updateModelDropdown(models, dom.modelName.value);
+        })
+        .catch(function(err) {
+            alert('Failed to fetch models: ' + err.message + '\n\nTry: ' + url);
+        })
+        .finally(function() {
+            btn.textContent = origText;
+            btn.disabled = false;
+        });
+}
+
+// Update model dropdown with fuzzy search
+function updateModelDropdown(models, currentValue) {
+    var dd = dom.modelDropdown;
+    if (!dd) return;
+    var filter = (currentValue || '').toLowerCase();
+    var filtered = filter ? models.filter(function(m) { return m.toLowerCase().indexOf(filter) !== -1; }) : models;
+    if (filtered.length === 0) { dd.classList.add('hidden'); return; }
+    var html = '';
+    var limit = Math.min(filtered.length, 50);
+    for (var i = 0; i < limit; i++) {
+        var hl = filter ? filtered[i].replace(new RegExp('(' + escapeRegex(filter) + ')', 'gi'), '<mark class="bg-amber-500/30 text-amber-200 rounded-sm px-0.5">$1</mark>') : filtered[i];
+        html += '<div class="model-option px-3 py-2 text-xs text-zinc-300 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0" data-model="' + escapeHtml(filtered[i]) + '">' + hl + '</div>';
+    }
+    dd.innerHTML = html;
+    dd.classList.remove('hidden');
+}
+
+function closeModelDropdown() {
+    if (dom.modelDropdown) dom.modelDropdown.classList.add('hidden');
+}
 
 // 统一的 API Endpoint 规范化（支持 DeepSeek 无 /v1、智谱 /v4、Groq /openai/v1 等各种变体）
 function normalizeApiEndpoint(raw) {
@@ -3093,22 +3333,26 @@ function normalizeApiEndpoint(raw) {
 
     if (url.includes('/chat/completions')) return url;
 
-    // 已知需要直接追加 /chat/completions 的情况
-    // DeepSeek 官方就是 https://api.deepseek.com （无 v1）
+    // DeepSeek: https://api.deepseek.com/chat/completions
     if (/^https?:\/\/api\.deepseek\.com(\/.*)?$/.test(url)) {
         return url.replace(/\/$/, '') + '/chat/completions';
     }
-
+    // xAI / Grok: https://api.x.ai/v1/chat/completions
+    if (/^https?:\/\/api\.x\.ai(\/.*)?$/.test(url)) {
+        return url.replace(/\/$/, '') + '/v1/chat/completions';
+    }
+    // OpenRouter: /api/v1/chat/completions
+    if (url.includes('openrouter.ai/api')) {
+        return url.replace(/\/$/, '') + '/v1/chat/completions';
+    }
     // 智谱 GLM 特殊路径
     if (url.includes('bigmodel.cn/api/paas/v4') || url.includes('z.ai/api/paas/v4')) {
         return url + '/chat/completions';
     }
-
     // 标准 OpenAI 兼容：以 /v1 或 /openai/v1 结尾
     if (/\/(v[0-9]+|openai\/v1)$/.test(url)) {
         return url + '/chat/completions';
     }
-
     // 其他情况：如果没有版本号就补 /v1，否则直接补
     if (!/\/v[0-9]/.test(url) && !url.includes('/paas/')) {
         url += '/v1';
@@ -3580,7 +3824,6 @@ async function initState() {
             if (idbData && (Object.keys(idbData.conversations || {}).length > 0 || idbData.lastSaved)) {
                 saved = idbData;
                 usedIDB = true;
-                console.log('[Storage] Loaded from IndexedDB (lastSaved:', new Date(idbData.lastSaved || 0), ')');
             }
         } catch (e) {
             console.warn('[Storage] IDB load error, will try localStorage');
@@ -3595,7 +3838,6 @@ async function initState() {
 
             // 自动安全迁移到 IDB（如果用户开启了 IDB 模式）
             if (StorageService._useIndexedDB && !usedIDB) {
-                console.log('[Storage] Auto-migrating from localStorage to IndexedDB...');
                 migrationResult.attempted = true;
                 try {
                     await StorageService.saveAllToIDB({
@@ -3604,7 +3846,6 @@ async function initState() {
                     });
                     migrationResult.success = true;
                     usedIDB = true;
-                    console.log('[Storage] Migration to IndexedDB completed.');
                     window._showStorageMigrationNotice = true;
                 } catch (e) {
                     console.error('[Storage] Auto-migration to IDB failed, staying on localStorage', e);
@@ -3632,16 +3873,7 @@ async function initState() {
             state.characters = saved.characters;
         }
     } else {
-        console.log('[Storage] No previous data found, starting fresh');
     }
-
-    // 调试辅助：记录最终加载结果
-    console.log('[Storage] Final load state after init:', {
-        conversationsCount: Object.keys(state.conversations || {}).length,
-        activeConvId: state.activeConvId,
-        usedIDB: usedIDB,
-        migrationResult
-    });
 
     if (usedIDB) {
         migrationResult.backend = 'indexeddb';
@@ -3676,7 +3908,6 @@ async function initState() {
             const firstId = order.find(id => state.conversations[id]) || Object.keys(state.conversations)[0];
             if (firstId) {
                 state.activeConvId = firstId;
-                console.log('[Storage] Recovered activeConvId from existing conversations:', firstId);
             } else {
                 state.activeConvId = null;
             }
@@ -3684,7 +3915,6 @@ async function initState() {
 
         // 只有在真正完全没有对话时，才创建全新的默认对话
         if (!state.activeConvId || !state.conversations[state.activeConvId]) {
-            console.log('[Storage] No valid conversations found, creating a brand new default one');
             var conv = defaultConversation();
             state.conversations[conv.id] = conv;
             state.conversationOrder.unshift(conv.id);
@@ -3783,14 +4013,41 @@ function setLanguage(lang) {
 }
 
 // ==================== Character Import ====================
+// Supports SillyTavern V1 (flat JSON), V2 (chara_card_v2), V3 (chara_card_v3)
 function importCharacterCard(jsonData) {
-    if (!jsonData || jsonData.spec !== 'chara_card_v3') {
+    if (!jsonData) throw new Error(t('import_invalid_format'));
+
+    var spec = jsonData.spec;
+    var d;
+
+    if (spec === 'chara_card_v3' || spec === 'chara_card_v2') {
+        // V2 / V3: fields nested under data
+        d = jsonData.data;
+    } else if (jsonData.name) {
+        // V1: flat structure (no spec field, no data wrapper)
+        // spec_version is also absent in V1
+        d = jsonData;
+    } else {
         throw new Error(t('import_invalid_format'));
     }
-    var d = jsonData.data;
+
     if (!d || !d.name) {
         throw new Error(t('import_missing_name'));
     }
+
+    // Extract extensions (V2/V3) — containing depth_prompt, talkativeness, etc.
+    var ext = d.extensions || {};
+
+    // Normalize depth_prompt: may be in data.extensions (V2/V3) or absent (V1)
+    var depthPrompt = null;
+    if (ext.depth_prompt && ext.depth_prompt.prompt) {
+        depthPrompt = {
+            prompt: ext.depth_prompt.prompt || '',
+            depth: ext.depth_prompt.depth || 4,
+            role: ext.depth_prompt.role || 'system'
+        };
+    }
+
     return {
         name: d.name,
         description: d.description || '',
@@ -3802,9 +4059,15 @@ function importCharacterCard(jsonData) {
         post_history_instructions: d.post_history_instructions || '',
         creator_notes: d.creator_notes || '',
         tags: d.tags || [],
-        alternate_greetings: d.alternate_greetings || []
+        alternate_greetings: d.alternate_greetings || [],
+        group_only_greetings: d.group_only_greetings || [],
+        // V2/V3 extensions
+        depth_prompt: depthPrompt,
+        talkativeness: ext.talkativeness != null ? ext.talkativeness : 0.5,
+        creator: d.creator || '',
     };
 }
+
 
 function replacePlaceholders(text, charName, userName) {
     if (!text) return '';
@@ -3812,6 +4075,7 @@ function replacePlaceholders(text, charName, userName) {
         .replace(/\{\{char\}\}/gi, charName)
         .replace(/\{\{user\}\}/gi, userName || 'User');
 }
+
 
 // World Info position constants (must be defined early)
 var WI_POS = {
@@ -3872,6 +4136,12 @@ function buildSystemPrompt(character, worldInfoByPos) {
         parts.push(replacePlaceholders(character.post_history_instructions, charName, userName));
     }
 
+    // Inject depth_prompt (character lore / backstory from V2/V3 extensions)
+    // This is the detailed character profile that goes between instructions and card info
+    if (character && character.depth_prompt && character.depth_prompt.prompt) {
+        parts.push(replacePlaceholders(character.depth_prompt.prompt, charName, userName));
+    }
+
     if (character) {
         var charInfo = [];
         if (character.personality) charInfo.push('Personality: ' + replacePlaceholders(character.personality, charName, userName));
@@ -3890,6 +4160,31 @@ function buildSystemPrompt(character, worldInfoByPos) {
     }
 
     return parts.join('\n\n').trim();
+}
+
+// Check if a character uses status blocks (by scanning first_mes and world book)
+function characterUsesStatusBlocks(character) {
+    if (!character) return false;
+    if (character.first_mes && /<Status\w*[^>]*>/i.test(character.first_mes)) return true;
+    if (character.alternate_greetings) {
+        for (var i = 0; i < character.alternate_greetings.length; i++) {
+            if (/<Status\w*[^>]*>/i.test(character.alternate_greetings[i])) return true;
+        }
+    }
+    var conv = getActiveConv();
+    if (conv && conv.worldBookIds && state.worldBooks) {
+        for (var j = 0; j < conv.worldBookIds.length; j++) {
+            var wb = state.worldBooks[conv.worldBookIds[j]];
+            if (wb && wb.entries) {
+                var keys = Object.keys(wb.entries);
+                for (var k = 0; k < keys.length; k++) {
+                    var e = wb.entries[keys[k]];
+                    if (e && !e.disable && /状态栏|Status\s*Block/i.test((e.content||'') + (e.comment||''))) return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 function buildMessagesForAPI() {
@@ -3996,9 +4291,41 @@ function buildMessagesForAPI() {
         });
     }
 
+    // If character has status templates in world book, inject format as last system msg
+    var statusTemplate = getActiveStatusTemplate(conv);
+    if (statusTemplate) {
+        apiMessages.push({ role: 'system', content: '【强制要求】在回复完成之后，必须根据对话内容更新并输出状态栏，格式严格参照：\n' + statusTemplate });
+    }
+
     return apiMessages.map(function(m) {
         return { role: m.role, content: replacePlaceholders(m.content, charName, userName) };
     });
+}
+
+// Extract status template from active world book entries
+// Works with ANY status tag format: <StatusBlock>, <Status_block>, <StatusBlocks>, etc.
+function getActiveStatusTemplate(conv) {
+    if (!conv || !conv.worldBookIds || !state.worldBooks) return null;
+    for (var i = 0; i < conv.worldBookIds.length; i++) {
+        var wb = state.worldBooks[conv.worldBookIds[i]];
+        if (!wb || !wb.entries) continue;
+        var keys = Object.keys(wb.entries);
+        for (var j = 0; j < keys.length; j++) {
+            var e = wb.entries[keys[j]];
+            if (!e || e.disable) continue;
+            var c = e.content || '';
+            // Must contain a status tag AND status-related content
+            if (!/<Status\w+/i.test(c)) continue;
+            if (!/状态栏|status/i.test(c)) continue;
+            // Try to extract a marked template section first
+            var startIdx = c.indexOf('模版开始');
+            var endIdx = c.indexOf('模版结束');
+            if (startIdx > -1 && endIdx > startIdx) return c.substring(startIdx, endIdx + 4);
+            // Otherwise return the full content as the template
+            return c;
+        }
+    }
+    return null;
 }
 
 // ==================== World Info (World Book) Support ====================
@@ -4109,15 +4436,83 @@ function getMergedWorldInfoForConv(conv) {
     return conv.worldInfo;
 }
 
+// Map SillyTavern position strings to numeric constants
+var WI_POS_MAP = {
+    'before_char': 0, 'after_char': 1,
+    'before_ex': 2, 'after_ex': 3,
+    'top_an': 4, 'bot_an': 5,
+    'at_depth': 6, 'outlet': 7
+};
+
+// Normalize a single entry from SillyTavern format to app internal format
+function normalizeWIEntry(e) {
+    var entry = JSON.parse(JSON.stringify(e));
+    // ST character_book uses "id"; standard WI export uses "uid"
+    if (entry.uid == null && entry.id != null) entry.uid = entry.id;
+    // ST uses "keys" (array) for primary keys; app uses "key"
+    if (entry.key === undefined && Array.isArray(entry.keys)) entry.key = entry.keys;
+    // ST uses "secondary_keys"; app uses "keysecondary"
+    if (entry.keysecondary === undefined && Array.isArray(entry.secondary_keys)) entry.keysecondary = entry.secondary_keys;
+    // ST uses "insertion_order"; app uses "order"
+    if (entry.order == null && entry.insertion_order != null) entry.order = entry.insertion_order;
+    // ST uses "enabled"; app uses "disable" (inverted)
+    if (entry.disable === undefined && entry.enabled !== undefined) entry.disable = !entry.enabled;
+    // ST top-level position is often a string; convert to numeric
+    if (typeof entry.position === 'string') {
+        var mapped = WI_POS_MAP[entry.position.toLowerCase()];
+        if (mapped !== undefined) entry.position = mapped;
+    }
+    // Also sync from extensions if present (ST puts many fields in extensions)
+    if (entry.extensions) {
+        if (entry.key === undefined && Array.isArray(entry.extensions.keys)) entry.key = entry.extensions.keys;
+        if (entry.keysecondary === undefined && Array.isArray(entry.extensions.secondary_keys)) entry.keysecondary = entry.extensions.secondary_keys;
+        if (entry.order == null && entry.extensions.insertion_order != null) entry.order = entry.extensions.insertion_order;
+        if (entry.depth == null && entry.extensions.depth != null) entry.depth = entry.extensions.depth;
+        if (entry.role == null && entry.extensions.role != null) entry.role = entry.extensions.role;
+        if (entry.position == null && entry.extensions.position != null) entry.position = entry.extensions.position;
+        if (entry.group === undefined && entry.extensions.group !== undefined) entry.group = entry.extensions.group;
+        if (entry.groupWeight == null && entry.extensions.group_weight != null) entry.groupWeight = entry.extensions.group_weight;
+        if (entry.groupOverride === undefined && entry.extensions.group_override !== undefined) entry.groupOverride = entry.extensions.group_override;
+        if (entry.useGroupScoring === undefined && entry.extensions.use_group_scoring !== undefined) entry.useGroupScoring = entry.extensions.use_group_scoring;
+        if (entry.scanDepth == null && entry.extensions.scan_depth != null) entry.scanDepth = entry.extensions.scan_depth;
+        if (entry.caseSensitive === undefined && entry.extensions.case_sensitive !== undefined) entry.caseSensitive = entry.extensions.case_sensitive;
+        if (entry.matchWholeWords === undefined && entry.extensions.match_whole_words !== undefined) entry.matchWholeWords = entry.extensions.match_whole_words;
+        if (entry.excludeRecursion === undefined && entry.extensions.exclude_recursion !== undefined) entry.excludeRecursion = entry.extensions.exclude_recursion;
+        if (entry.preventRecursion === undefined && entry.extensions.prevent_recursion !== undefined) entry.preventRecursion = entry.extensions.prevent_recursion;
+        if (entry.delayUntilRecursion === undefined && entry.extensions.delay_until_recursion !== undefined) entry.delayUntilRecursion = entry.extensions.delay_until_recursion;
+        if (entry.sticky == null && entry.extensions.sticky != null) entry.sticky = entry.extensions.sticky;
+        if (entry.cooldown == null && entry.extensions.cooldown != null) entry.cooldown = entry.extensions.cooldown;
+        if (entry.delay == null && entry.extensions.delay != null) entry.delay = entry.extensions.delay;
+        if (entry.probability == null && entry.extensions.probability != null) entry.probability = entry.extensions.probability;
+        if (entry.useProbability === undefined && entry.extensions.useProbability !== undefined) entry.useProbability = entry.extensions.useProbability;
+        if (entry.selectiveLogic == null && entry.extensions.selectiveLogic != null) entry.selectiveLogic = entry.extensions.selectiveLogic;
+        if (entry.automationId === undefined && entry.extensions.automation_id !== undefined) entry.automationId = entry.extensions.automation_id;
+        if (entry.ignoreBudget === undefined && entry.extensions.ignore_budget !== undefined) entry.ignoreBudget = entry.extensions.ignore_budget;
+        if (entry.vectorized === undefined && entry.extensions.vectorized !== undefined) entry.vectorized = entry.extensions.vectorized;
+        if (entry.displayIndex == null && entry.extensions.display_index != null) entry.displayIndex = entry.extensions.display_index;
+        if (entry.triggers === undefined && Array.isArray(entry.extensions.triggers)) entry.triggers = entry.extensions.triggers;
+        // Character filter
+        if (!entry.characterFilter) entry.characterFilter = { isExclude: false, names: [], tags: [] };
+        if (entry.extensions.match_persona_description !== undefined) entry.matchPersonaDescription = entry.extensions.match_persona_description;
+        if (entry.extensions.match_character_description !== undefined) entry.matchCharacterDescription = entry.extensions.match_character_description;
+        if (entry.extensions.match_character_personality !== undefined) entry.matchCharacterPersonality = entry.extensions.match_character_personality;
+        if (entry.extensions.match_character_depth_prompt !== undefined) entry.matchCharacterDepthPrompt = entry.extensions.match_character_depth_prompt;
+        if (entry.extensions.match_scenario !== undefined) entry.matchScenario = entry.extensions.match_scenario;
+        if (entry.extensions.match_creator_notes !== undefined) entry.matchCreatorNotes = entry.extensions.match_creator_notes;
+    }
+    return entry;
+}
+
 function normalizeImportedWorldInfo(raw) {
     // Accept SillyTavern format { entries: { "0": {...}, ... } } or { worldInfo: ... } or array fallback
+    // Also accepts character_book format from character cards
     var wi = { name: '', entries: {} };
     if (!raw) return wi;
 
     var src = raw.entries || (raw.worldInfo && raw.worldInfo.entries) || raw;
     if (Array.isArray(src)) {
         src.forEach(function(e, idx) {
-            var entry = JSON.parse(JSON.stringify(e));
+            var entry = normalizeWIEntry(e);
             var uid = (entry.uid != null) ? entry.uid : idx;
             var parsed = parseInt(uid, 10);
             entry.uid = (parsed === 0 || !isNaN(parsed)) ? parsed : Date.now();
@@ -4125,7 +4520,7 @@ function normalizeImportedWorldInfo(raw) {
         });
     } else if (src && typeof src === 'object') {
         Object.keys(src).forEach(function(k) {
-            var entry = JSON.parse(JSON.stringify(src[k]));
+            var entry = normalizeWIEntry(src[k]);
             // Preserve uid 0 correctly (common in SillyTavern exports)
             var uid = (entry.uid != null) ? entry.uid : k;
             var parsed = parseInt(uid, 10);
@@ -4809,6 +5204,44 @@ function deleteAllWIEntries() {
     showNoSelection();
 }
 
+function deleteWorldBook(wbId) {
+    if (!state.worldBooks || !state.worldBooks[wbId]) return;
+    var wb = state.worldBooks[wbId];
+    var name = wb.name || t('world_book_title');
+    var msg = t('world_book_confirm_delete_book').replace('{name}', name);
+    if (!confirm(msg)) return;
+
+    // 1. 先清理：从所有对话中移除此世界书的引用
+    if (state.conversations) {
+        Object.keys(state.conversations).forEach(function(convId) {
+            var conv = state.conversations[convId];
+            if (conv && Array.isArray(conv.worldBookIds)) {
+                conv.worldBookIds = conv.worldBookIds.filter(function(id) { return id !== wbId; });
+            }
+        });
+    }
+
+    // 2. 如果当前正在查看此书，先切回书列表并清空编辑器
+    if (wiState.currentWorldBookId === wbId) {
+        wiState.currentWorldBookId = null;
+        wiState.viewMode = 'books';
+        wiState.selectedUid = null;
+        showNoSelection();
+    }
+
+    // 3. 先删明细（清空此世界书下的所有条目）
+    wb.entries = {};
+
+    // 4. 再从全局书库列表中删除此书
+    delete state.worldBooks[wbId];
+    wiState.dirty = true;
+
+    // 5. 刷新 UI，持久化
+    renderWIEntryList(dom.wiSearch ? dom.wiSearch.value.trim() : '');
+    renderWorldInfoBadge();
+    persistState();
+}
+
 function selectWIEntry(uid) {
     wiState.selectedUid = String(uid);
     var entry = getActiveWI().entries[wiState.selectedUid];
@@ -4927,7 +5360,7 @@ function renderWIEntryList(filter) {
                 '</div>' +
                 '<div class="flex items-center gap-1 text-[10px] text-right flex-shrink-0">' +
                     '<span class="tabular-nums text-zinc-400">' + (entry.order != null ? entry.order : 100) + '</span>' +
-                    '<button class="wi-list-del opacity-40 hover:opacity-100 text-red-400 px-1" data-uid="' + uidStr + '">✕</button>' +
+                    '<button class="wi-list-del opacity-35 hover:opacity-100 active:bg-red-500/20 text-red-400 min-w-[26px] min-h-[26px] rounded inline-flex items-center justify-center text-xs" data-uid="' + uidStr + '">✕</button>' +
                 '</div>' +
             '</div>';
 
@@ -5010,11 +5443,16 @@ function renderWorldBookList(filter) {
                     <div class="text-sm font-medium text-zinc-200 truncate">${escapeHtml(wb.name || '未命名世界书')}</div>
                     <div class="text-[10px] text-zinc-400">${Object.keys(wb.entries || {}).length} 条目</div>
                 </div>
-                ${isLinked ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">已关联</span>' : ''}
+                <div class="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                    ${isLinked ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">已关联</span>' : ''}
+                    <button class="wi-book-del opacity-35 hover:opacity-100 text-red-400 hover:text-red-200 hover:bg-red-500/25 active:bg-red-500/40 min-w-[28px] min-h-[28px] rounded-lg flex items-center justify-center text-xs leading-none transition-all" title="${escapeHtml(t('world_book_delete_book'))}">✕</button>
+                </div>
             </div>
         `;
 
-        row.addEventListener('click', function() {
+        row.addEventListener('click', function(e) {
+            // 如果点击的是删除按钮，不触发行的点击
+            if (e.target.closest('.wi-book-del')) return;
             wiState.currentWorldBookId = wb.id;
             wiState.viewMode = 'entries';
             wiState.selectedUid = null;
@@ -5022,6 +5460,15 @@ function renderWorldBookList(filter) {
             renderWIEntryList(dom.wiSearch.value.trim());
             updateWorldBookModalHeader();
         });
+
+        // 删除按钮事件
+        var delBtn = row.querySelector('.wi-book-del');
+        if (delBtn) {
+            delBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                deleteWorldBook(wb.id);
+            });
+        }
 
         container.appendChild(row);
     });
@@ -5131,6 +5578,7 @@ function renderWorldInfoBadge() {
     el.textContent = count > 0 ? count : '';
     el.title = count + ' ' + t('world_book_entry') + (conv.worldBookIds && conv.worldBookIds.length > 1 ? ' (来自 ' + conv.worldBookIds.length + ' 个世界书)' : '');
 }
+
 
 function renderWorldInfoBudgetWarning() {
     var el = dom.wiBudgetWarning;
@@ -5280,7 +5728,9 @@ function buildScanText(conv, depth, entry) {
             // For now we don't have a separate persona system, skip or use settings
         }
         if (entry.matchCharacterDepthPrompt) {
-            out.push("Character's Note: " + (c.post_history_instructions || ''));
+            // Use imported depth_prompt (from V2/V3 character card) if available, else fallback to post_history_instructions
+            var depthPromptText = (c.depth_prompt && c.depth_prompt.prompt) ? c.depth_prompt.prompt : (c.post_history_instructions || '');
+            out.push("Character's Note: " + depthPromptText);
         }
         if (entry.matchCreatorNotes) {
             out.push('Creator Notes: ' + (c.creator_notes || ''));
@@ -6345,12 +6795,93 @@ function archiveCurrentConversation() {
     renderConversationList();
 }
 
+// Show greeting selector modal when character has alternate greetings
+// Pending conversation data is stored here while the user picks a greeting
+var _pendingGreetingConv = null;
+
+function showGreetingSelector(character, conv) {
+    var allGreetings = [];
+    // Collect all greetings: first_mes + alternate_greetings
+    if (character.first_mes) allGreetings.push(character.first_mes);
+    if (character.alternate_greetings && character.alternate_greetings.length > 0) {
+        for (var i = 0; i < character.alternate_greetings.length; i++) {
+            if (character.alternate_greetings[i] && character.alternate_greetings[i].trim()) {
+                allGreetings.push(character.alternate_greetings[i]);
+            }
+        }
+    }
+    // Deduplicate
+    var seen = {};
+    var unique = [];
+    for (var g = 0; g < allGreetings.length; g++) {
+        var key = allGreetings[g].trim();
+        if (!seen[key]) {
+            seen[key] = true;
+            unique.push(key);
+        }
+    }
+    if (unique.length <= 1) {
+        // Only one unique greeting — just use it directly
+        var firstMes = replacePlaceholders(unique[0], character.name, state.settings.userName || 'User');
+        conv.messages.push({ role: 'assistant', content: firstMes });
+        persistState();
+        renderAll();
+        return;
+    }
+
+    // Store pending conversation
+    _pendingGreetingConv = { conv: conv, character: character, greetings: unique };
+
+    // Build modal content
+    dom.greetingCharName.textContent = character.name || 'Unknown';
+    var listHtml = '';
+    for (var i = 0; i < unique.length; i++) {
+        var fullText = unique[i];
+        var len = fullText.length;
+        var lenLabel = len < 200 ? len + '字' : (len < 1000 ? Math.round(len/100)/10 + 'k字' : Math.round(len/1000) + 'k字');
+        listHtml += '<div class="greeting-option group glass rounded-2xl p-4 cursor-pointer transition-all border border-white/5 hover:border-amber-500/40 hover:bg-white/[0.06] mb-3" data-index="' + i + '">'
+            + '<div class="flex items-center justify-between mb-2">'
+            + '<span class="text-[11px] px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-400 font-semibold">开场白 #' + (i + 1) + '</span>'
+            + '<span class="text-[10px] text-zinc-500">' + lenLabel + '</span>'
+            + '</div>'
+            + '<div class="greeting-body text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap max-h-32 sm:max-h-40 overflow-y-auto pr-1">' + escapeHtml(fullText) + '</div>'
+            + '<div class="mt-3 flex justify-end">'
+            + '<span class="text-[11px] px-3 py-1 rounded-lg bg-amber-500 text-black font-semibold opacity-0 group-hover:opacity-100 greeting-select-btn">选择此开场白</span>'
+            + '</div>'
+            + '</div>';
+    }
+    dom.greetingList.innerHTML = listHtml;
+
+    // Bind click to each option
+    var options = dom.greetingList.querySelectorAll('.greeting-option');
+    for (var j = 0; j < options.length; j++) {
+        options[j].addEventListener('click', function() {
+            var idx = parseInt(this.getAttribute('data-index'));
+            var chosen = unique[idx];
+            var userName = state.settings.userName || 'User';
+            var charName = character.name;
+            var firstMes = replacePlaceholders(chosen, charName, userName);
+            conv.messages.push({ role: 'assistant', content: firstMes });
+            dom.greetingModal.classList.add('hidden');
+            _pendingGreetingConv = null;
+            persistState();
+            renderAll();
+        });
+    }
+
+    dom.greetingModal.classList.remove('hidden');
+}
+
 function newConversation(charOrChars) {
     saveCurrentConversation();
     var conv = defaultConversation();
     var current = getActiveConv();
 
-    // 复制世界书（如果有）
+    // Copy world books from current conversation (if any)
+    if (current && current.worldBookIds && current.worldBookIds.length > 0) {
+        conv.worldBookIds = current.worldBookIds.slice();
+    }
+    // 兼容旧版 worldInfo
     if (current && current.worldInfo) {
         conv.worldInfo = JSON.parse(JSON.stringify(current.worldInfo));
     }
@@ -6363,11 +6894,41 @@ function newConversation(charOrChars) {
             conv.character = JSON.parse(JSON.stringify(character));
             const charName = conv.character.name;
             const userName = state.settings.userName || 'User';
-            const firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
-            if (firstMes) {
-                conv.messages.push({ role: 'assistant', content: firstMes });
-            }
             conv.title = t('chat_with') + conv.character.name;
+
+            // Check for alternate greetings — show selector if multiple unique greetings exist
+            var hasAlternates = character.alternate_greetings && character.alternate_greetings.length > 0;
+            if (hasAlternates) {
+                // Remove duplicates to check actual unique count
+                var allG = [character.first_mes].concat(character.alternate_greetings).filter(Boolean);
+                var seenG = {};
+                var uniqG = [];
+                for (var gi = 0; gi < allG.length; gi++) {
+                    if (!seenG[allG[gi].trim()]) { seenG[allG[gi].trim()] = true; uniqG.push(allG[gi].trim()); }
+                }
+                hasAlternates = uniqG.length > 1;
+            }
+
+            if (!hasAlternates) {
+                // Single greeting — use directly
+                const firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
+                if (firstMes) {
+                    conv.messages.push({ role: 'assistant', content: firstMes });
+                }
+            }
+            // If has alternates, showGreetingSelector will be called after conv is saved
+
+            // Auto-link world books matching this character
+            if ((!conv.worldBookIds || conv.worldBookIds.length === 0) && state.worldBooks && charName) {
+                var wbIds = Object.keys(state.worldBooks);
+                for (var wi = 0; wi < wbIds.length; wi++) {
+                    var wb = state.worldBooks[wbIds[wi]];
+                    if (wb && wb.characterName === charName) {
+                        if (!conv.worldBookIds) conv.worldBookIds = [];
+                        conv.worldBookIds.push(wbIds[wi]);
+                    }
+                }
+            }
         }
     }
     // ===== 群组模式（Stage 1 MVP） =====
@@ -6412,11 +6973,24 @@ function newConversation(charOrChars) {
         conv.character = JSON.parse(JSON.stringify(character));
         const charName = conv.character.name;
         const userName = state.settings.userName || 'User';
-        const firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
-        if (firstMes) {
-            conv.messages.push({ role: 'assistant', content: firstMes });
-        }
         conv.title = t('chat_with') + conv.character.name;
+
+        // Check for alternate greetings
+        var _hasAlts = character.alternate_greetings && character.alternate_greetings.length > 0;
+        if (_hasAlts) {
+            var _all = [character.first_mes].concat(character.alternate_greetings).filter(Boolean);
+            var _seen = {}, _unq = [];
+            for (var _i = 0; _i < _all.length; _i++) {
+                if (!_seen[_all[_i].trim()]) { _seen[_all[_i].trim()] = true; _unq.push(_all[_i].trim()); }
+            }
+            _hasAlts = _unq.length > 1;
+        }
+        if (!_hasAlts) {
+            const firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
+            if (firstMes) {
+                conv.messages.push({ role: 'assistant', content: firstMes });
+            }
+        }
     }
 
     normalizeConversation(conv);
@@ -6428,6 +7002,27 @@ function newConversation(charOrChars) {
     conv._lastRenderedVisibleCount = 0;
     conv._showAllMessages = false;
     conv._wiCache = null;
+
+    // If single-character mode and has alternate greetings, show selector instead of rendering immediately
+    var isSingleChar = !charOrChars || !Array.isArray(charOrChars) || charOrChars.length === 1;
+    var charForGreeting = null;
+    if (isSingleChar) {
+        if (Array.isArray(charOrChars) && charOrChars.length === 1) {
+            charForGreeting = charOrChars[0];
+        } else if (charOrChars && !Array.isArray(charOrChars)) {
+            charForGreeting = charOrChars;
+        }
+    }
+    charForGreeting = charForGreeting || (current && current.character ? current.character : null);
+    charForGreeting = charForGreeting || conv.character;
+    if (isSingleChar && conv.character && conv.messages.length === 0 &&
+        charForGreeting && charForGreeting.alternate_greetings && charForGreeting.alternate_greetings.length > 0) {
+        // Persist conversation before showing selector (in case user refreshes)
+        persistState();
+        // Show greeting selector — it will handle rendering after user picks
+        showGreetingSelector(charForGreeting, conv);
+        return;
+    }
 
     if (dom.messagesContainer) dom.messagesContainer.innerHTML = '';
 
@@ -6543,7 +7138,7 @@ function showNewChatCharacterPicker() {
         const bottomArea = modal.querySelector('.mt-4.pt-4.border-t');
         if (bottomArea) {
             const toggleBtn = document.createElement('button');
-            toggleBtn.className = 'w-full mb-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 hover:bg-white/10 border border-white/10 transition-all';
+            toggleBtn.className = 'w-full mt-3 mb-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 hover:bg-white/10 border border-white/10 transition-all';
             toggleBtn.textContent = '多选创建群组聊天';
 
             toggleBtn.addEventListener('click', () => {
@@ -6700,15 +7295,18 @@ function cacheDom() {
         'sidebar','convList','noConvHint','chatTopBar','charAvatar','chatTitle','chatSubtitle',
         'messagesContainer','emptyState','messageInput','sendBtn','stopBtn','mentionBtn',
         'settingsModal','settingsBackdrop','settingsCloseBtn',
-        'apiEndpoint','apiKey','saveApiKey','modelName','contextLength','contextLenVal',
+        'apiEndpoint','apiKey','saveApiKey','modelName','modelDropdown','fetchModelsBtn',
+        'presetDeepseek','presetGrok','presetOpenrouter','saveProviderBtn',
+        'contextLength','contextLenVal',
         'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
         'userName','systemPrompt',
         'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
+        'greetingModal','greetingBackdrop','greetingCloseBtn','greetingList','greetingCharName',
         'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn',
         'archiveBtn','tokenInfo','tokenCount','tokenBar','tokenMax','newChatBtn',
         'sidebarSettingsBtn','topSettingsBtn','viewPromptBtn',
         'exportAllBtn','importConvBtn','convImportFile',
-        'charCardEmpty','charCardPreview','charCardActions','charCardAvatar','charCardName',
+        'charCardEmpty','charCardPreview','charCardAccent','charCardActions','charCardAvatar','charCardName',
         'charCardTagCount','charCardPersonality','charCardEmptyHint',
         'charImportBtn','charCreateBtn','charEditBtn','charExportBtn','charRemoveBtn',
         'charEditorModal','charEditorBackdrop','charEditorCloseBtn','charEditorCancelBtn','charEditorSaveBtn',
@@ -6906,12 +7504,12 @@ function renderMessages() {
 
     if (allMessages.length === 0) {
         container.innerHTML = '';
-        dom.emptyState.style.display = '';
-        dom.tokenInfo.classList.add('hidden');
+        if (dom.emptyState) dom.emptyState.style.display = '';
+        if (dom.tokenInfo) dom.tokenInfo.classList.add('hidden');
         return;
     }
 
-    dom.emptyState.style.display = 'none';
+    if (dom.emptyState) dom.emptyState.style.display = 'none';
     dom.tokenInfo.classList.remove('hidden');
 
     // === 增量 DOM 更新 + Windowed Rendering ===
@@ -7101,22 +7699,31 @@ function renderCharacterCard() {
     var character = conv && conv.character;
 
     if (character) {
+        // Show character preview, hide empty state
         dom.charCardPreview.classList.remove('hidden');
-        dom.charCardEmptyHint.classList.add('hidden');
+        dom.charCardEmpty.classList.add('hidden');
+        // Show header actions
         dom.charEditBtn.classList.remove('hidden');
         dom.charExportBtn.classList.remove('hidden');
         dom.charRemoveBtn.classList.remove('hidden');
+        // Glowing accent bar when character is loaded
+        if (dom.charCardAccent) dom.charCardAccent.style.opacity = '1';
+        // Populate data
         dom.charCardAvatar.textContent = character.name ? character.name.charAt(0).toUpperCase() : '?';
         dom.charCardName.textContent = character.name || t('char_empty_name');
         var tagCount = character.tags ? character.tags.length : 0;
         dom.charCardTagCount.textContent = tagCount + ' tag' + (tagCount !== 1 ? 's' : '');
         dom.charCardPersonality.textContent = character.personality || character.description ? (character.personality || character.description).slice(0, 120) : '';
     } else {
+        // Hide character preview, show empty state
         dom.charCardPreview.classList.add('hidden');
-        dom.charCardEmptyHint.classList.remove('hidden');
+        dom.charCardEmpty.classList.remove('hidden');
+        // Hide header actions
         dom.charEditBtn.classList.add('hidden');
         dom.charExportBtn.classList.add('hidden');
         dom.charRemoveBtn.classList.add('hidden');
+        // Remove accent bar glow
+        if (dom.charCardAccent) dom.charCardAccent.style.opacity = '0';
     }
     renderWorldInfoBadge();
 }
@@ -7134,6 +7741,8 @@ function removeCharacter() {
     requestFullRender();
 }
 
+// Remove world books that are ONLY used by this conversation (not shared)
+// Called when removing a character or deleting a conversation
 /**
  * 从全局角色库彻底删除一个角色卡（不影响任何已有对话的嵌入副本）
  */
@@ -7142,14 +7751,40 @@ function deleteCharacterFromLibrary(nameOrKey) {
     const key = nameOrKey.trim().toLowerCase();
 
     if (!state.characters || !state.characters[key]) return;
+    var charData = state.characters[key];
+    var charName = charData.name || '';
+
+    // Delete world books associated with this character
+    var deletedWbs = 0;
+    if (state.worldBooks) {
+        var wbIds = Object.keys(state.worldBooks);
+        for (var i = 0; i < wbIds.length; i++) {
+            var wb = state.worldBooks[wbIds[i]];
+            if (wb && wb.characterName === charName) {
+                // Remove references from all conversations
+                if (state.conversations) {
+                    Object.keys(state.conversations).forEach(function(cid) {
+                        var c = state.conversations[cid];
+                        if (c && Array.isArray(c.worldBookIds)) {
+                            c.worldBookIds = c.worldBookIds.filter(function(id) { return id !== wbIds[i]; });
+                        }
+                    });
+                }
+                delete state.worldBooks[wbIds[i]];
+                deletedWbs++;
+            }
+        }
+    }
 
     delete state.characters[key];
     persistState();
 
+    if (deletedWbs > 0) {
+    }
+
     // 如果当前正在显示选择器，刷新它
     const pickerList = document.getElementById('newChatPickerList');
     if (pickerList && !document.getElementById('newChatPickerModal').classList.contains('hidden')) {
-        // 简单粗暴刷新整个选择器
         showNewChatCharacterPicker();
     }
 }
@@ -7188,7 +7823,12 @@ function saveCharacterEdits() {
         post_history_instructions: dom.charEditPostHistory.value,
         creator_notes: dom.charEditCreatorNotes.value,
         tags: tags,
-        alternate_greetings: conv.character ? conv.character.alternate_greetings : []
+        alternate_greetings: conv.character ? conv.character.alternate_greetings : [],
+        // Preserve imported V2/V3 extension fields not shown in the editor
+        depth_prompt: conv.character ? conv.character.depth_prompt : null,
+        group_only_greetings: conv.character ? conv.character.group_only_greetings : [],
+        talkativeness: conv.character ? conv.character.talkativeness : 0.5,
+        creator: conv.character ? conv.character.creator : '',
     };
 
     var wasNew = !conv.character || !conv.character.name || conv.character.name === 'Unnamed';
@@ -7381,12 +8021,185 @@ function escapeHtml(text) {
 
 function highlightDialogue(text) {
     if (!text) return '';
+    var safeBlocks = [];
+
+    // === Universal Status Detection ===
+    // Normalize: find ALL status content regardless of tag format, then clean up
+
+    // Step 1: Find complete pairs <StatusXxx>...</StatusXxx>
+    text = text.replace(/<(Status\w*)\b[^>]*>([\s\S]*?)<\/\1>/gi, function(match, tag, inner) {
+        safeBlocks.push({tag: tag.toLowerCase(), content: inner.trim()});
+        return '%%SB_' + (safeBlocks.length - 1) + '%%';
+    });
+
+    // Step 2: Find self-closing <StatusXxx/>
+    text = text.replace(/<(Status\w*)\b[^>]*\/>/gi, function(match, tag) {
+        safeBlocks.push({tag: tag.toLowerCase(), content: ''});
+        return '%%SB_' + (safeBlocks.length - 1) + '%%';
+    });
+
+    // Step 3: Handle orphaned opening tags — content from tag to next blank line
+    text = text.replace(/<(Status\w*)\b[^>]*>([\s\S]*?)(?=\n\n|\n*$)/g, function(match, tag, inner) {
+        var content = inner.trim();
+        if (content && (content.indexOf(':') > -1 || content.split('\n').length >= 2)) {
+            safeBlocks.push({tag: tag.toLowerCase(), content: content});
+            return '%%SB_' + (safeBlocks.length - 1) + '%%';
+        }
+        return ''; // empty or not status-like, just remove the tag
+    });
+
+    // Step 4: Strip ALL remaining status tags (orphaned closings, etc.)
+    text = text.replace(/<\/?Status\w*\b[^>]*>/gi, '');
+
+    // Step 5: Detect plain-text status (no XML tags, just "状态栏: ...")
+    text = text.replace(/(^|\n)(状态栏\s*:[\s\S]*?)(?=\n\n|\n[^\s\n\-●▶▸\d]|\n*$)/g, function(match, prefix, content) {
+        if (/:\s*\n\s+[\w一-鿿]/.test(content) || content.split('\n').length >= 3) {
+            safeBlocks.push({tag: 'status_plain', content: content.trim()});
+            return prefix + '%%SB_' + (safeBlocks.length - 1) + '%%';
+        }
+        return match;
+    });
+
+    // Escape and restore
     var escaped = escapeHtml(text);
-    // Highlight Chinese curly double quotes “...”
     escaped = escaped.replace(/“([\s\S]*?)”/g, '<span class="dialogue-highlight">“$1”</span>');
-    // Highlight corner brackets 「...」
     escaped = escaped.replace(/「([\s\S]*?)」/g, '<span class="dialogue-highlight">「$1」</span>');
+    for (var i = 0; i < safeBlocks.length; i++) {
+        escaped = escaped.replace('%%SB_' + i + '%%', buildUniversalStatusPanel(safeBlocks[i]));
+    }
     return escaped;
+}
+
+// ==================== Universal Status Panel Renderer ====================
+// Handles all known SillyTavern status tag variants:
+//   <StatusBlock> <Status_block> <StatusBlocks> <StatusPlaceHolderImpl/> <StatusBlock_Rule> etc.
+
+function buildUniversalStatusPanel(frag) {
+    var inner = frag.content.trim();
+    var tag = frag.tag;
+
+    // Self-closing placeholder (e.g. <StatusPlaceHolderImpl/>)
+    if (!inner) {
+        return '<div class="status-block status-placeholder">'
+            + '<div class="status-header"><span>📊</span><span>STATUS</span><span class="status-badge">Generated</span></div>'
+            + '</div>';
+    }
+
+    // ---- Format Detectors ----
+    // 1. Markdown code block (most common: ```markdown / ```)
+    var mdMatch = inner.match(/```(?:markdown|md|txt|TXT)?\s*([\s\S]*?)```/i);
+    if (mdMatch) return buildStatusFromLines(tag, mdMatch[1].trim().split('\n'));
+
+    // 2. HTML <details>/<summary> (used by <StatusBlocks>)
+    if (/<details>/i.test(inner)) {
+        var txt = inner.replace(/<[^>]+>/g, '\n').replace(/&[a-z]+;/gi, '');
+        return buildStatusFromLines(tag, txt.split('\n'));
+    }
+
+    // 3. YAML-like format with "状态栏:" prefix (<Status_block> variant)
+    if (/状态栏\s*:/.test(inner)) {
+        return buildStatusFromLines(tag, inner.split('\n'));
+    }
+
+    // 4. Plain text: split by newlines
+    return buildStatusFromLines(tag, inner.split('\n'));
+}
+
+// Shared builder: takes an array of raw lines and renders a styled panel
+function buildStatusFromLines(tag, rawLines) {
+    var lines = [];
+    for (var i = 0; i < rawLines.length; i++) {
+        var s = rawLines[i].trim();
+        if (s) lines.push(s);
+    }
+    if (!lines.length) return '';
+
+    var html = '<div class="status-block">';
+    html += '<div class="status-header"><span>📊</span><span>STATUS</span></div>';
+    html += '<div class="status-body">';
+
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        // Skip HTML tags that slipped through
+        if (/^<[\/]?\w+/.test(line)) continue;
+        // Skip pure separator lines
+        if (/^[═╒╘╞╡╔╚║─═]+$/.test(line)) continue;
+
+        var ch = line.charAt(0);
+
+        // ---- Pattern 1: Emoji header like "🔹 交互信息" ----
+        if (isStatusEmoji(ch) && line.length < 30) {
+            html += '<div class="status-section">' + escapeHtml(line) + '</div>';
+            continue;
+        }
+
+        // ---- Pattern 2: Emoji key-value like "👗 当前衣着：红色礼服" or "📍 地点" ----
+        if (isStatusEmoji(ch) && line.indexOf(':') > -1) {
+            var ci = line.indexOf(':');
+            var icon2 = ch;
+            var label2 = line.slice(ci + 1).trim();
+            html += '<div class="status-row"><span class="status-icon">' + icon2 + '</span><span class="status-label">' + escapeHtml(label2) + '</span></div>';
+            continue;
+        }
+
+        // ---- Pattern 3: Emoji + text (no colon) like "📍 赵秀娥家" ----
+        if (isStatusEmoji(ch)) {
+            html += '<div class="status-row"><span class="status-icon">' + ch + '</span><span class="status-label">' + escapeHtml(line.slice(1).trim()) + '</span></div>';
+            continue;
+        }
+
+        // ---- Pattern 4: List item (YAML-style) like "  - 用户:" or "- 名字: John" ----
+        var listMatch = line.match(/^\s*[-•]\s+(.+)/);
+        if (listMatch) {
+            // Parse sub key-value if present
+            var subKv = listMatch[1].match(/^([^:：]+)[：:]\s*(.+)/);
+            if (subKv) {
+                html += '<div class="status-row" style="padding-left:14px;"><span class="status-icon">›</span><span class="status-label"><b>' + escapeHtml(subKv[1].trim()) + '</b>: ' + escapeHtml(subKv[2]) + '</span></div>';
+            } else {
+                html += '<div class="status-row" style="padding-left:14px;"><span class="status-icon">›</span><span class="status-label">' + escapeHtml(listMatch[1]) + '</span></div>';
+            }
+            continue;
+        }
+
+        // ---- Pattern 4b: Section title ending with colon (e.g. "状态栏:", "用户列表:") ----
+        if (/^[\w一-鿿]+\s*[：:]$/.test(line) && line.length < 20) {
+            html += '<div class="status-section">' + escapeHtml(line) + '</div>';
+            continue;
+        }
+
+        // ---- Pattern 5: Key-value text (possibly indented) ----
+        var kvMatch = line.match(/^\s*([\w一-鿿一-鿿　-〿＀-￯]+)\s*[：:]\s*(.+)/);
+        if (kvMatch && kvMatch[1].length < 15) {
+            var indent = line.match(/^(\s*)/)[1].length > 1 ? ' style="padding-left:14px;"' : '';
+            var value = kvMatch[2].replace(/^[""](.*)[""]$/, '$1');
+            html += '<div class="status-row"' + indent + '><span class="status-icon">•</span><span class="status-label"><b>' + escapeHtml(kvMatch[1].trim()) + '</b>: ' + escapeHtml(value) + '</span></div>';
+            continue;
+        }
+
+        // ---- Pattern 6: "当前..." or "Current..." prefix ----
+        if (/^(当前|Current)\s/.test(line)) {
+            html += '<div class="status-info">' + escapeHtml(line) + '</div>';
+            continue;
+        }
+
+        // ---- Fallback: plain info line ----
+        html += '<div class="status-info">' + escapeHtml(line) + '</div>';
+    }
+
+    html += '</div></div>';
+    return html;
+}
+
+// Check if a character is an emoji or symbol used in status panels
+function isStatusEmoji(ch) {
+    if (!ch) return false;
+    var code = ch.codePointAt(0);
+    return (code >= 0x2600 && code <= 0x27BF)   // Misc Symbols
+        || (code >= 0x1F300 && code <= 0x1F9FF)  // Emoticons, Pictographs
+        || (code >= 0x1FA00 && code <= 0x1FAFF)  // Symbols Extended-A
+        || (code >= 0x2300 && code <= 0x23FF)    // Misc Technical
+        || (code >= 0x2000 && code <= 0x2BFF)    // General Punctuation + Misc Symbols
+        || (code >= 0xFE00 && code <= 0xFE0F);   // Variation Selectors
 }
 
 // ==================== Message Actions ====================
@@ -7721,6 +8534,8 @@ function bindEvents() {
         dom.apiKey.value = state.settings.apiKey;
         if (dom.saveApiKey) dom.saveApiKey.checked = !!state.settings.saveApiKey;
         dom.modelName.value = state.settings.model;
+        if (state._cachedModels) updateModelDropdown(state._cachedModels, state.settings.model);
+        updateProviderBadges();
         dom.contextLength.value = state.settings.contextLength;
         dom.contextLenVal.textContent = state.settings.contextLength;
         dom.maxTokens.value = state.settings.maxTokens;
@@ -7896,6 +8711,17 @@ function bindEvents() {
         state.settings.summarizeApiKey = dom.summarizeApiKey.value.trim();
         state.settings.summarizeModel = dom.summarizeModel.value.trim() || 'deepseek-v4-flash';
 
+        // Auto-save provider config
+        var providerKey = detectCurrentProvider();
+        if (providerKey) {
+            saveProviderConfig(providerKey, {
+                endpoint: dom.apiEndpoint.value.trim(),
+                apiKey: dom.apiKey.value.trim(),
+                model: dom.modelName.value.trim()
+            });
+            showToast('✓ Auto-saved config for ' + API_PRESETS[providerKey].label);
+        }
+
         persistState();
         dom.settingsModal.classList.add('hidden');
 
@@ -7919,6 +8745,49 @@ function bindEvents() {
     if (dom.topSettingsBtn) dom.topSettingsBtn.addEventListener('click', openSettings);
     if (dom.settingsCloseBtn) dom.settingsCloseBtn.addEventListener('click', closeSettings);
     if (dom.settingsBackdrop) dom.settingsBackdrop.addEventListener('click', closeSettings);
+
+    // Preset buttons
+    if (dom.presetDeepseek) dom.presetDeepseek.addEventListener('click', function() { applyMainApiPreset('deepseek'); });
+    if (dom.presetGrok) dom.presetGrok.addEventListener('click', function() { applyMainApiPreset('grok'); });
+    if (dom.presetOpenrouter) dom.presetOpenrouter.addEventListener('click', function() { applyMainApiPreset('openrouter'); });
+
+    // Update provider button active state when endpoint is manually edited
+    if (dom.apiEndpoint) dom.apiEndpoint.addEventListener('input', updateProviderBadges);
+
+    // Save provider config button
+    if (dom.saveProviderBtn) dom.saveProviderBtn.addEventListener('click', saveCurrentProviderConfig);
+
+    // Fetch models button
+    if (dom.fetchModelsBtn) dom.fetchModelsBtn.addEventListener('click', fetchModels);
+
+    // Model dropdown: show on focus/input, hide on blur
+    if (dom.modelName && dom.modelDropdown) {
+        dom.modelName.addEventListener('focus', function() {
+            if (state._cachedModels) updateModelDropdown(state._cachedModels, dom.modelName.value);
+        });
+        dom.modelName.addEventListener('input', function() {
+            if (state._cachedModels) updateModelDropdown(state._cachedModels, dom.modelName.value);
+        });
+        dom.modelName.addEventListener('blur', function() {
+            setTimeout(closeModelDropdown, 150);
+        });
+        // Click on dropdown option
+        dom.modelDropdown.addEventListener('mousedown', function(e) {
+            var opt = e.target.closest('.model-option');
+            if (opt) {
+                dom.modelName.value = opt.getAttribute('data-model');
+                closeModelDropdown();
+            }
+        });
+    }
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (dom.modelDropdown && !dom.modelDropdown.classList.contains('hidden')) {
+            if (!dom.modelName.contains(e.target) && !dom.modelDropdown.contains(e.target)) {
+                closeModelDropdown();
+            }
+        }
+    });
 
     // Settings sliders
     function bindSlider(slider, valEl, format) {
@@ -7970,6 +8839,23 @@ function bindEvents() {
     dom.importCloseBtn.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
     dom.importBackdrop.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
 
+    // Greeting selector modal close — use first greeting as default
+    function finalizeGreetingModal() {
+        dom.greetingModal.classList.add('hidden');
+        if (!_pendingGreetingConv) return;
+        var pc = _pendingGreetingConv;
+        _pendingGreetingConv = null;
+        // Use first greeting if none selected
+        if (pc.conv.messages.length === 0 && pc.greetings && pc.greetings.length > 0) {
+            var firstMes = replacePlaceholders(pc.greetings[0], pc.character.name, state.settings.userName || 'User');
+            pc.conv.messages.push({ role: 'assistant', content: firstMes });
+        }
+        persistState();
+        renderAll();
+    }
+    dom.greetingCloseBtn.addEventListener('click', finalizeGreetingModal);
+    dom.greetingBackdrop.addEventListener('click', finalizeGreetingModal);
+
     // File import
     dom.importFileInput.addEventListener('change', function(e) {
         var file = e.target.files[0];
@@ -7982,32 +8868,53 @@ function bindEvents() {
                 var conv = getActiveConv();
                 if (!conv) { newConversation(); conv = getActiveConv(); }
 
+                // Always create a new conversation when importing — preserves old conversation
+                // and its world books intact. Avoids accidentally deleting previous character's data.
                 var hasMsgs = conv.messages.some(function(m) { return m.role !== 'system'; });
-                if (hasMsgs) {
+                var hasChar = !!(conv.character && conv.character.name);
+                if (hasMsgs || hasChar) {
                     saveCurrentConversation();
-                    // 捕获旧对话的世界书
-                    var oldWorldInfo = conv.worldInfo ? JSON.parse(JSON.stringify(conv.worldInfo)) : null;
-
                     var newConv = defaultConversation();
                     state.conversations[newConv.id] = newConv;
                     state.conversationOrder.unshift(newConv.id);
                     state.activeConvId = newConv.id;
                     conv = newConv;
-
-                    if (oldWorldInfo) {
-                        conv.worldInfo = oldWorldInfo;
-                    }
                 }
 
                 conv.character = character;
                 conv.title = t('chat_with') + character.name;
                 conv.messages = [];
+                conv.worldBookIds = [];
 
                 // 注册到全局角色库
                 if (character.name) {
                     const key = character.name.trim().toLowerCase();
                     if (!state.characters) state.characters = {};
                     state.characters[key] = JSON.parse(JSON.stringify(character));
+                }
+
+                // 从角色卡导入世界书 (character_book / world book)
+                // V2/V3: under data; also check top-level for variant formats
+                var charBook = (json.data && (json.data.character_book || json.data.world_book))
+                    || json.character_book
+                    || json.world_book;
+                if (charBook && charBook.entries && charBook.entries.length > 0) {
+                    try {
+                        var normalized = normalizeImportedWorldInfo(charBook);
+                        var wbName = normalized.name || (character.name + ' 世界书');
+                        var wbId = 'wb-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+                        if (!state.worldBooks) state.worldBooks = {};
+                        state.worldBooks[wbId] = {
+                            id: wbId,
+                            name: wbName,
+                            characterName: character.name,
+                            entries: normalized.entries,
+                            created: Date.now()
+                        };
+                        conv.worldBookIds.push(wbId);
+                    } catch (wbErr) {
+                        console.warn('[Import] 世界书导入失败:', wbErr);
+                    }
                 }
 
                 var charName = character.name;
@@ -8174,6 +9081,7 @@ function bindEvents() {
             if (dom.summaryManagerModal && !dom.summaryManagerModal.classList.contains('hidden')) dom.summaryManagerModal.classList.add('hidden');
             if (!dom.worldBookModal.classList.contains('hidden')) closeWorldBookModal();
             if (!dom.announceModal.classList.contains('hidden')) hideAnnouncementModal();
+            if (!dom.greetingModal.classList.contains('hidden')) finalizeGreetingModal();
         }
     });
 }
