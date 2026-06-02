@@ -8257,6 +8257,7 @@ function highlightDialogue(text) {
     var escaped = escapeHtml(text);
     escaped = escaped.replace(/“([\s\S]*?)”/g, '<span class="dialogue-highlight">“$1”</span>');
     escaped = escaped.replace(/「([\s\S]*?)」/g, '<span class="dialogue-highlight">「$1」</span>');
+    escaped = escaped.replace(/&quot;([\s\S]*?)&quot;/g, '<span class="dialogue-highlight">"$1"</span>');
     for (var i = 0; i < safeBlocks.length; i++) {
         escaped = escaped.replace('%%SB_' + i + '%%', buildUniversalStatusPanel(safeBlocks[i]));
     }
