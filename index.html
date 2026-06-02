@@ -93,6 +93,14 @@ body {
 .msg-action-btn.copy-btn:hover { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
 .msg-action-btn.retry-btn:hover { color: #f59e0b; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
 .msg-action-btn.del-btn:hover { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); }
+.msg-action-btn.edit-btn:hover { color: #a78bfa; border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+.msg-action-btn.edit-btn { font-size: 13px; line-height: 1; }
+
+/* 编辑模式下的 textarea 优化 */
+.msg-bubble textarea {
+    border: none;
+    box-shadow: none;
+}
 
 /* Mobile responsive */
 @media (max-width: 767px) {
@@ -1402,6 +1410,7 @@ var i18n = {
         copied: '已复制！',
         delete_msg: '删除消息',
         regenerate: '重新生成',
+        edit_msg: '编辑消息',
         import_title: '导入角色卡',
         import_desc: '支持 SillyTavern',
         import_desc2: '格式的 JSON 文件。',
@@ -1669,6 +1678,7 @@ var i18n = {
         copied: '已複製！',
         delete_msg: '刪除訊息',
         regenerate: '重新生成',
+        edit_msg: '編輯訊息',
         import_title: '匯入角色卡',
         import_desc: '支援 SillyTavern',
         import_desc2: '格式的 JSON 檔案。',
@@ -1919,6 +1929,7 @@ var i18n = {
         copied: 'Copied!',
         delete_msg: 'Delete message',
         regenerate: 'Regenerate',
+        edit_msg: 'Edit message',
         import_title: 'Import Character Card',
         import_desc: 'Supports SillyTavern',
         import_desc2: 'format JSON files.',
@@ -3526,6 +3537,7 @@ function appendFinalAssistantMessage(conv, fullContent) {
                 <button class="msg-action-btn copy-btn" data-action="copy" data-msg-idx="${actualIdx}" title="${t('copy')}">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                 </button>
+                <button class="msg-action-btn edit-btn" data-action="edit" data-msg-idx="${actualIdx}" title="${t('edit_msg')}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                 <button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="${actualIdx}" title="${t('regenerate')}">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                 </button>
@@ -6989,6 +7001,7 @@ function renderMessages() {
                         <button class="msg-action-btn copy-btn" data-action="copy" data-msg-idx="${actualIdx}" title="${t('copy')}">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         </button>
+                        <button class="msg-action-btn edit-btn" data-action="edit" data-msg-idx="${actualIdx}" title="${t('edit_msg')}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                         ${!isUser ? `
                         <button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="${actualIdx}" title="${t('regenerate')}">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
@@ -7031,6 +7044,7 @@ function renderMessages() {
         html += '<div class="msg-bubble">' + (isUser ? escapeHtml(msg.content) : highlightDialogue(msg.content)) + '</div>';
         html += '<div class="msg-actions">';
         html += '<button class="msg-action-btn copy-btn" data-action="copy" data-msg-idx="' + actualIdx + '" title="' + t('copy') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
+        html += '<button class="msg-action-btn edit-btn" data-action="edit" data-msg-idx="' + actualIdx + '" title="' + t('edit_msg') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
         if (!isUser) {
             html += '<button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="' + actualIdx + '" title="' + t('regenerate') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>';
         }
@@ -7088,6 +7102,7 @@ function renderMessagesFullHistory(conv) {
         html += '<div class="msg-bubble">' + (isUser ? escapeHtml(msg.content) : highlightDialogue(msg.content)) + '</div>';
         html += '<div class="msg-actions">';
         html += '<button class="msg-action-btn copy-btn" data-action="copy" data-msg-idx="' + actualIdx + '" title="' + t('copy') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
+        html += '<button class="msg-action-btn edit-btn" data-action="edit" data-msg-idx="' + actualIdx + '" title="' + t('edit_msg') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
         if (!isUser) {
             html += '<button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="' + actualIdx + '" title="' + t('regenerate') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>';
         }
@@ -7547,6 +7562,107 @@ function copyMessageText(text) {
     }
 }
 
+/**
+ * 内联编辑消息内容（支持用户消息和助手消息）
+ * 通过传入触发的按钮元素来准确定位对应的气泡 DOM
+ */
+function editMessage(actualIdx, triggerBtn) {
+    var conv = getActiveConv();
+    if (!conv || !conv.messages[actualIdx]) return;
+    if (state.isGenerating) return; // 生成中禁止编辑
+
+    var msg = conv.messages[actualIdx];
+    var originalContent = msg.content || '';
+
+    // 找到对应的 msg-wrapper 和 bubble
+    var bubble = null;
+    if (triggerBtn) {
+        var wrapper = triggerBtn.closest('.msg-wrapper');
+        if (wrapper) bubble = wrapper.querySelector('.msg-bubble');
+    }
+    if (!bubble) {
+        // 兜底：通过 data-msg-idx 查找
+        var btn = dom.messagesContainer.querySelector('.msg-action-btn[data-action="edit"][data-msg-idx="' + actualIdx + '"]');
+        if (btn) {
+            var w = btn.closest('.msg-wrapper');
+            if (w) bubble = w.querySelector('.msg-bubble');
+        }
+    }
+    if (!bubble) {
+        // 最后兜底：直接全量重渲染后进入编辑（较少发生）
+        conv.messages[actualIdx].content = originalContent; // 占位
+        renderMessagesOnly();
+        return;
+    }
+
+    // 记录原始气泡的实际渲染宽度（关键：保留原有对话框大小）
+    var originalBubbleWidth = bubble.offsetWidth;
+
+    // 创建编辑态 textarea（保留原有宽度 + 允许高度自动扩展）
+    var ta = document.createElement('textarea');
+    ta.value = originalContent;
+    // 注意：不再使用 w-full，而是通过 JS 精确设置宽度，保留原消息气泡的视觉宽度
+    ta.className = 'px-3 py-2.5 glass rounded-2xl text-[0.95rem] text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 resize-y leading-relaxed';
+    ta.style.fontFamily = 'inherit';
+    ta.style.boxSizing = 'border-box';
+    ta.style.width = originalBubbleWidth + 'px';
+    ta.style.maxWidth = '100%'; // 防止极端情况下溢出
+
+    // 短消息保护：给予一个最小可用编辑宽度，避免极短消息编辑极度狭窄
+    // 但仍尽量尊重原气泡的实际宽度
+    if (originalBubbleWidth < 280) {
+        ta.style.minWidth = Math.min(280, originalBubbleWidth * 1.15) + 'px';
+    }
+
+    // 保存原始内容以便取消
+    var originalHTML = bubble.innerHTML;
+    bubble.innerHTML = '';
+    bubble.appendChild(ta);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    // 自动高度调整（编辑长消息时更友好）
+    function autoResizeTextarea() {
+        ta.style.height = 'auto';
+        var maxHeight = 420; // 最大高度限制
+        ta.style.height = Math.min(ta.scrollHeight, maxHeight) + 'px';
+    }
+    ta.addEventListener('input', autoResizeTextarea);
+    // 初始自适应
+    setTimeout(autoResizeTextarea, 0);
+
+    function saveEdit() {
+        var newVal = ta.value.trim();
+        if (newVal !== originalContent) {
+            conv.messages[actualIdx].content = newVal;
+            conv.updated = Date.now();
+            conv._wiCache = null;
+            conv._lastRenderedVisibleCount = 0;
+            persistState();
+            renderMessagesOnly();
+            renderConversationListOnly();
+        } else {
+            // 内容没变，直接恢复
+            bubble.innerHTML = originalHTML;
+        }
+    }
+
+    function cancelEdit() {
+        bubble.innerHTML = originalHTML;
+    }
+
+    ta.addEventListener('blur', saveEdit);
+    ta.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            saveEdit();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            cancelEdit();
+        }
+    });
+}
+
 // ==================== Send Message ====================
 function sendMessage() {
     if (state.isGenerating) return;
@@ -7701,6 +7817,8 @@ function bindEvents() {
         } else if (action === 'retry') {
             if (state.isGenerating) return;
             regenerateMessage(idx);
+        } else if (action === 'edit') {
+            editMessage(idx, btn);
         }
     });
 
