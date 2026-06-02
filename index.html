@@ -1533,6 +1533,8 @@ var i18n = {
         world_book_no_selection: '选择左侧条目进行编辑，或点击“新建条目”',
         world_book_entry: '条目',
         world_book_confirm_delete_all: '确定删除此世界书的所有条目？此操作不可撤销。',
+        world_book_delete_book: '删除世界书',
+        world_book_confirm_delete_book: '确定彻底删除这个世界书？此操作不可撤销。关联到此世界书的对话将自动解除关联。',
         wi_comment: '备注 (Memo)',
         wi_keys: '激活关键字 (Keys)',
         wi_keys_hint: '逗号或换行分隔；支持正则如 /pattern/flags',
@@ -1801,6 +1803,8 @@ var i18n = {
         world_book_no_selection: '選擇左側條目進行編輯，或點擊「新建條目」',
         world_book_entry: '條目',
         world_book_confirm_delete_all: '確定刪除此世界書的所有條目？此操作無法復原。',
+        world_book_delete_book: '刪除世界書',
+        world_book_confirm_delete_book: '確定徹底刪除這個世界書？此操作無法復原。關聯到此世界書的對話將自動解除關聯。',
         wi_comment: '備註 (Memo)',
         wi_keys: '啟動關鍵字 (Keys)',
         wi_keys_hint: '逗號或換行分隔；支援正則如 /pattern/flags',
@@ -2051,6 +2055,8 @@ var i18n = {
         world_book_no_selection: 'Select an entry on the left to edit, or click "+ New Entry"',
         world_book_entry: 'entry',
         world_book_confirm_delete_all: 'Delete ALL entries in this World Book? This cannot be undone.',
+        world_book_delete_book: 'Delete World Book',
+        world_book_confirm_delete_book: 'Permanently delete this World Book? This cannot be undone. All conversations linked to it will be unlinked automatically.',
         wi_comment: 'Memo / Title',
         wi_keys: 'Activation Keys',
         wi_keys_hint: 'Comma or newline separated. Regex supported: /pattern/flags',
@@ -4913,6 +4919,49 @@ function deleteAllWIEntries() {
     showNoSelection();
 }
 
+function deleteWorldBook(wbId) {
+    if (!wbId || !state.worldBooks || !state.worldBooks[wbId]) return;
+
+    var wb = state.worldBooks[wbId];
+    var entryCount = Object.keys(wb.entries || {}).length;
+    var msg = t('world_book_confirm_delete_book') || '确定彻底删除这个世界书？此操作不可撤销。关联到此世界书的对话将自动解除关联。';
+
+    if (!confirm(msg)) return;
+
+    // Remove the book
+    delete state.worldBooks[wbId];
+
+    // Unlink from all conversations
+    if (state.conversations) {
+        Object.values(state.conversations).forEach(function(conv) {
+            if (conv && Array.isArray(conv.worldBookIds)) {
+                conv.worldBookIds = conv.worldBookIds.filter(function(id) { return id !== wbId; });
+            }
+        });
+    }
+
+    // If this was the currently selected book, reset to list view
+    if (wiState.currentWorldBookId === wbId) {
+        wiState.currentWorldBookId = null;
+        wiState.viewMode = 'books';
+        wiState.selectedUid = null;
+    }
+
+    wiState.dirty = true;
+    persistState();
+    renderWorldInfoBadge();
+
+    // Refresh the list
+    var filter = (dom.wiSearch && dom.wiSearch.value) ? dom.wiSearch.value.trim() : '';
+    renderWorldBookList(filter);
+
+    // If we were in entries view for this book, go back to list
+    if (dom.wiEntryList) {
+        // already refreshed above if needed
+    }
+    updateWorldBookModalHeader();
+}
+
 function selectWIEntry(uid) {
     wiState.selectedUid = String(uid);
     var entry = getActiveWI().entries[wiState.selectedUid];
@@ -5005,6 +5054,19 @@ function renderWIEntryList(filter) {
         }
 
         container.appendChild(assocRow);
+
+        // Add direct "delete entire book" for thorough cleanup
+        var delBookRow = document.createElement('div');
+        delBookRow.className = 'px-2 py-1 text-xs';
+        delBookRow.innerHTML = `
+            <button class="px-2 py-0.5 text-[10px] rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 w-full text-left">🗑 ${t('world_book_delete_book') || '删除世界书'}</button>
+        `;
+        delBookRow.querySelector('button').addEventListener('click', function() {
+            if (wiState.currentWorldBookId) {
+                deleteWorldBook(wiState.currentWorldBookId);
+            }
+        });
+        container.appendChild(delBookRow);
     }
 
     if (entries.length === 0) {
@@ -5114,11 +5176,19 @@ function renderWorldBookList(filter) {
                     <div class="text-sm font-medium text-zinc-200 truncate">${escapeHtml(wb.name || '未命名世界书')}</div>
                     <div class="text-[10px] text-zinc-400">${Object.keys(wb.entries || {}).length} 条目</div>
                 </div>
-                ${isLinked ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">已关联</span>' : ''}
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    ${isLinked ? `
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400">已关联</span>
+                        <button class="world-book-unlink-btn opacity-0 group-hover:opacity-100 px-1.5 py-0 text-[10px] rounded bg-red-500/10 text-red-400 hover:bg-red-500/20" title="${t('world_book_unlink') || '取消关联'}">取消</button>
+                    ` : ''}
+                    <button class="world-book-del-btn opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded text-xs transition-all" title="${t('world_book_delete_book') || '删除世界书'}">×</button>
+                </div>
             </div>
         `;
 
-        row.addEventListener('click', function() {
+        // Click row to open the book (but not on the delete button)
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.world-book-del-btn')) return; // let delete handler take it
             wiState.currentWorldBookId = wb.id;
             wiState.viewMode = 'entries';
             wiState.selectedUid = null;
@@ -5126,6 +5196,32 @@ function renderWorldBookList(filter) {
             renderWIEntryList(dom.wiSearch.value.trim());
             updateWorldBookModalHeader();
         });
+
+        // Delete button handler
+        var delBtn = row.querySelector('.world-book-del-btn');
+        if (delBtn) {
+            delBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                deleteWorldBook(wb.id);
+            });
+        }
+
+        // Unlink button handler (if present)
+        var unlinkBtn = row.querySelector('.world-book-unlink-btn');
+        if (unlinkBtn) {
+            unlinkBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var currentConv = getActiveConv();
+                if (!currentConv) return;
+                currentConv.worldBookIds = (currentConv.worldBookIds || []).filter(function(id) { return id !== wb.id; });
+                wiState.dirty = true;
+                persistState();
+                renderWorldInfoBadge();
+                // Re-render list to update badges
+                var f = (dom.wiSearch && dom.wiSearch.value) ? dom.wiSearch.value.trim() : '';
+                renderWorldBookList(f);
+            });
+        }
 
         container.appendChild(row);
     });
