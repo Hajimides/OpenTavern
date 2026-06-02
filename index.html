@@ -316,92 +316,174 @@ body {
     /* Mobile: input area */
     #messageInput { font-size: 16px; } /* prevent iOS zoom */
 
-    /* ===== World Book Modal Mobile Adaptations ===== */
+    /* ===== World Book Modal Mobile Adaptations (Panel Stack Redesign) ===== */
+    /* Full-screen modal on mobile */
     #worldBookModal .relative.glass.rounded-3xl {
         width: 100% !important;
         max-width: 100% !important;
-        height: 100% !important;
-        max-height: 100% !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
         border-radius: 0 !important;
         margin: 0 !important;
     }
 
-    /* Stack list + editor vertically on mobile */
+    /* ---- Header: compact, buttons wrap naturally ---- */
+    #worldBookModal .px-5.py-3 {
+        flex-wrap: wrap !important;
+        padding: 6px 8px !important;
+        gap: 4px !important;
+    }
+    #worldBookModal .px-5.py-3 > div:first-child {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+    }
+    #worldBookModal .px-5.py-3 > div:last-child {
+        flex-wrap: wrap !important;
+        gap: 3px !important;
+    }
+    #worldBookModal .px-5.py-3 .text-xl { font-size: 16px !important; }
+    #worldBookModal .px-5.py-3 .text-lg { font-size: 12px !important; }
+    #worldBookModal #wiBookName {
+        max-width: 100px !important;
+        font-size: 11px !important;
+        padding: 2px 6px !important;
+        margin-left: 4px !important;
+    }
+
+    /* Header buttons: compact but keep original sizing feel */
+    #worldBookModal .px-5.py-3 button {
+        font-size: 10px !important;
+        padding: 3px 6px !important;
+        min-height: 26px !important;
+        line-height: 1.1 !important;
+        white-space: nowrap !important;
+    }
+    /* Hide only "Delete All" button on mobile (keep Import/Export accessible) */
+    #worldBookModal .px-5.py-3 #wiDeleteAllBtn {
+        display: none !important;
+    }
+
+    /* ---- Mobile navigation bar (hidden on desktop, shown on mobile) ---- */
+    #wiMobileNav {
+        display: flex !important;
+    }
+
+    /* ---- Body: panel stack container ---- */
     #worldBookModal .flex-1.flex.overflow-hidden {
         flex-direction: column !important;
+        position: relative !important;
+        overflow: hidden !important;
     }
 
-    /* Compact entry list as top section */
+    /* ---- Left panel (book list / entry list): full area on mobile ---- */
     #worldBookModal .w-72 {
         width: 100% !important;
-        max-height: 160px !important;
-        flex-shrink: 0;
+        max-height: none !important;
+        flex: 1 1 0% !important;
+        min-height: 0 !important;
         border-right: none !important;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        border-bottom: none !important;
+        overflow-y: auto !important;
+        transition: transform 0.25s ease, opacity 0.25s ease !important;
     }
 
-    /* Extra breathing room for search bar below the (now taller) button row */
+    /* ---- Right panel (editor): full area overlay on mobile ---- */
+    #worldBookModal #wiEditorContainer {
+        position: absolute !important;
+        inset: 0 !important;
+        z-index: 5 !important;
+        background: #0a0a0b !important;
+        overflow-y: auto !important;
+        padding: 10px !important;
+        transition: transform 0.25s ease, opacity 0.25s ease !important;
+    }
+
+    /* ---- Panel visibility controlled by data-mobile-panel ---- */
+    /* Books panel: list visible, editor hidden */
+    #worldBookModal[data-mobile-panel="books"] .w-72 {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+    #worldBookModal[data-mobile-panel="books"] #wiEditorContainer {
+        transform: translateX(105%) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* Entries panel: list visible, editor hidden */
+    #worldBookModal[data-mobile-panel="entries"] .w-72 {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+    #worldBookModal[data-mobile-panel="entries"] #wiEditorContainer {
+        transform: translateX(105%) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* Editor panel: list hidden, editor visible */
+    #worldBookModal[data-mobile-panel="editor"] .w-72 {
+        transform: translateX(-30%) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    #worldBookModal[data-mobile-panel="editor"] #wiEditorContainer {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    /* ---- List cards: keep original sizing, just ensure touch-friendly ---- */
+    #worldBookModal #wiEntryList .group {
+        padding: 10px 10px !important;
+        margin-bottom: 4px !important;
+        border-radius: 12px !important;
+    }
+
+    /* Always-visible action buttons on mobile cards (keep original sizing) */
+    #worldBookModal .wi-book-del,
+    #worldBookModal .wi-list-del {
+        opacity: 1 !important;
+        min-width: 28px !important;
+        min-height: 28px !important;
+        background: rgba(255,255,255,0.06) !important;
+        border-radius: 8px !important;
+    }
+
+    /* ---- Search bar: keep original size ---- */
+    #worldBookModal #wiEntryList > div:first-child,
     #worldBookModal .w-72 > div:first-child {
-        padding-top: 10px !important;
+        padding: 8px !important;
     }
 
-    /* ===== Header: Force two-row layout on mobile to prevent overlap ===== */
-    #worldBookModal .px-5.py-3 {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        padding: 8px 10px 12px !important;   /* more bottom padding so wrapped buttons don't crowd the search */
+    /* ---- Editor form: mobile structure only, keep original sizing ---- */
+    #worldBookModal #wiEditorContainer .p-4 { padding: 0 !important; }
+
+    /* No-selection placeholder: hide on mobile (panels handle this) */
+    #worldBookModal[data-mobile-panel="editor"] #wiNoSelection {
+        display: none !important;
+    }
+
+    /* Editor form: always visible in editor panel */
+    #worldBookModal[data-mobile-panel="editor"] #wiEditorForm {
+        display: block !important;
+    }
+
+    /* Grid fields: single column on mobile */
+    #worldBookModal #wiEditorContainer .grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+
+    /* Editor action buttons row */
+    #worldBookModal #wiEditorContainer .flex.items-center.justify-between {
+        flex-wrap: wrap !important;
         gap: 6px !important;
     }
 
-    /* Title + book name row */
-    #worldBookModal .px-5.py-3 > div:first-child {
-        flex-direction: row !important;
-        align-items: center !important;
-        margin-bottom: 2px;
-    }
-
-    /* Buttons row - wrap safely, with breathing room above search */
-    #worldBookModal .px-5.py-3 > div:last-child {
-        flex-wrap: wrap !important;
-        gap: 4px !important;
-        justify-content: flex-start !important;
-        padding-bottom: 4px; /* extra space before the entry list / search bar */
-    }
-
-    #worldBookModal button {
-        font-size: 11px !important;
-        padding: 5px 8px !important;
-        min-height: 30px;
-        line-height: 1;
-    }
-
-    /* Make book name input much smaller on mobile */
-    #worldBookModal #wiBookName {
-        max-width: 110px !important;
-        font-size: 12px !important;
-        padding: 4px 8px !important;
-    }
-
-    #worldBookModal .text-lg {
-        font-size: 15px !important;
-    }
-
-    /* Tighter editor padding */
-    #worldBookModal .p-4 {
-        padding: 10px !important;
-    }
-
-    #worldBookModal .space-y-4 > * + * {
-        margin-top: 10px !important;
-    }
-
-    /* Make form fields a bit larger for touch */
-    #worldBookModal input,
-    #worldBookModal select,
-    #worldBookModal textarea {
-        font-size: 14px !important;
-        padding-top: 6px !important;
-        padding-bottom: 6px !important;
+    /* Back/association rows in entry list */
+    #worldBookModal #wiEntryList > .text-xs.cursor-pointer {
+        padding: 8px !important;
     }
 }
 
@@ -815,6 +897,12 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 <button id="wiAddEntryBtn" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white shadow shadow-amber-500/20 transition-all" data-i18n="world_book_add_entry">+ 新建条目</button>
                 <button id="wiCloseBtn" class="w-9 h-9 rounded-full glass flex items-center justify-center text-xl text-zinc-400 hover:text-zinc-200 transition-colors leading-none">&times;</button>
             </div>
+        </div>
+
+        <!-- Mobile navigation bar (hidden on desktop, visible on mobile via media query) -->
+        <div id="wiMobileNav" class="hidden px-3 py-2 border-b border-white/10 bg-black/30 items-center gap-2 flex-shrink-0">
+            <button id="wiMobileBackBtn" class="px-2.5 py-1 text-xs rounded-lg glass hover:bg-white/10 text-amber-400 font-medium flex-shrink-0" data-i18n="world_book_mobile_back">← 返回</button>
+            <span id="wiMobileNavTitle" class="text-sm font-medium text-zinc-300 truncate flex-1 min-w-0"></span>
         </div>
 
         <!-- Body: list + editor -->
@@ -1718,6 +1806,10 @@ var i18n = {
 
         world_book_new: '+ 新建世界书',
         world_book_back_to_list: '← 返回世界书列表',
+        world_book_mobile_back: '← 返回',
+        world_book_mobile_books: '世界书列表',
+        world_book_mobile_entries: '条目列表',
+        world_book_mobile_editor: '编辑条目',
         world_book_link_to_current: '关联到当前对话',
         world_book_unlink: '取消关联',
         world_book_linked: '已关联',
@@ -1987,6 +2079,10 @@ var i18n = {
 
         world_book_new: '+ 新建世界書',
         world_book_back_to_list: '← 返回世界書列表',
+        world_book_mobile_back: '← 返回',
+        world_book_mobile_books: '世界書列表',
+        world_book_mobile_entries: '條目列表',
+        world_book_mobile_editor: '編輯條目',
         world_book_link_to_current: '關聯到目前對話',
         world_book_unlink: '取消關聯',
         world_book_linked: '已關聯',
@@ -2238,6 +2334,10 @@ var i18n = {
 
         world_book_new: '+ New World Book',
         world_book_back_to_list: '← Back to World Book List',
+        world_book_mobile_back: '← Back',
+        world_book_mobile_books: 'World Books',
+        world_book_mobile_entries: 'Entries',
+        world_book_mobile_editor: 'Edit Entry',
         world_book_link_to_current: 'Link to Current Conversation',
         world_book_unlink: 'Unlink',
         world_book_linked: 'Linked',
@@ -4575,7 +4675,8 @@ var wiState = {
     selectedUid: null,
     dirty: false,
     primaryKeys: [],
-    secondaryKeys: []
+    secondaryKeys: [],
+    mobilePanel: 'books'           // mobile-only: 'books' | 'entries' | 'editor'
 };
 
 function getActiveWI() {
@@ -4585,6 +4686,51 @@ function getActiveWI() {
     }
     var conv = getActiveConv();
     return getWorldInfo(conv);
+}
+
+// Mobile detection helper
+function isMobileView() {
+    return window.innerWidth < 768;
+}
+
+// Mobile panel navigation: transitions between books/entries/editor panels
+function navigateMobilePanel(panel, title) {
+    if (!isMobileView()) return;
+    wiState.mobilePanel = panel;
+    var modal = document.getElementById('worldBookModal');
+    var navTitle = document.getElementById('wiMobileNavTitle');
+    var backBtn = document.getElementById('wiMobileBackBtn');
+    if (modal) modal.setAttribute('data-mobile-panel', panel);
+    if (navTitle) navTitle.textContent = title || '';
+    if (backBtn) {
+        backBtn.style.display = (panel === 'books') ? 'none' : '';
+    }
+}
+
+// Handle mobile back button navigation
+function handleMobileBack() {
+    if (!isMobileView()) return;
+    switch (wiState.mobilePanel) {
+        case 'editor':
+            // Go back to entry list
+            showNoSelection();
+            var wb = state.worldBooks && state.worldBooks[wiState.currentWorldBookId];
+            navigateMobilePanel('entries', wb ? (wb.name || t('world_book_mobile_entries')) : t('world_book_mobile_entries'));
+            break;
+        case 'entries':
+            // Go back to book list
+            wiState.viewMode = 'books';
+            wiState.currentWorldBookId = null;
+            wiState.selectedUid = null;
+            renderWIEntryList(dom.wiSearch ? dom.wiSearch.value.trim() : '');
+            updateWorldBookModalHeader();
+            navigateMobilePanel('books', t('world_book_mobile_books'));
+            break;
+        default:
+            // On books panel, close the modal
+            closeWorldBookModal();
+            break;
+    }
 }
 
 // Phase 2: Get or create a global world book by ID
@@ -4713,10 +4859,15 @@ function openWorldBookModal() {
     wiState.currentWorldBookId = null;
     wiState.selectedUid = null;
 
+    // Mobile: set initial panel
+    if (isMobileView()) {
+        navigateMobilePanel('books', t('world_book_mobile_books'));
+    }
+
     renderWIEntryList('');
     showNoSelection();
 
-    // wire dynamic listeners once
+    // wire dynamic listeners once (includes mobile back button)
     if (!dom.wiBookName._wired) {
         wireWorldBookListeners();
         dom.wiBookName._wired = true;
@@ -4735,6 +4886,11 @@ function closeWorldBookModal() {
     dom.worldBookModal.classList.add('hidden');
     wiState.modalOpen = false;
     wiState.selectedUid = null;
+    // Reset mobile panel attribute
+    if (isMobileView()) {
+        document.getElementById('worldBookModal').removeAttribute('data-mobile-panel');
+        wiState.mobilePanel = 'books';
+    }
     renderConversationListOnly(); // for count badge
     renderWorldInfoBudgetWarning();
 }
@@ -4754,6 +4910,12 @@ function wireWorldBookListeners() {
     dom.wiCloseBtn.addEventListener('click', closeWorldBookModal);
     dom.worldBookBackdrop.addEventListener('click', closeWorldBookModal);
 
+    // Mobile back button
+    var mobileBackBtn = document.getElementById('wiMobileBackBtn');
+    if (mobileBackBtn) {
+        mobileBackBtn.addEventListener('click', handleMobileBack);
+    }
+
     dom.wiAddEntryBtn.addEventListener('click', addNewWIEntry);
 
     // Phase 2: Create new global world book
@@ -4768,6 +4930,10 @@ function wireWorldBookListeners() {
             showNoSelection();
             updateWorldBookModalHeader();
             persistState();
+            // Mobile: navigate to entries panel
+            if (isMobileView()) {
+                navigateMobilePanel('entries', newBook.name || t('world_book_mobile_entries'));
+            }
         });
     }
 
@@ -4811,6 +4977,7 @@ function wireWorldBookListeners() {
     bindLive('wiGroup', 'group');
     bindLive('wiGroupWeight', 'groupWeight', true);
     bindLive('wiOutletName', 'outletName');
+    bindLive('wiContent', 'content');
     bindLive('wiDepth', 'depth', true);
     bindLive('wiSticky', 'sticky', true);
     bindLive('wiCooldown', 'cooldown', true);
@@ -5130,6 +5297,11 @@ function showNoSelection() {
     wiState.selectedUid = null;
     wiState.primaryKeys = [];
     wiState.secondaryKeys = [];
+    // On mobile, navigate back to entries panel if we were in editor
+    if (isMobileView() && wiState.mobilePanel === 'editor') {
+        var wb = state.worldBooks && state.worldBooks[wiState.currentWorldBookId];
+        navigateMobilePanel('entries', wb ? (wb.name || t('world_book_mobile_entries')) : t('world_book_mobile_entries'));
+    }
 }
 
 function updateEntryFromForm() {
@@ -5246,6 +5418,10 @@ function selectWIEntry(uid) {
     wiState.selectedUid = String(uid);
     var entry = getActiveWI().entries[wiState.selectedUid];
     fillEditorFromEntry(entry);
+    // On mobile, transition to editor panel
+    if (isMobileView()) {
+        navigateMobilePanel('editor', entry.comment || t('world_book_mobile_editor'));
+    }
 }
 
 function renderWIEntryList(filter) {
@@ -5283,7 +5459,7 @@ function renderWIEntryList(filter) {
     // Phase 2: Show "back to book list" when viewing a specific world's entries
     if (wiState.currentWorldBookId) {
         var backRow = document.createElement('div');
-        backRow.className = 'text-xs text-amber-400 px-2 py-1 mb-2 cursor-pointer hover:underline flex items-center gap-1';
+        backRow.className = 'text-xs text-amber-400 px-2 py-1 mb-2 cursor-pointer hover:underline flex items-center gap-1 mobile-hide-sm';
         backRow.innerHTML = t('world_book_back_to_list');
         backRow.addEventListener('click', function() {
             wiState.viewMode = 'books';
@@ -5291,6 +5467,10 @@ function renderWIEntryList(filter) {
             wiState.selectedUid = null;
             renderWIEntryList(dom.wiSearch.value.trim());
             updateWorldBookModalHeader();
+            // Mobile: navigate back to books panel
+            if (isMobileView()) {
+                navigateMobilePanel('books', t('world_book_mobile_books'));
+            }
         });
         container.appendChild(backRow);
 
@@ -5459,6 +5639,10 @@ function renderWorldBookList(filter) {
             dom.wiBookName.value = wb.name || '';
             renderWIEntryList(dom.wiSearch.value.trim());
             updateWorldBookModalHeader();
+            // Mobile: navigate to entries panel
+            if (isMobileView()) {
+                navigateMobilePanel('entries', wb.name || t('world_book_mobile_entries'));
+            }
         });
 
         // 删除按钮事件
