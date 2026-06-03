@@ -74,8 +74,8 @@ body {
 .conv-item.active { border-left-color: var(--accent); background: rgba(245,158,11,0.06); }
 .conv-item:hover:not(.active) { background: rgba(255,255,255,0.03); }
 
-.msg-user .msg-bubble { background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.18); border-radius: 20px 20px 4px 20px; }
-.msg-assistant .msg-bubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px 20px 20px 4px; }
+.msg-user .msg-bubble { background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.18); border-radius: 20px 4px 20px 20px; }
+.msg-assistant .msg-bubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px 20px 20px 20px; }
 .msg-bubble { padding: 14px 18px; line-height: 1.7; font-size: 1rem; white-space: pre-wrap; word-break: break-word; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
 .dialogue-highlight { color: #f59e0b; }
@@ -110,6 +110,15 @@ body {
 .msg-action-btn.copy-btn:hover { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
 .msg-action-btn.retry-btn:hover { color: #f59e0b; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
 .msg-action-btn.del-btn:hover { color: #f87171; border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.08); }
+.msg-action-btn.edit-btn:hover { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
+.msg-action-btn.refresh-btn:hover { color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); }
+
+/* Wave animation for AI "thinking" bubble */
+.think-wave { display: flex; align-items: center; gap: 4px; padding: 6px 2px; }
+.think-wave span { width: 6px; height: 6px; border-radius: 50%; background: rgba(245,158,11,0.4); animation: waveBounce 1.4s ease-in-out infinite; }
+.think-wave span:nth-child(2) { animation-delay: 0.2s; background: rgba(245,158,11,0.55); }
+.think-wave span:nth-child(3) { animation-delay: 0.4s; background: rgba(245,158,11,0.7); }
+@keyframes waveBounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
 
 /* Mobile responsive */
 @media (max-width: 767px) {
@@ -558,6 +567,16 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
     color: #f59e0b !important;
     border-color: rgba(245,158,11,0.4) !important;
 }
+
+/* Avatar upload */
+.av-upload-wrap { -webkit-tap-highlight-color: transparent; }
+.av-upload-wrap .av-overlay { opacity: 0; transition: opacity 0.2s; }
+.av-upload-wrap:hover .av-overlay,
+.av-upload-wrap.hovering .av-overlay { opacity: 1; }
+.av-upload-wrap:hover .av-preview,
+.av-upload-wrap.hovering .av-preview { box-shadow: 0 0 0 2px rgba(245,158,11,0.4); }
+.av-upload-wrap:active .av-preview { transform: scale(0.95); }
+.av-upload-wrap input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
 </style>
 </head>
 <body class="shimmer-enabled">
@@ -568,15 +587,15 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
 <!-- ===== Settings Modal ===== -->
 <div id="settingsModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="settingsBackdrop"></div>
-    <div class="relative glass rounded-3xl w-[92%] max-w-lg p-7 shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
-        <div class="flex items-center justify-between mb-6">
+    <div class="relative glass rounded-3xl w-[92%] max-w-lg p-7 shadow-2xl animate-fade-in max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between mb-5 flex-shrink-0">
             <h2 class="text-lg font-bold text-zinc-100" data-i18n="settings_title">Settings</h2>
             <button id="settingsCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
         </div>
-        <div class="space-y-5">
+        <div class="flex-1 overflow-y-auto space-y-5 pr-1">
             <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_api_endpoint">API Endpoint</label>
-                <input id="apiEndpoint" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="https://api.openai.com/v1 （或直接粘贴完整地址）">
+                <input id="apiEndpoint" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="https://api.openai.com （或直接粘贴完整地址）">
                 <div class="mt-1.5">
                     <div class="flex items-center justify-between mb-1">
                         <span class="text-[10px] text-zinc-500">Provider — click to switch, auto-load saved config</span>
@@ -586,21 +605,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                         <button type="button" id="presetDeepseek" class="preset-btn px-2 sm:px-3 py-1.5 sm:py-1 text-xs rounded-lg border font-medium transition-colors">DeepSeek</button>
                         <button type="button" id="presetGrok" class="preset-btn px-2 sm:px-3 py-1.5 sm:py-1 text-xs rounded-lg border font-medium transition-colors">Grok</button>
                         <button type="button" id="presetOpenrouter" class="preset-btn px-2 sm:px-3 py-1.5 sm:py-1 text-xs rounded-lg border font-medium transition-colors">OpenRouter</button>
+                        <button type="button" id="presetCustom" class="preset-btn px-2 sm:px-3 py-1.5 sm:py-1 text-xs rounded-lg border font-medium transition-colors">自定义</button>
                     </div>
                 </div>
             </div>
             <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_api_key">API Key</label>
                 <input id="apiKey" type="password" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="sk-...">
-                <div class="mt-1.5">
-                    <label class="flex items-center gap-2 text-[11px] text-zinc-300 cursor-pointer select-none">
-                        <input type="checkbox" id="saveApiKey" class="accent-amber-500 w-3.5 h-3.5 flex-shrink-0">
-                        <span data-i18n="settings_save_api_key">将 API Key 保存到浏览器本地存储</span>
-                    </label>
-                    <div class="mt-1 ml-5 text-[10px] text-amber-400/90 leading-snug" data-i18n="settings_save_api_key_warn">
-                        ⚠️ 请仅在您完全信任的私人设备上启用此选项。API Key 将以明文形式存储在浏览器 localStorage 中，存在被他人访问或脚本窃取的风险。在公共电脑、网吧或共享设备上请勿勾选！
-                    </div>
-                </div>
             </div>
             <div>
                 <div class="flex items-center justify-between">
@@ -646,11 +657,36 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             </div>
             <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_user_name">Your Name (replaces {{user}})</label>
-                <input id="userName" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="User">
+                <div class="flex items-center gap-3 mt-1.5">
+                    <div class="av-upload-wrap relative inline-block cursor-pointer flex-shrink-0" id="userAvatarWrap">
+                        <div id="userAvatar" class="av-preview w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-zinc-400 text-sm overflow-hidden ring-1 ring-white/10 transition-all duration-200">👤</div>
+                        <div class="av-overlay absolute inset-0 rounded-lg bg-black/40 flex items-center justify-center pointer-events-none">
+                            <span class="text-white text-[9px]">📷</span>
+                        </div>
+                        <input type="file" id="userAvatarInput" accept="image/*">
+                    </div>
+                    <input id="userName" type="text" class="flex-1 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="User">
+                </div>
             </div>
             <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider"><span data-i18n="settings_system_prompt">Custom System Prompt</span> <span class="text-zinc-600" data-i18n="settings_system_prompt_hint">(overrides character's system prompt)</span></label>
                 <textarea id="systemPrompt" rows="4" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none" data-i18n-placeholder="settings_system_prompt_placeholder"></textarea>
+            </div>
+            <!-- Jailbreak Presets -->
+            <hr class="border-white/5">
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Jailbreak 预设</label>
+                    <button id="jbNewBtn" type="button" class="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-300 border border-white/10 transition-all">+ 新建</button>
+                </div>
+                <div class="relative" id="jbDropdownWrap">
+                    <button id="jbDropdownBtn" type="button" class="w-full flex items-center justify-between px-3 py-2 glass rounded-xl text-sm text-zinc-200 border border-white/10 hover:border-amber-500/30 transition-all">
+                        <span id="jbDropdownLabel">-- 不使用 --</span>
+                        <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div id="jbDropdownMenu" class="absolute left-0 right-0 top-full mt-1 rounded-xl border border-white/10 py-1 shadow-xl z-[200] hidden max-h-48 overflow-y-auto" style="background:rgba(24,24,27,0.95);backdrop-filter:blur(12px);">
+                    </div>
+                </div>
             </div>
             <hr class="border-white/5">
             <!-- 自动总结设置（清晰分离） -->
@@ -734,7 +770,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <div>
                 <div class="flex items-center justify-between mb-1">
                     <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">存储后端</label>
-                    <span id="storageBackend" class="text-xs px-2 py-0.5 rounded-full bg-white/5">localStorage</span>
+                    <span id="storageBackend" class="text-xs px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400">OPFS</span>
                 </div>
 
                 <div class="mb-1">
@@ -747,13 +783,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                     </div>
                 </div>
 
-                <p class="text-[10px] text-zinc-500" id="storageHint" data-i18n="storage_hint_opfs">正在使用 OPFS（Origin Private File System），容量大、性能好，推荐长期使用。</p>
+                <p class="text-[10px] text-zinc-500" id="storageHint" data-i18n="storage_hint_ls">正在使用 OPFS（浏览器数据库存储，容量大）。</p>
 
-                <!-- OPFS 清理按钮 -->
-                <button id="clearOPFSBtn"
+                <!-- 清理存储按钮 -->
+                <button id="clearStorageBtn"
                         class="mt-2 w-full px-3 py-1.5 text-xs rounded-lg bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-400 border border-red-500/20 transition-all font-medium flex items-center justify-center gap-1"
-                        data-i18n="clear_opfs_data">
-                    <!-- 文字由 JS 通过 t('clear_opfs_data') 动态设置，支持 i18n -->
+                        data-i18n="clear_storage_data">
+                    🗑️ 清除所有本地数据（不可恢复）
                 </button>
             </div>
 
@@ -807,7 +843,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
         <label class="flex flex-col items-center gap-3 p-8 glass rounded-2xl border-dashed border-2 border-white/10 hover:border-amber-500/30 cursor-pointer transition-all">
             <span class="text-3xl">📄</span>
             <span class="text-sm text-zinc-400" data-i18n="import_click_hint">Click to select a .json character card</span>
-            <input type="file" id="importFileInput" accept=".json" class="hidden">
+            <input type="file" id="importFileInput" accept=".json,.png,image/png" class="hidden">
         </label>
         <p id="importStatus" class="text-xs text-zinc-500 mt-3 text-center hidden"></p>
     </div>
@@ -822,15 +858,23 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <button id="charEditorCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
         </div>
         <div class="flex-1 overflow-y-auto space-y-4 pr-1">
-            <div class="grid grid-cols-2 gap-4">
-                <div>
+            <!-- Avatar + Name row -->
+            <div class="flex items-center gap-4">
+                <div class="av-upload-wrap relative inline-block cursor-pointer flex-shrink-0" id="charEditAvatarWrap">
+                    <div id="charEditAvatar" class="av-preview w-16 h-16 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xl font-bold overflow-hidden ring-1 ring-white/10 transition-all duration-200">?</div>
+                    <div class="av-overlay absolute inset-0 rounded-xl bg-black/40 flex items-center justify-center pointer-events-none">
+                        <span class="text-white text-[10px] font-medium">更换</span>
+                    </div>
+                    <input type="file" id="charEditAvatarInput" accept="image/*">
+                </div>
+                <div class="flex-1">
                     <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_name">Name</label>
                     <input id="charEditName" type="text" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all">
                 </div>
-                <div>
-                    <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_tags">Tags (comma separated)</label>
-                    <input id="charEditTags" type="text" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="tag1, tag2, tag3">
-                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_tags">Tags (comma separated)</label>
+                <input id="charEditTags" type="text" class="w-full mt-1 px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="tag1, tag2, tag3">
             </div>
             <div>
                 <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="char_editor_description">Description</label>
@@ -884,6 +928,47 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
         </div>
         <p class="text-xs text-zinc-500 mb-3 flex-shrink-0" id="greetingCharName"></p>
         <div id="greetingList" class="flex-1 overflow-y-auto space-y-2 pr-1"></div>
+    </div>
+</div>
+
+<!-- ===== Custom Themed Dialog (replaces native alert/confirm) ===== -->
+<div id="customDialog" class="modal-overlay fixed inset-0 z-[300] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="customDialogBackdrop"></div>
+    <div class="relative glass rounded-2xl w-[92%] max-w-sm p-6 shadow-2xl animate-fade-in border border-white/10">
+        <p id="customDialogMsg" class="text-sm text-zinc-200 mb-5 leading-relaxed whitespace-pre-wrap"></p>
+        <div class="flex gap-3 justify-end">
+            <button id="customDialogCancel" class="px-4 py-2 rounded-xl text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-all hidden">取消</button>
+            <button id="customDialogOk" class="px-4 py-2 rounded-xl text-sm font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-all">确定</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Edit Message Modal ===== -->
+<div id="editMsgModal" class="modal-overlay fixed inset-0 z-[300] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="editMsgBackdrop"></div>
+    <div class="relative glass rounded-2xl w-[92%] max-w-lg p-6 shadow-2xl animate-fade-in border border-white/10">
+        <h3 class="text-sm font-semibold text-zinc-200 mb-3">编辑消息</h3>
+        <textarea id="editMsgTextarea" rows="5" class="w-full px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+        <p class="text-[10px] text-zinc-500 mt-1.5">修改后的消息将替换原内容，AI 的下一条回复会被删除并重新生成。</p>
+        <div class="flex gap-3 mt-4 justify-end">
+            <button id="editMsgCancel" class="px-4 py-2 rounded-xl text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-all">取消</button>
+            <button id="editMsgSend" class="px-4 py-2 rounded-xl text-sm font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-all">发送</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Jailbreak Preset Edit Modal ===== -->
+<div id="jbEditModal" class="modal-overlay fixed inset-0 z-[300] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="jbEditBackdrop"></div>
+    <div class="relative glass rounded-2xl w-[92%] max-w-lg p-6 shadow-2xl animate-fade-in border border-white/10">
+        <h3 id="jbEditTitle" class="text-sm font-semibold text-zinc-200 mb-3">新建预设</h3>
+        <input id="jbEditName" type="text" class="w-full px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all mb-3" placeholder="预设名称">
+        <textarea id="jbEditContent" rows="10" class="w-full px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none" placeholder="破甲提示词内容..."></textarea>
+        <div class="flex gap-3 mt-4">
+            <div class="flex-1"></div>
+            <button id="jbEditCancel" class="px-4 py-2 rounded-xl text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-all">取消</button>
+            <button id="jbEditSave" class="px-4 py-2 rounded-xl text-sm font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-all">保存</button>
+        </div>
     </div>
 </div>
 
@@ -1140,13 +1225,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                                     <label class="text-zinc-400">Scan Depth 覆盖</label>
                                     <input id="wiScanDepth" type="number" min="0" placeholder="全局" class="w-full mt-0.5 px-2 py-1 glass rounded-lg">
                                 </div>
-                                <div class="flex items-end gap-2">
+                                <div class="flex items-start gap-2">
                                     <label class="flex items-center gap-1"><input type="checkbox" id="wiCaseSens" class="accent-amber-500"> <span data-i18n="wi_case_sensitive">大小写敏感</span></label>
                                 </div>
-                                <div class="flex items-end gap-2">
+                                <div class="flex items-start gap-2">
                                     <label class="flex items-center gap-1"><input type="checkbox" id="wiMatchWhole" class="accent-amber-500"> <span data-i18n="wi_match_whole">全词匹配</span></label>
                                 </div>
-                                <div class="flex items-end gap-2">
+                                <div class="flex items-start gap-2">
                                     <label class="flex items-center gap-1"><input type="checkbox" id="wiIgnoreBudget" class="accent-amber-500"> <span data-i18n="wi_ignore_budget">忽略预算</span></label>
                                 </div>
                                 <div class="md:col-span-2">
@@ -1371,8 +1456,8 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                     <p class="text-sm font-bold text-zinc-100 leading-tight">OpenTavern</p>
                     <!-- 极简存储状态指示器 (Phase 1 补充) -->
                     <div id="storageStatus" 
-                         class="text-[9px] px-1.5 py-px rounded bg-white/5 text-zinc-400 font-mono cursor-pointer select-none hover:bg-white/10 transition-colors"
-                         title="存储后端">
+                         class="text-[9px] px-1.5 py-px rounded bg-amber-500/10 text-amber-400 font-mono cursor-pointer select-none hover:bg-amber-500/20 transition-colors"
+                         title="OPFS">
                         OPFS
                     </div>
                 </div>
@@ -1397,7 +1482,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                     <div class="p-3.5">
                         <div class="flex items-start gap-3">
                             <!-- Avatar -->
-                            <div id="charCardAvatar" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-amber-500/10 ring-1 ring-white/10">?</div>
+                            <div id="charCardAvatar" class="w-11 h-11 rounded-lg bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-amber-500/10 ring-1 ring-white/10">?</div>
                             <!-- Info -->
                             <div class="min-w-0 flex-1 pt-0.5">
                                 <p id="charCardName" class="text-sm font-semibold text-zinc-100 truncate leading-tight"></p>
@@ -1440,11 +1525,11 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             </div>
 
             <!-- World Book quick access -->
-            <div class="glass rounded-xl px-3 py-2.5 flex items-center gap-2.5 text-xs border border-white/5">
+            <div class="glass rounded-xl px-3 py-2.5 flex items-center gap-2.5 border border-white/5">
                 <span class="text-zinc-400 flex-shrink-0 text-base">📖</span>
-                <span class="flex-1 text-zinc-300 truncate text-[11px] font-medium" data-i18n="world_book">World Book</span>
+                <span class="flex-1 text-zinc-300 truncate text-sm font-medium" data-i18n="world_book">World Book</span>
                 <span id="wiEntryCount" class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 flex-shrink-0"></span>
-                <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="world_book_btn">Edit</button>
+                <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-sm font-medium flex-shrink-0 min-h-[28px]" data-i18n="world_book_btn">Edit</button>
             </div>
         </div>
         <div id="convList" class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
@@ -1474,23 +1559,35 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
     <!-- Main Chat Area -->
     <div class="flex-1 flex flex-col overflow-hidden">
         <!-- Chat Top Bar -->
-        <div id="chatTopBar" class="flex-shrink-0 px-5 py-3 flex items-center justify-between border-b border-white/5 bg-zinc-950/15 backdrop-blur-2xl">
+        <div id="chatTopBar" class="flex-shrink-0 px-5 py-3 flex items-center justify-between border-b border-white/5 bg-zinc-950/15 backdrop-blur-2xl relative z-30">
             <div class="flex items-center gap-3 min-w-0">
                 <button id="hamburgerBtn" class="hamburger-btn" aria-label="Menu">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
-                <div id="charAvatar" class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500 text-sm flex-shrink-0">💬</div>
+                <div id="charAvatar" class="w-9 h-9 rounded-md bg-white/5 flex items-center justify-center text-zinc-500 text-sm flex-shrink-0">💬</div>
                 <div class="min-w-0">
                     <h3 id="chatTitle" class="text-base font-semibold text-zinc-200 truncate" data-i18n="new_chat_title">New Chat</h3>
                     <p id="chatSubtitle" class="text-sm text-zinc-500 truncate" data-i18n="no_character">No character loaded</p>
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0 topbar-actions">
-                <!-- Language Switcher -->
-                <div class="flex items-center glass rounded-xl p-0.5 border-white/5">
+                <!-- Language Switcher — desktop: buttons, mobile: dropdown -->
+                <div class="hidden sm:flex items-center glass rounded-xl p-0.5 border-white/5">
                     <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active text-zinc-900" data-lang="zh-CN">简</button>
                     <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-zinc-400" data-lang="zh-TW">繁</button>
                     <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-zinc-400" data-lang="en">EN</button>
+                </div>
+                <!-- Mobile language switcher — custom dropdown -->
+                <div class="sm:hidden relative z-[60]">
+                    <button id="langToggleMobile" class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold text-zinc-300 glass border border-white/10 hover:border-amber-500/30 transition-all">
+                        <span id="langToggleLabel">简</span>
+                        <svg class="w-3 h-3 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                    </button>
+                    <div id="langMenuMobile" class="absolute right-0 top-full mt-1 glass rounded-xl border border-white/10 py-1 shadow-xl z-[9999] hidden min-w-[64px]">
+                        <button class="lang-menu-item block w-full text-left px-3 py-1.5 text-xs font-semibold text-zinc-300" data-lang="zh-CN">简</button>
+                        <button class="lang-menu-item block w-full text-left px-3 py-1.5 text-xs font-semibold text-zinc-300" data-lang="zh-TW">繁</button>
+                        <button class="lang-menu-item block w-full text-left px-3 py-1.5 text-xs font-semibold text-zinc-300" data-lang="en">EN</button>
+                    </div>
                 </div>
                 <button id="summarizeBtn" 
                         class="px-2 sm:px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-500 glass hover:text-zinc-300 hover:bg-white/10 transition-all flex items-center justify-center"
@@ -1595,7 +1692,7 @@ var i18n = {
         import_desc: '支持 SillyTavern',
         import_desc2: '格式的 JSON 文件。',
         import_click_hint: '点击选择一个 .json 角色卡文件',
-        import_success: '已加载：',
+        import_success: '已导入成功',
         import_error: '导入错误',
         import_invalid_format: '无效的角色卡格式。需要 SillyTavern 角色卡 (V1/V2/V3)。',
         import_missing_name: '角色卡缺少必需的 "name" 字段。',
@@ -1780,8 +1877,6 @@ var i18n = {
         settings_summarize_api_endpoint: 'API Endpoint',
         settings_summarize_api_key: 'API Key',
         settings_summarize_model: 'Model',
-        settings_save_api_key: '将 API Key 保存到浏览器本地存储',
-        settings_save_api_key_warn: '⚠️ 请仅在您完全信任的私人设备上启用此选项。API Key 将以明文形式存储在浏览器 localStorage 中，存在被他人访问或脚本窃取的风险。在公共电脑、网吧或共享设备上请勿勾选！',
         // Announcement modal
         announce_title: '欢迎使用 OpenTavern',
         announce_subtitle: '快速开始指南 · 3 步上手',
@@ -1801,17 +1896,15 @@ var i18n = {
         // Phase 4 Storage & Backup (新增)
         storage_backend: '存储后端',
         storage_used_space: '已用空间',
-        storage_hint_idb: '正在使用 IndexedDB，可支持多个角色卡与大型世界书。',
-        storage_hint_ls: '推荐使用 IndexedDB（容量大得多）。当前默认开启，localStorage 仅用于迁移。',
-        storage_hint_opfs: '正在使用 OPFS（Origin Private File System），容量大、性能好，推荐长期使用。',
-        clear_opfs_data: '🗑️ 清除 OPFS 所有数据（不可恢复）',
+        storage_hint_ls: '正在使用 OPFS（浏览器数据库存储，容量大）。',
+        clear_storage_data: '🗑️ 清除所有本地数据（不可恢复）',
         storage_usage_calculating: '计算中...',
         storage_high_warning: '存储空间紧张，建议尽快备份！',
 
         backup_reminder_title: '建议定期备份你的世界书和对话数据',
         backup_reminder_export_now: '立即导出备份',
         backup_reminder_later: '以后再说',
-        backup_migration_incomplete: '存储后端已锁定为 localStorage（IDB 封装存在历史 bug，已禁用自动迁移）',
+        backup_migration_incomplete: '存储后端已切换为 OPFS。',
 
         world_book_new: '+ 新建世界书',
         world_book_back_to_list: '← 返回世界书列表',
@@ -1868,7 +1961,7 @@ var i18n = {
         import_desc: '支援 SillyTavern',
         import_desc2: '格式的 JSON 檔案。',
         import_click_hint: '點擊選擇一個 .json 角色卡檔案',
-        import_success: '已載入：',
+        import_success: '已匯入成功',
         import_error: '匯入錯誤',
         import_invalid_format: '無效的角色卡格式。需要 SillyTavern 角色卡 (V1/V2/V3)。',
         import_missing_name: '角色卡缺少必需的 "name" 欄位。',
@@ -2053,8 +2146,6 @@ var i18n = {
         settings_summarize_api_endpoint: 'API Endpoint',
         settings_summarize_api_key: 'API Key',
         settings_summarize_model: 'Model',
-        settings_save_api_key: '將 API Key 儲存到瀏覽器本地',
-        settings_save_api_key_warn: '⚠️ 請僅在您完全信任的私人裝置上啟用此選項。API Key 將以明文形式儲存在瀏覽器 localStorage 中，存在被他人存取或腳本竊取的風險。在公共電腦、網吧或共享裝置上請勿勾選！',
         // Announcement modal
         announce_title: '歡迎使用 OpenTavern',
         announce_subtitle: '快速開始指南 · 3 步上手',
@@ -2074,17 +2165,15 @@ var i18n = {
         // Phase 4 Storage & Backup
         storage_backend: '儲存後端',
         storage_used_space: '已用空間',
-        storage_hint_idb: '正在使用 IndexedDB，可支援多個角色卡與大型世界書。',
-        storage_hint_ls: '目前使用 localStorage 兼容層。支援 IndexedDB 後可獲得更大容量與更好效能（會自動遷移）。',
-        storage_hint_opfs: '正在使用 OPFS（Origin Private File System），容量大、性能佳，推薦長期使用。',
-        clear_opfs_data: '🗑️ 清除 OPFS 所有資料（不可恢復）',
+        storage_hint_ls: '正在使用 OPFS（瀏覽器資料庫存儲，容量大）。',
+        clear_storage_data: '🗑️ 清除所有本地資料（不可恢復）',
         storage_usage_calculating: '計算中...',
         storage_high_warning: '儲存空間緊張，建議盡快備份！',
 
         backup_reminder_title: '建議定期備份你的世界書和對話資料',
         backup_reminder_export_now: '立即匯出備份',
         backup_reminder_later: '以後再說',
-        backup_migration_incomplete: '儲存後端已鎖定為 localStorage（IDB 封裝存在歷史 bug，已禁用自動遷移）',
+        backup_migration_incomplete: '儲存後端已切換為 OPFS。',
 
         world_book_new: '+ 新建世界書',
         world_book_back_to_list: '← 返回世界書列表',
@@ -2124,7 +2213,7 @@ var i18n = {
         import_desc: 'Supports SillyTavern',
         import_desc2: 'format JSON files.',
         import_click_hint: 'Click to select a .json character card',
-        import_success: 'Loaded: ',
+        import_success: 'imported successfully',
         import_error: 'Import Error',
         import_invalid_format: 'Invalid character card format. Expected a SillyTavern card (V1/V2/V3).',
         import_missing_name: 'Character card missing required "name" field.',
@@ -2308,8 +2397,6 @@ var i18n = {
         settings_summarize_api_endpoint: 'API Endpoint',
         settings_summarize_api_key: 'API Key',
         settings_summarize_model: 'Model',
-        settings_save_api_key: 'Save API Key to browser local storage',
-        settings_save_api_key_warn: '⚠️ Only enable on devices you fully trust. The API Key will be stored in plaintext in browser localStorage and can be read by anyone with physical access or via XSS attacks. Do NOT enable on public computers, internet cafes, or shared devices!',
         // Announcement modal
         announce_title: 'Welcome to OpenTavern',
         announce_subtitle: 'Quick Start Guide · Get going in 3 steps',
@@ -2329,10 +2416,8 @@ var i18n = {
         // Phase 4 Storage & Backup
         storage_backend: 'Storage Backend',
         storage_used_space: 'Used Space',
-        storage_hint_idb: 'Using IndexedDB, supports multiple character cards and large world books.',
-        storage_hint_ls: 'IndexedDB recommended (much higher capacity). Enabled by default; localStorage used only for migration.',
-        storage_hint_opfs: 'Using OPFS (Origin Private File System) — large capacity and good performance. Recommended for long-term use.',
-        clear_opfs_data: '🗑️ Clear all OPFS data (irreversible)',
+        storage_hint_ls: 'Using OPFS (browser database storage, large capacity).',
+        clear_storage_data: '🗑️ Clear all local data (irreversible)',
         storage_usage_calculating: 'Calculating...',
         storage_high_warning: 'Storage space is tight. Please back up soon!',
 
@@ -2540,474 +2625,146 @@ if (gl) {
     }
 }
 
-// ==================== Storage Engine (v2 - IndexedDB + idb) ====================
-// 按照用户确认：引入极小的 idb 库 + 世界书升级为全局可复用独立资源
-
-var STORAGE_KEY = 'opentavern-data-v1';
+// ==================== Storage Engine (OPFS) ====================
 
 // ==================== 存储说明 ====================
-// 默认使用 OPFS（Origin Private File System），容量大、可靠性高。
-// 非常适合 GitHub Pages / Cloudflare Pages 静态部署。
-// 旧 localStorage 数据会在首次启动时自动迁移到 OPFS。
-// 所有保存数据都带 lastSaved 时间戳。
+// 使用 OPFS 存储所有数据。主数据 JSON + 头像 PNG 文件。
 
-// ==================== idb 库（正确实现的极小版本） ====================
-// 基于 https://github.com/jakearchibald/idb 思路，完全重写以确保可靠。
-// 关键修复：所有 IDBRequest 必须经过 promisifyRequest 包装，
-// 否则 await 会得到原始请求对象而不是 .result，导致之前的数据丢失 bug。
-(function() {
-    'use strict';
 
-    function promisifyRequest(request) {
-        return new Promise((resolve, reject) => {
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    // 包装一个已打开的数据库实例
-    function wrapDB(db) {
-        return {
-            get(storeName, key) {
-                return promisifyRequest(
-                    db.transaction(storeName).objectStore(storeName).get(key)
-                );
-            },
-            set(storeName, key, value) {
-                return promisifyRequest(
-                    db.transaction(storeName, 'readwrite').objectStore(storeName).put(value, key)
-                );
-            },
-            delete(storeName, key) {
-                return promisifyRequest(
-                    db.transaction(storeName, 'readwrite').objectStore(storeName).delete(key)
-                );
-            },
-            clear(storeName) {
-                return promisifyRequest(
-                    db.transaction(storeName, 'readwrite').objectStore(storeName).clear()
-                );
-            },
-            getAll(storeName) {
-                return promisifyRequest(
-                    db.transaction(storeName).objectStore(storeName).getAll()
-                );
-            },
-            getAllKeys(storeName) {
-                return promisifyRequest(
-                    db.transaction(storeName).objectStore(storeName).getAllKeys()
-                );
-            },
-            // 返回原生事务（上层需要自己处理完成）
-            transaction(storeNames, mode) {
-                return db.transaction(storeNames, mode);
-            },
-            // 便捷的事务完成 Promise 包装
-            transactionDone(tx) {
-                return new Promise((resolve, reject) => {
-                    tx.oncomplete = () => resolve();
-                    tx.onerror = () => reject(tx.error);
-                    tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
-                });
-            }
-        };
-    }
-
-    window.idb = {
-        openDB(name, version, options = {}) {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(name, version);
-
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (options.upgrade) {
-                        options.upgrade(db, event.oldVersion, event.newVersion, request.transaction);
-                    }
-                };
-
-                request.onsuccess = () => {
-                    resolve(wrapDB(request.result));
-                };
-
-                request.onerror = () => reject(request.error);
-                request.onblocked = () => reject(new Error('IndexedDB open blocked'));
-            });
-        }
-    };
-})();
-
-// ==================== OPFS Storage（推荐新后端 - 容量大、可靠性高） ====================
-// 使用 Origin Private File System，适合 GitHub Pages / Cloudflare Pages 静态部署
-// 数据以单个 JSON 文件形式存储（opentavern-data.json）
-const OPFSStorage = {
+// ==================== StorageService — OPFS 存储 ====================
+// 主数据以 JSON 存储在 'settings' store (key 'main')，头像 PNG 以 Blob 存储在 'avatars' store
+var StorageService = {
     _root: null,
-    _fileName: 'opentavern-data.json',
+    _dataFileName: 'opentavern-data.json',
+    _avatarDir: 'avatars',
+    _avatarUrlCache: {},
+    _avatarUrlOrder: [],
 
     async _getRoot() {
         if (this._root) return this._root;
-        if (!navigator.storage || !navigator.storage.getDirectory) {
-            throw new Error('OPFS not supported in this browser');
-        }
         this._root = await navigator.storage.getDirectory();
         return this._root;
     },
 
+    async _getAvatarDir() {
+        var root = await this._getRoot();
+        try { return await root.getDirectoryHandle(this._avatarDir, { create: true }); }
+        catch (e) { return await root.getDirectoryHandle(this._avatarDir, { create: true }); }
+    },
+
+    // ==================== 主数据读写（OPFS JSON） ====================
     async loadAll() {
         try {
-            const root = await this._getRoot();
-            let fileHandle;
-            try {
-                fileHandle = await root.getFileHandle(this._fileName);
-            } catch (e) {
-                return null; // 文件不存在
-            }
-            const file = await fileHandle.getFile();
-            const text = await file.text();
+            var root = await this._getRoot();
+            var fh;
+            try { fh = await root.getFileHandle(this._dataFileName); }
+            catch (e) { return null; }
+            var file = await fh.getFile();
+            var text = await file.text();
             if (!text) return null;
-            const data = JSON.parse(text);
-            // 兼容旧数据
+            var data = JSON.parse(text);
             if (!data.lastSaved) data.lastSaved = Date.now();
-            return data;
+            return (data && (Object.keys(data.conversations || {}).length > 0 || data.lastSaved)) ? data : null;
         } catch (e) {
-            console.error('[OPFS] loadAll failed:', e);
+            console.warn('[Storage] loadAll failed:', e.message);
             return null;
         }
     },
 
     async saveAll(data) {
         try {
-            const root = await this._getRoot();
-            const fileHandle = await root.getFileHandle(this._fileName, { create: true });
-            const writable = await fileHandle.createWritable();
-            // 使用紧凑 JSON 节省空间
+            var root = await this._getRoot();
+            var fh = await root.getFileHandle(this._dataFileName, { create: true });
+            var writable = await fh.createWritable();
             await writable.write(JSON.stringify(data));
             await writable.close();
         } catch (e) {
-            console.error('[OPFS] saveAll failed:', e);
-            throw e;
+            console.warn('[Storage] saveAll failed:', e.message);
         }
     },
+
+    // ==================== 头像 PNG 文件存储（OPFS avatars/ 目录） ====================
+    async saveAvatar(key, pngBlob) {
+        try {
+            var dir = await this._getAvatarDir();
+            var fh = await dir.getFileHandle(key + '.png', { create: true });
+            var writable = await fh.createWritable();
+            await writable.write(pngBlob);
+            await writable.close();
+            if (this._avatarUrlCache[key]) {
+                URL.revokeObjectURL(this._avatarUrlCache[key]);
+                delete this._avatarUrlCache[key];
+            }
+        } catch (e) {
+            console.warn('[Storage] saveAvatar failed:', e.message);
+        }
+    },
+
+    async getAvatarUrl(key) {
+        if (!key) return null;
+        if (this._avatarUrlCache[key]) return this._avatarUrlCache[key];
+        try {
+            var dir = await this._getAvatarDir();
+            var fh;
+            try { fh = await dir.getFileHandle(key + '.png'); }
+            catch (e) { return null; }
+            var file = await fh.getFile();
+            var url = URL.createObjectURL(file);
+            this._avatarUrlCache[key] = url;
+            this._avatarUrlOrder.push(key);
+            while (this._avatarUrlOrder.length > 15) {
+                var old = this._avatarUrlOrder.shift();
+                if (this._avatarUrlCache[old]) { URL.revokeObjectURL(this._avatarUrlCache[old]); delete this._avatarUrlCache[old]; }
+            }
+            return url;
+        } catch (e) { return null; }
+    },
+
+    async removeAvatar(key) {
+        try {
+            var dir = await this._getAvatarDir();
+            await dir.removeEntry(key + '.png');
+        } catch (e) {}
+        if (this._avatarUrlCache[key]) {
+            URL.revokeObjectURL(this._avatarUrlCache[key]);
+            delete this._avatarUrlCache[key];
+        }
+    },
+
+    revokeAllAvatarUrls() {
+        var self = this;
+        Object.keys(this._avatarUrlCache).forEach(function(k) { URL.revokeObjectURL(self._avatarUrlCache[k]); });
+        this._avatarUrlCache = {};
+        this._avatarUrlOrder = [];
+    },
+
+    // ==================== 工具方法 ====================
+    getBackend() { return 'opfs'; },
 
     async getStorageInfo() {
         try {
             if (navigator.storage && navigator.storage.estimate) {
-                const estimate = await navigator.storage.estimate();
-                return {
-                    backend: 'opfs',
-                    used: estimate.usage,
-                    quota: estimate.quota
-                };
+                var est = await navigator.storage.estimate();
+                return { backend: 'opfs', used: est.usage, quota: est.quota };
             }
         } catch (e) {}
         return { backend: 'opfs', used: null, quota: null };
     },
 
     async clear() {
+        this.revokeAllAvatarUrls();
         try {
-            const root = await this._getRoot();
-            await root.removeEntry(this._fileName);
+            var root = await this._getRoot();
+            await root.removeEntry(this._dataFileName);
         } catch (e) {}
-    }
-};
-
-// ==================== StorageService 抽象层（已切换为 OPFS 优先） ====================
-// 目标：让上层代码不需要关心存储细节
-var StorageService = {
-    // =====================================================
-    // 当前主存储：OPFS（Origin Private File System）
-    // 容量大、性能好，适合 GitHub Pages / Cloudflare Pages
-    // localStorage 仅用于首次从旧版本迁移
-    // =====================================================
-    _useOPFS: true,
-
-    async loadAll() {
-        if (this._useOPFS) {
-            try {
-                const opfsData = await OPFSStorage.loadAll();
-                if (opfsData) {
-                    return opfsData;
-                }
-            } catch (e) {
-                console.warn('[Storage] OPFS load failed, falling back to localStorage for migration');
-            }
-        }
-
-        // 降级：尝试从旧 localStorage 读取（用于迁移）
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) {
-                const oldData = JSON.parse(raw);
-                // 检测到旧数据，自动迁移到 OPFS
-                if (oldData && (Object.keys(oldData.conversations || {}).length > 0 || oldData.lastSaved)) {
-                    await OPFSStorage.saveAll(oldData);
-                    // 可选：迁移成功后清理旧 localStorage（保守起见先注释）
-                    // localStorage.removeItem(STORAGE_KEY);
-                    return oldData;
-                }
-            }
-        } catch (e) {
-            console.error('[Storage] localStorage fallback failed:', e);
-        }
-
-        return null;
-    },
-
-    async saveAll(data) {
-        if (this._useOPFS) {
-            await OPFSStorage.saveAll(data);
-        } else {
-            // 极端降级
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-            } catch (e) {
-                console.error('[Storage] localStorage save failed:', e);
-            }
-        }
-    },
-
-    // 检测当前使用哪种后端
-    getBackend() {
-        return this._useOPFS ? 'opfs' : 'localStorage';
-    },
-
-    async enableOPFS() {
-        this._useOPFS = true;
-        return true;
-    },
-
-    // ==================== IndexedDB 后端实现（使用 idb） ====================
-    _idbDB: null,
-    _dbName: 'OpenTavernDB',
-    _dbVersion: 2,                    // v2: 新增 worldBooks store
-
-    async initIndexedDB() {
-        if (this._idbDB) return this._idbDB;
-
-        try {
-            this._idbDB = await idb.openDB(this._dbName, this._dbVersion, {
-                upgrade(db, oldVersion) {
-                    // v1: 基础 stores (使用 keyPath: 'id' 方便 put(value))
-                    if (oldVersion < 1) {
-                        if (!db.objectStoreNames.contains('settings')) {
-                            db.createObjectStore('settings'); // settings 用 'main' 作为 key
-                        }
-                        if (!db.objectStoreNames.contains('conversations')) {
-                            db.createObjectStore('conversations', { keyPath: 'id' });
-                        }
-                        if (!db.objectStoreNames.contains('metadata')) {
-                            db.createObjectStore('metadata');
-                        }
-                    }
-                    // v2: 世界书升级为独立全局资源
-                    if (oldVersion < 2) {
-                        if (!db.objectStoreNames.contains('worldBooks')) {
-                            db.createObjectStore('worldBooks', { keyPath: 'id' });
-                        }
-                    }
-                }
-            });
-            return this._idbDB;
-        } catch (err) {
-            console.error('[Storage] Failed to init IndexedDB:', err);
-            return null;
-        }
-    },
-
-    async getIDB() {
-        if (!this._idbDB) {
-            await this.initIndexedDB();
-        }
-        return this._idbDB;
-    },
-
-    // ==================== 真实 IndexedDB 方法（已使用正确的 promisify 封装） ====================
-    async loadAllFromIDB() {
-        const db = await this.getIDB();
-        if (!db) return null;
-
-        try {
-            // 新封装已正确 promisify，所有 await 都能拿到真实 .result
-            // 更健壮：即使部分 store 读取失败，也尽量返回能拿到的数据
-            const results = await Promise.allSettled([
-                db.get('settings', 'main'),
-                db.getAll('conversations').catch(() => []),
-                db.getAll('worldBooks').catch(() => []),
-                db.get('metadata', 'main')
-            ]);
-
-            const settings = results[0].status === 'fulfilled' ? results[0].value : null;
-            const conversationsRaw = results[1].status === 'fulfilled' ? results[1].value : [];
-            const worldBooksRaw = results[2].status === 'fulfilled' ? results[2].value : [];
-            const metadata = results[3].status === 'fulfilled' ? results[3].value : null;
-
-            const conversations = Array.isArray(conversationsRaw) ? conversationsRaw : [];
-            const worldBooks = Array.isArray(worldBooksRaw) ? worldBooksRaw : [];
-
-            const convObj = {};
-            conversations.forEach(c => { if (c && c.id) convObj[c.id] = c; });
-
-            const wbObj = {};
-            worldBooks.forEach(w => { if (w && w.id) wbObj[w.id] = w; });
-
-            return {
-                settings: settings || {},
-                conversations: convObj,
-                worldBooks: wbObj,
-                conversationOrder: (metadata && metadata.conversationOrder) || [],
-                activeConvId: (metadata && metadata.activeConvId) || null,
-                dataVersion: (metadata && metadata.dataVersion) || 2,
-                lastSaved: (metadata && metadata.lastSaved) || null,
-                _loadedFrom: 'idb'
-            };
-        } catch (err) {
-            console.error('[Storage] loadAllFromIDB failed (returning null):', err);
-            return null;
-        }
-    },
-
-    async saveAllToIDB(data) {
-        const db = await this.getIDB();
-        if (!db) return;
-
-        // 使用一个事务写入多个 store，关键是：先同步发起所有请求，再等待事务完成
-        const tx = db.transaction(['settings', 'conversations', 'worldBooks', 'metadata'], 'readwrite');
-
-        try {
-            // settings
-            tx.objectStore('settings').put(data.settings || {}, 'main');
-
-            // conversations
-            const convStore = tx.objectStore('conversations');
-            for (const conv of Object.values(data.conversations || {})) {
-                if (conv && conv.id) {
-                    convStore.put(conv);
-                }
-            }
-
-            // worldBooks
-            if (data.worldBooks) {
-                const wbStore = tx.objectStore('worldBooks');
-                for (const wb of Object.values(data.worldBooks)) {
-                    if (wb && wb.id) {
-                        wbStore.put(wb);
-                    }
-                }
-            }
-
-            // metadata
-            tx.objectStore('metadata').put({
-                conversationOrder: data.conversationOrder || [],
-                activeConvId: data.activeConvId || null,
-                dataVersion: 2,
-                lastSaved: data.lastSaved || Date.now()
-            }, 'main');
-
-            // 等待整个事务真正提交（使用我们新封装提供的 helper）
-            await db.transactionDone(tx);
-        } catch (err) {
-            console.error('[Storage] saveAllToIDB failed:', err);
-            try { tx.abort(); } catch (_) {}
-        }
-    },
-
-    // ==================== 迁移工具函数（当前已禁用） ====================
-    async migrateFromLocalStorage() {
-        console.warn('[Storage] migrateFromLocalStorage 当前已禁用（仅 localStorage 模式稳定运行中）');
-        return false;
-    },
-
-    // Phase 2: 将旧的对话内嵌世界书转换为全局独立世界书
-    _migrateLegacyWorldInfoToGlobal(conversationsObj) {
-        const worldBooks = {};
-        const processed = new Set();
-
-        Object.keys(conversationsObj || {}).forEach(convId => {
-            const conv = conversationsObj[convId];
-            const legacyWI = conv.worldInfo;
-
-            if (!legacyWI || !legacyWI.entries || Object.keys(legacyWI.entries).length === 0) {
-                // No world info or already migrated
-                if (!conv.worldBookIds) conv.worldBookIds = [];
-                delete conv.worldInfo; // clean legacy field
-                return;
-            }
-
-            // Create a hash-like key to avoid creating duplicate world books for identical content
-            const entryKeys = Object.keys(legacyWI.entries).sort().join('|');
-            const contentSig = entryKeys + '|' + (legacyWI.name || '');
-
-            let targetWbId = null;
-
-            // Very simple dedup: if we already created a book with same signature in this migration, reuse it
-            for (const [wbId, wb] of Object.entries(worldBooks)) {
-                const wbSig = Object.keys(wb.entries || {}).sort().join('|') + '|' + (wb.name || '');
-                if (wbSig === contentSig) {
-                    targetWbId = wbId;
-                    break;
-                }
-            }
-
-            if (!targetWbId) {
-                targetWbId = 'wb-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
-                worldBooks[targetWbId] = {
-                    id: targetWbId,
-                    name: legacyWI.name || 'Imported World Book',
-                    entries: JSON.parse(JSON.stringify(legacyWI.entries)),
-                    created: Date.now(),
-                    source: 'legacy-migration'
-                };
-            }
-
-            // Convert conversation to use reference instead of embedding
-            conv.worldBookIds = conv.worldBookIds || [];
-            if (!conv.worldBookIds.includes(targetWbId)) {
-                conv.worldBookIds.push(targetWbId);
-            }
-
-            // Remove old embedded data
-            delete conv.worldInfo;
-        });
-
-        return worldBooks;
-    },
-
-    // ==================== 统一对外接口（当前强制 localStorage） ====================
-    async loadAll() {
-        // 强制只走 localStorage，IDB 暂时完全不参与
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : null;
-        } catch (e) {
-            return null;
-        }
-    },
-
-    async saveAll(data) {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {
-            console.error('[Storage] localStorage save failed:', e);
-        }
-    },
-
-    async getStorageInfo() {
-        try {
-            if (navigator.storage && navigator.storage.estimate) {
-                const estimate = await navigator.storage.estimate();
-                return {
-                    backend: this.getBackend(),
-                    used: estimate.usage,
-                    quota: estimate.quota
-                };
-            }
+            var root2 = await this._getRoot();
+            await root2.removeEntry(this._avatarDir, { recursive: true });
         } catch (e) {}
-        return {
-            backend: this.getBackend(),
-            used: null,
-            quota: null
-        };
-    }
-};
+        this._root = null;
+    },
+}
+
 
 // ==================== Phase 4: 备份提醒系统 ====================
 const BACKUP_REMINDER_DAYS = 7; // 每7天提醒一次备份
@@ -3034,7 +2791,7 @@ function recordBackupMade() {
 function showBackupReminderIfNeeded() {
     if (!shouldShowBackupReminder()) return;
 
-    // 只在 IndexedDB 模式下强提醒
+    // 只在 OPFS 模式下强提醒
     if (StorageService.getBackend() !== 'indexeddb') return;
 
     setTimeout(() => {
@@ -3070,45 +2827,10 @@ function updateStorageStatusUI() {
     const el = document.getElementById('storageStatus');
     if (!el) return;
 
-    const backend = StorageService.getBackend();
-    const isOPFS = backend === 'opfs';
-    const isIDB = backend === 'indexeddb';
-
-    el.textContent = isOPFS ? 'OPFS' : (isIDB ? 'IDB' : 'LS');
-    if (isOPFS) {
-        el.style.background = 'rgba(16,185,129,0.15)';
-        el.style.color = '#4ade80';
-    } else if (isIDB) {
-        el.style.background = 'rgba(16,185,129,0.15)';
-        el.style.color = '#4ade80';
-    } else {
-        el.style.background = 'rgba(245,158,11,0.15)';
-        el.style.color = '#fbbf24';
-    }
-
-    // 更新 tooltip + 用量 (使用 i18n)
-    StorageService.getStorageInfo().then(info => {
-        let tip = isOPFS ? t('storage_hint_opfs') : (isIDB ? t('storage_hint_idb') : t('storage_hint_ls'));
-
-        if (info && info.used != null && info.quota != null) {
-            const usedMB = (info.used / 1024 / 1024).toFixed(1);
-            const quotaMB = Math.round(info.quota / 1024 / 1024);
-            tip += ` · ${usedMB} / ~${quotaMB} MB`;
-
-            const percent = (info.used / info.quota) * 100;
-            if (percent > 85) {
-                el.style.background = 'rgba(239,68,68,0.25)';
-                el.style.color = '#f87171';
-                tip += ` (${t('storage_high_warning')})`;
-            } else if (percent > 70) {
-                el.style.background = 'rgba(245,158,11,0.25)';
-                el.style.color = '#fbbf24';
-            }
-        }
-        el.title = tip;
-    }).catch(() => {
-        el.title = isOPFS ? t('storage_hint_opfs') : (isIDB ? t('storage_hint_idb') : t('storage_hint_ls'));
-    });
+    el.textContent = 'OPFS';
+    el.style.background = 'rgba(245,158,11,0.15)';
+    el.style.color = '#fbbf24';
+    el.title = t('storage_hint_ls');
 
     // 点击直接打开设置（Phase 1 补充，绕过按钮绑定问题）
     el.addEventListener('click', function() {
@@ -3124,34 +2846,9 @@ function updateStorageStatusUI() {
     });
 }
 
-// ==================== 兼容层（逐步迁移中） ====================
-// 旧的同步 API 暂时保留，未来会逐步改为异步
-
-function loadAll() {
-    // 当前仍使用 localStorage，迁移后会走 StorageService
-    try {
-        var raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-        return null;
-    }
-}
-
-function saveAll(data) {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {}
-}
-
 // Returns a copy of settings with API keys stripped unless user explicitly opted in.
-// This prevents accidental persistence of secrets in localStorage.
 function getSafeSettingsForPersist() {
-    var s = JSON.parse(JSON.stringify(state.settings || {}));
-    if (!s.saveApiKey) {
-        s.apiKey = '';
-        s.summarizeApiKey = '';
-    }
-    return s;
+    return JSON.parse(JSON.stringify(state.settings || {}));
 }
 
 function makeId() {
@@ -3226,7 +2923,6 @@ function defaultSettings() {
     return {
         apiEndpoint: 'https://api.openai.com/v1/chat/completions',
         apiKey: '',
-        saveApiKey: false,
         model: 'gpt-4o',
         contextLength: 10,
         maxTokens: 1024,
@@ -3241,6 +2937,8 @@ function defaultSettings() {
         autoSummarizeOnReply: false,
         summaryThreshold: 12,
         summaryMaxWords: 0,
+        jailbreakPresets: {},
+        activeJailbreakPreset: '',
         // World Info (World Book) budget control
         worldInfoBudgetEnabled: true,
         worldInfoBudget: 2048,
@@ -3257,42 +2955,68 @@ function defaultSettings() {
 var API_PRESETS = {
     'deepseek':   { endpoint: 'https://api.deepseek.com',            defaultModel: 'deepseek-chat',       label: 'DeepSeek' },
     'grok':       { endpoint: 'https://api.x.ai',                   defaultModel: 'grok-3',              label: 'Grok' },
-    'openrouter': { endpoint: 'https://openrouter.ai/api',          defaultModel: 'openai/gpt-4o',       label: 'OpenRouter' }
+    'openrouter': { endpoint: 'https://openrouter.ai/api',          defaultModel: 'openai/gpt-4o',       label: 'OpenRouter' },
+    'custom':     { endpoint: '',                                    defaultModel: '',                    label: '自定义' }
 };
 
 // ==================== Per-Provider Config Storage ====================
-var PROVIDER_STORE_KEY = 'opentavern_provider_configs';
+// ==================== Per-Provider Config Storage (OPFS) ====================
+var PROVIDER_CONFIG_FILE = 'opentavern-provider-configs.json';
 
-function loadProviderConfigs() {
-    try { return JSON.parse(localStorage.getItem(PROVIDER_STORE_KEY)) || {}; }
-    catch(e) { return {}; }
+async function _readProviderConfigFile() {
+    try {
+        var root = await StorageService._getRoot();
+        var fh = await root.getFileHandle(PROVIDER_CONFIG_FILE);
+        var file = await fh.getFile();
+        var text = await file.text();
+        return text ? JSON.parse(text) : {};
+    } catch (e) { return {}; }
 }
 
-function saveProviderConfig(key, config) {
-    var all = loadProviderConfigs();
+async function _writeProviderConfigFile(data) {
+    try {
+        var root = await StorageService._getRoot();
+        var fh = await root.getFileHandle(PROVIDER_CONFIG_FILE, { create: true });
+        var writable = await fh.createWritable();
+        await writable.write(JSON.stringify(data));
+        await writable.close();
+    } catch (e) {}
+}
+
+async function loadProviderConfigs() {
+    return await _readProviderConfigFile();
+}
+
+async function saveProviderConfig(key, config) {
+    var all = await loadProviderConfigs();
     all[key] = { endpoint: config.endpoint, apiKey: config.apiKey, model: config.model, savedAt: Date.now() };
-    localStorage.setItem(PROVIDER_STORE_KEY, JSON.stringify(all));
+    await _writeProviderConfigFile(all);
 }
 
-function getProviderConfig(key) {
-    return loadProviderConfigs()[key] || null;
+async function getProviderConfig(key) {
+    var all = await loadProviderConfigs();
+    return all[key] || null;
 }
 
 function detectCurrentProvider() {
     var ep = (dom.apiEndpoint.value || '').trim();
+    // Check known presets first (endpoint-based matching)
     for (var k in API_PRESETS) {
-        if (ep.indexOf(API_PRESETS[k].endpoint.replace(/\/+$/, '')) === 0) return k;
+        if (k === 'custom') continue; // skip custom — it has no endpoint to match
+        if (API_PRESETS[k].endpoint && ep.indexOf(API_PRESETS[k].endpoint.replace(/\/+$/, '')) === 0) return k;
     }
+    // If endpoint doesn't match any known preset and user last selected custom, keep it
+    if (state._activeProvider === 'custom') return 'custom';
     return null;
 }
 
 // Load saved config for a provider into the form
-function applySavedProviderConfig(key) {
-    var saved = getProviderConfig(key);
+async function applySavedProviderConfig(key) {
+    var saved = await getProviderConfig(key);
     if (saved) {
         dom.apiEndpoint.value = saved.endpoint;
         if (dom.apiKey) dom.apiKey.value = saved.apiKey || '';
-        dom.modelName.value = saved.model || API_PRESETS[key].defaultModel;
+        dom.modelName.value = saved.model || API_PRESETS[key].defaultModel || '';
         return true;
     }
     // No saved config → clear API key to avoid carrying over from previous provider
@@ -3301,28 +3025,28 @@ function applySavedProviderConfig(key) {
 }
 
 // Save current form values for the current provider
-function saveCurrentProviderConfig() {
+async function saveCurrentProviderConfig() {
     var key = detectCurrentProvider();
-    if (!key) { alert('Cannot detect provider from current endpoint. Select a provider first.'); return; }
-    saveProviderConfig(key, {
+    if (!key) { showCustomAlert('无法检测到供应商信息，请先选择一个供应商。'); return; }
+    await saveProviderConfig(key, {
         endpoint: dom.apiEndpoint.value.trim(),
         apiKey: dom.apiKey.value.trim(),
         model: dom.modelName.value.trim()
     });
-    updateProviderBadges();
-    showToast('✓ Config saved for ' + API_PRESETS[key].label);
+    await updateProviderBadges();
+    showToast('AI供应商信息已保存');
 }
 
-// Simple toast notification
+// Simple toast notification (top of screen, amber themed)
 function showToast(msg) {
     var existing = document.getElementById('settingsToast');
     if (existing) existing.remove();
     var toast = document.createElement('div');
     toast.id = 'settingsToast';
-    toast.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] px-4 py-2 rounded-xl bg-emerald-500/90 text-white text-sm font-medium shadow-lg transition-all duration-300';
+    toast.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-[300] px-4 py-2 rounded-xl bg-amber-500/90 text-zinc-900 text-sm font-medium shadow-lg transition-all duration-300';
     toast.textContent = msg;
     toast.style.opacity = '0';
-    toast.style.transform = 'translate(-50%, 10px)';
+    toast.style.transform = 'translate(-50%, -10px)';
     document.body.appendChild(toast);
     requestAnimationFrame(function() {
         toast.style.opacity = '1';
@@ -3335,16 +3059,66 @@ function showToast(msg) {
     }, 2000);
 }
 
+// ==================== Custom Themed Dialog (replaces native alert/confirm) ====================
+var _dialogResolve = null;
+
+function _getCustomDialog() {
+    return {
+        overlay: document.getElementById('customDialog'),
+        msg: document.getElementById('customDialogMsg'),
+        ok: document.getElementById('customDialogOk'),
+        cancel: document.getElementById('customDialogCancel'),
+        backdrop: document.getElementById('customDialogBackdrop')
+    };
+}
+
+function _closeCustomDialog(result) {
+    var d = _getCustomDialog();
+    if (d.overlay) d.overlay.classList.add('hidden');
+    if (_dialogResolve) {
+        _dialogResolve(result);
+        _dialogResolve = null;
+    }
+}
+
+// Themed alert — single OK button, no return value
+function showCustomAlert(msg) {
+    var d = _getCustomDialog();
+    if (!d.overlay) { window.alert(msg); return; } // fallback to native if DOM not ready
+    d.msg.textContent = msg;
+    d.cancel.classList.add('hidden');
+    d.ok.textContent = '确定';
+    d.ok.onclick = function() { _closeCustomDialog(true); };
+    d.backdrop.onclick = function() { _closeCustomDialog(true); };
+    d.overlay.classList.remove('hidden');
+}
+
+// Themed confirm — OK + Cancel, returns Promise<boolean>
+function showCustomConfirm(msg, okText, cancelText) {
+    var d = _getCustomDialog();
+    if (!d.overlay) return Promise.resolve(window.confirm(msg)); // fallback to native if DOM not ready
+    d.msg.textContent = msg;
+    d.cancel.classList.remove('hidden');
+    d.ok.textContent = okText || '确定';
+    d.cancel.textContent = cancelText || '取消';
+    d.ok.onclick = function() { _closeCustomDialog(true); };
+    d.cancel.onclick = function() { _closeCustomDialog(false); };
+    d.backdrop.onclick = function() { _closeCustomDialog(false); };
+    d.overlay.classList.remove('hidden');
+    return new Promise(function(resolve) { _dialogResolve = resolve; });
+}
+
 // Apply preset: load saved config if exists, otherwise use defaults
-function applyMainApiPreset(key) {
+async function applyMainApiPreset(key) {
     var p = API_PRESETS[key];
     if (!p) return;
-    var found = applySavedProviderConfig(key);
+    state._activeProvider = key;
+    var found = await applySavedProviderConfig(key);
     if (!found) {
         dom.apiEndpoint.value = p.endpoint;
         dom.modelName.value = p.defaultModel;
     }
-    updateProviderBadges();
+    await updateProviderBadges();
 }
 
 function applySummarizePreset(key) {
@@ -3357,8 +3131,8 @@ function applySummarizePreset(key) {
 }
 
 // Update preset button indicators (active highlight + saved config tooltip)
-function updateProviderBadges() {
-    var configs = loadProviderConfigs();
+async function updateProviderBadges() {
+    var configs = await loadProviderConfigs();
     var activeKey = detectCurrentProvider();
     Object.keys(API_PRESETS).forEach(function(k) {
         var btn = document.getElementById('preset' + k.charAt(0).toUpperCase() + k.slice(1));
@@ -3385,8 +3159,8 @@ function updateProviderBadges() {
 function fetchModels() {
     var endpoint = dom.apiEndpoint.value.trim();
     var apiKey = dom.apiKey.value.trim();
-    if (!endpoint) { alert('Please fill in the API Endpoint first.'); return; }
-    if (!apiKey) { alert('Please fill in the API Key first.'); return; }
+    if (!endpoint) { showCustomAlert('请先填写 API Endpoint。'); return; }
+    if (!apiKey) { showCustomAlert('请先填写 API Key。'); return; }
 
     var base = endpoint.replace(/\/+$/, '').replace(/\/chat\/completions$/, '').replace(/\/v1$/, '');
     var url = base + '/v1/models';
@@ -3400,13 +3174,13 @@ function fetchModels() {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             var models = (data.data || []).map(function(m) { return m.id; }).sort();
-            if (models.length === 0) { alert('No models found. Check your API endpoint and key.'); return; }
+            if (models.length === 0) { showCustomAlert('未找到模型。请检查 API Endpoint 和 Key。'); return; }
             // Cache models
             state._cachedModels = models;
             updateModelDropdown(models, dom.modelName.value);
         })
         .catch(function(err) {
-            alert('Failed to fetch models: ' + err.message + '\n\nTry: ' + url);
+            showCustomAlert('Failed to fetch models: ' + err.message + '\n\nTry: ' + url);
         })
         .finally(function() {
             btn.textContent = origText;
@@ -3639,11 +3413,12 @@ function showGroupMentionPanel(conv) {
         const item = document.createElement('div');
         item.className = `flex items-center gap-3 px-4 py-3 rounded-2xl cursor-pointer active:bg-white/10 transition-colors ${isMuted ? 'opacity-60' : 'hover:bg-white/5'}`;
 
-        const avatar = char.name ? char.name.charAt(0).toUpperCase() : '?';
+        var avatarLetter = char.name ? char.name.charAt(0).toUpperCase() : '?';
+        var avatarKey = char._avatarKey;
 
         item.innerHTML = `
-            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-base sm:text-lg font-bold flex-shrink-0">
-                ${avatar}
+            <div class="mention-avatar w-9 h-9 sm:w-10 sm:h-10 rounded-md bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-base sm:text-lg font-bold flex-shrink-0 overflow-hidden">
+                ${avatarLetter}
             </div>
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
@@ -3653,6 +3428,13 @@ function showGroupMentionPanel(conv) {
                 ${char.personality ? `<p class="text-[11px] sm:text-xs text-zinc-400 line-clamp-1 mt-0.5">${escapeHtml(char.personality.slice(0, 60))}</p>` : ''}
             </div>
         `;
+
+        if (avatarKey) {
+            var avDiv = item.querySelector('.mention-avatar');
+            StorageService.getAvatarUrl(avatarKey).then(function(url) {
+                if (url && avDiv) avDiv.innerHTML = '<img src="' + url + '" alt="" class="w-full h-full object-cover rounded-md">';
+            });
+        }
 
         if (!isMuted) {
             item.addEventListener('click', () => {
@@ -3807,7 +3589,7 @@ var renderSubscriptions = {
         updateInputState();
         // 不再自动调用 renderMessagesOnly()：
         // - 启动生成时，onToken 会在首次收到 token 时手动创建 streaming 气泡
-        // - 完成时，appendFinalAssistantMessage 负责增量追加最终 AI 消息（避免滚动跳动）
+        // - 完成时，onComplete 在原地转换流式 div 为最终消息（避免滚动跳动）
         // - 之前这里会触发 renderMessagesOnly + appendFinal 两条路径，配合 activeConvId 切换时的 DOM 残留，容易产生重复消息
     },
     'settings': function() {
@@ -3852,59 +3634,6 @@ function renderMessagesOnly() {
     if (dom.messagesContainer) renderMessages();
 }
 
-// 流式完成后增量追加最终消息（避免全量重绘导致滚动跳到底部）
-function appendFinalAssistantMessage(conv, fullContent) {
-    if (!conv || !dom.messagesContainer || !fullContent) return;
-
-    // 防护：如果当前激活的对话已经不是这个 conv 了（用户切换了对话），直接放弃追加
-    // 避免在快速切换对话后，旧的流式完成回调错误地往当前对话里重复追加消息
-    var activeConv = getActiveConv();
-    if (!activeConv || activeConv.id !== conv.id) {
-        return;
-    }
-
-    var container = dom.messagesContainer;
-    // 使用消息自带的 speaker（如果有）或通过 helper 获取
-    var lastMsg = conv.messages[conv.messages.length - 1];
-    var senderName = getMessageSenderName(lastMsg, conv);
-    var actualIdx = conv.messages.length - 1; // 刚 push 进去的索引
-
-    var msgDiv = document.createElement('div');
-    msgDiv.className = 'msg-enter msg-assistant flex justify-start';
-    msgDiv.innerHTML = `
-        <div class="max-w-[80%] msg-wrapper">
-            <p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">${escapeHtml(senderName)}</p>
-            <div class="msg-bubble">${highlightDialogue(fullContent)}</div>
-            <div class="msg-actions">
-                <button class="msg-action-btn copy-btn" data-action="copy" data-msg-idx="${actualIdx}" title="${t('copy')}">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                </button>
-                <button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="${actualIdx}" title="${t('regenerate')}">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                </button>
-                <button class="msg-action-btn del-btn" data-action="delete" data-msg-idx="${actualIdx}" title="${t('delete_msg')}">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-            </div>
-        </div>`;
-
-    container.appendChild(msgDiv);
-
-    // 更新增量渲染计数
-    if (typeof conv._lastRenderedVisibleCount === 'number') {
-        conv._lastRenderedVisibleCount += 1;
-    }
-
-    // 只有当用户当前在底部时才自动滚动到底部
-    var isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 150;
-    if (isNearBottom) {
-        container.scrollTop = container.scrollHeight;
-    }
-
-    // 更新 token 信息栏（函数独立性考虑，即使调用方也会调用一次）
-    renderTokenBar();
-}
-
 function renderConversationListOnly() {
     if (dom.convList) renderConversationList();
 }
@@ -3915,54 +3644,8 @@ function renderCharacterUI() {
 }
 
 async function initState() {
-    // =====================================================
-    // 安全启动逻辑（IDB 优先 + lastSaved 时间戳保护）
-    // 1. 优先尝试从 IndexedDB 加载（容量大）
-    // 2. 如果 IDB 为空但 localStorage 有数据（含 lastSaved），自动迁移一次
-    // 3. 所有后续写入走选中的后端
-    // =====================================================
-    let migrationResult = { backend: 'localStorage', attempted: false, success: false };
-
-    let saved = null;
-    let usedIDB = false;
-
-    // 优先读 IDB
-    if (StorageService._useIndexedDB) {
-        try {
-            const idbData = await StorageService.loadAllFromIDB();
-            if (idbData && (Object.keys(idbData.conversations || {}).length > 0 || idbData.lastSaved)) {
-                saved = idbData;
-                usedIDB = true;
-            }
-        } catch (e) {
-            console.warn('[Storage] IDB load error, will try localStorage');
-        }
-    }
-
-    // 如果 IDB 没数据，读 localStorage 并考虑迁移
-    if (!saved) {
-        const lsData = loadAll();
-        if (lsData) {
-            saved = lsData;
-
-            // 自动安全迁移到 IDB（如果用户开启了 IDB 模式）
-            if (StorageService._useIndexedDB && !usedIDB) {
-                migrationResult.attempted = true;
-                try {
-                    await StorageService.saveAllToIDB({
-                        ...lsData,
-                        lastSaved: Date.now()
-                    });
-                    migrationResult.success = true;
-                    usedIDB = true;
-                    window._showStorageMigrationNotice = true;
-                } catch (e) {
-                    console.error('[Storage] Auto-migration to IDB failed, staying on localStorage', e);
-                    // 失败就继续用 LS 数据
-                }
-            }
-        }
-    }
+    // 从 OPFS 加载所有数据
+    let saved = await StorageService.loadAll();
 
     if (saved) {
         if (saved.settings) {
@@ -3981,27 +3664,10 @@ async function initState() {
         if (saved.characters) {
             state.characters = saved.characters;
         }
-    } else {
     }
-
-    if (usedIDB) {
-        migrationResult.backend = 'indexeddb';
-    }
-
-    state._storageMigration = migrationResult;
 
     // Ensure lang is set
     if (!state.settings.lang) state.settings.lang = 'zh-CN';
-
-    // Security migration for API key persistence
-    var hadApiKey = !!(state.settings && state.settings.apiKey);
-    if (typeof state.settings.saveApiKey === 'undefined') {
-        state.settings.saveApiKey = hadApiKey;
-    }
-    if (!state.settings.saveApiKey) {
-        state.settings.apiKey = '';
-        state.settings.summarizeApiKey = '';
-    }
 
     // === 角色卡全局库迁移（解决编辑不生效 + 无法删除问题） ===
     if (!state.characters) state.characters = {};
@@ -4056,7 +3722,7 @@ function persistState(immediate) {
             clearTimeout(_persistTimeout);
             _persistTimeout = null;
         }
-        // 保存到当前选中的后端（默认 IndexedDB，容量大）
+        // 保存到 OPFS
         StorageService.saveAll(dataToSave);
         return;
     }
@@ -4116,6 +3782,21 @@ function setLanguage(lang) {
     applyAnnouncementTranslations();   // 如果公告弹窗当前可见，同步更新语言
     updateAnnouncementLangButtons();   // 同步公告栏内的语言按钮高亮状态
 
+    // Sync mobile dropdown label + active item
+    if (dom.langToggleLabel) {
+        var labels = { 'zh-CN': '简', 'zh-TW': '繁', 'en': 'EN' };
+        dom.langToggleLabel.textContent = labels[lang] || lang;
+    }
+    if (dom.langMenuMobile) {
+        dom.langMenuMobile.querySelectorAll('.lang-menu-item').forEach(function(item) {
+            if (item.getAttribute('data-lang') === lang) {
+                item.classList.add('text-amber-400');
+            } else {
+                item.classList.remove('text-amber-400');
+            }
+        });
+    }
+
     // 语言变更影响范围很大，使用全量渲染
     appStore.notify('settings');
     requestFullRender();
@@ -4174,7 +3855,172 @@ function importCharacterCard(jsonData) {
         depth_prompt: depthPrompt,
         talkativeness: ext.talkativeness != null ? ext.talkativeness : 0.5,
         creator: d.creator || '',
+        _avatarKey: null,       // OPFS key for avatar PNG blob
     };
+}
+
+// ==================== PNG Character Card Parser ====================
+// SillyTavern stores base64-encoded JSON in PNG text chunks (tEXt / iTXt / zTXt)
+// under keywords "ccv3" (V3, preferred) or "chara" (V1/V2, legacy).
+// Pipeline: PNG chunk → base64 decode → UTF-8 bytes → JSON.parse
+function parsePNGCharacterCard(arrayBuffer) {
+    var bytes = new Uint8Array(arrayBuffer);
+    // Validate PNG signature
+    var PNG_SIG = [137, 80, 78, 71, 13, 10, 26, 10];
+    for (var i = 0; i < 8; i++) {
+        if (bytes[i] !== PNG_SIG[i]) throw new Error('Not a valid PNG file');
+    }
+
+    // Decode base64 value to proper JSON string (handles UTF-8 non-ASCII chars)
+    function base64ToJSON(b64Bytes) {
+        // Convert bytes to base64 string (ASCII)
+        var b64Str = '';
+        for (var i = 0; i < b64Bytes.length; i++) { b64Str += String.fromCharCode(b64Bytes[i]); }
+        // atob decodes base64 → binary string (each char = one byte)
+        var binStr = atob(b64Str);
+        // Convert binary string to UTF-8 bytes then decode
+        var utf8Bytes = new Uint8Array(binStr.length);
+        for (var j = 0; j < binStr.length; j++) { utf8Bytes[j] = binStr.charCodeAt(j) & 0xFF; }
+        var jsonStr = new TextDecoder('utf-8').decode(utf8Bytes);
+        return JSON.parse(jsonStr);
+    }
+
+    // Collect all found text chunks — ccv3 takes priority over chara
+    var foundCCV3 = null;
+    var foundChara = null;
+
+    // Helper: read keyword + value from chunk bytes (keyword\0value)
+    function splitKeywordValue(chunkBytes) {
+        var nullIdx = -1;
+        for (var j = 0; j < chunkBytes.length; j++) {
+            if (chunkBytes[j] === 0) { nullIdx = j; break; }
+        }
+        if (nullIdx === -1) return null;
+        var kw = '';
+        for (var k = 0; k < nullIdx; k++) { kw += String.fromCharCode(chunkBytes[k]); }
+        return { keyword: kw, value: chunkBytes.slice(nullIdx + 1) };
+    }
+
+    var offset = 8;
+    while (offset < bytes.length) {
+        if (offset + 12 > bytes.length) break;
+        var len = (bytes[offset] << 24) | (bytes[offset+1] << 16) | (bytes[offset+2] << 8) | bytes[offset+3];
+        var type = String.fromCharCode(bytes[offset+4], bytes[offset+5], bytes[offset+6], bytes[offset+7]);
+        var chunkData = bytes.slice(offset + 8, offset + 8 + len);
+
+        if (type === 'tEXt') {
+            var kv = splitKeywordValue(chunkData);
+            if (kv) {
+                if (kv.keyword === 'ccv3') foundCCV3 = kv.value;
+                else if (kv.keyword === 'chara' && !foundCCV3) foundChara = kv.value;
+            }
+        } else if (type === 'iTXt') {
+            var ikv = splitKeywordValue(chunkData);
+            if (ikv && (ikv.keyword === 'ccv3' || ikv.keyword === 'chara')) {
+                // iTXt: keyword\0 + compFlag(1B) + compMethod(1B) + lang\0 + transKey\0 + text
+                var pos = ikv.keyword.length + 1;
+                var compFlag = chunkData[pos]; pos += 2; // skip compFlag + compMethod
+                while (pos < chunkData.length && chunkData[pos] !== 0) pos++; // skip language
+                pos++;
+                while (pos < chunkData.length && chunkData[pos] !== 0) pos++; // skip transKeyword
+                pos++;
+                var iValue = chunkData.slice(pos);
+                if (compFlag === 0) {
+                    if (ikv.keyword === 'ccv3') foundCCV3 = iValue;
+                    else if (ikv.keyword === 'chara' && !foundCCV3) foundChara = iValue;
+                }
+                // compFlag === 1 means zlib compressed — skip for now (rare)
+            }
+        } else if (type === 'zTXt') {
+            // zTXt uses zlib compression — rare for character cards; skip with warning
+            var zkv = splitKeywordValue(chunkData);
+            if (zkv && (zkv.keyword === 'ccv3' || zkv.keyword === 'chara')) {
+                console.warn('[PNG] zTXt chunk found but decompression is async — skipping. If you need zTXt support, re-export your card as PNG from SillyTavern (it uses tEXt by default).');
+            }
+        }
+        offset += 12 + len;
+    }
+
+    // Priority: ccv3 > chara
+    var valueToParse = foundCCV3 || foundChara;
+    if (!valueToParse) {
+        throw new Error('No character card data found in PNG (missing ccv3/chara text chunk)');
+    }
+
+    // Decode base64 → JSON
+    try {
+        return base64ToJSON(valueToParse);
+    } catch (e) {
+        var preview = '';
+        for (var p = 0; p < Math.min(200, valueToParse.length); p++) { preview += String.fromCharCode(valueToParse[p]); }
+        console.error('[PNG Parse] Base64 decode failed. Preview:', preview, 'Error:', e);
+        throw new Error('Failed to decode character data from PNG');
+    }
+}
+
+
+// Strip character-card metadata chunks (tEXt/iTXt/zTXt with keyword "chara" or "ccv3")
+// from a PNG, returning a clean ArrayBuffer suitable for avatar storage.
+function stripPNGMetadata(arrayBuffer) {
+    var src = new Uint8Array(arrayBuffer);
+    // Validate PNG signature
+    var PNG_SIG = [137, 80, 78, 71, 13, 10, 26, 10];
+    for (var i = 0; i < 8; i++) {
+        if (src[i] !== PNG_SIG[i]) return arrayBuffer; // not a valid PNG, return as-is
+    }
+
+    var CHARA_KEYWORDS = ['chara', 'ccv3'];
+
+    // Check if a chunk is a text chunk with character data that should be stripped
+    function isChardataChunk(chunkType, chunkData) {
+        if (chunkType !== 'tEXt' && chunkType !== 'iTXt' && chunkType !== 'zTXt') return false;
+        // Read the keyword (up to first null byte)
+        var kwEnd = -1;
+        for (var j = 0; j < chunkData.length; j++) {
+            if (chunkData[j] === 0) { kwEnd = j; break; }
+        }
+        if (kwEnd <= 0) return false;
+        var kw = '';
+        for (var k = 0; k < kwEnd; k++) { kw += String.fromCharCode(chunkData[k]); }
+        return CHARA_KEYWORDS.indexOf(kw) !== -1;
+    }
+
+    // First pass: calculate output size
+    var keptChunks = [];
+    var offset = 8;
+    while (offset < src.length) {
+        if (offset + 12 > src.length) break;
+        var len = (src[offset] << 24) | (src[offset+1] << 16) | (src[offset+2] << 8) | src[offset+3];
+        var type = String.fromCharCode(src[offset+4], src[offset+5], src[offset+6], src[offset+7]);
+        var totalChunkLen = 12 + len; // 4B len + 4B type + data + 4B CRC
+        if (offset + totalChunkLen > src.length) break;
+
+        var chunkBytes = src.slice(offset, offset + totalChunkLen);
+        var chunkData = src.slice(offset + 8, offset + 8 + len);
+
+        if (!isChardataChunk(type, chunkData)) {
+            keptChunks.push(chunkBytes);
+        }
+        offset += totalChunkLen;
+    }
+
+    // If nothing was stripped, return original
+    if (keptChunks.length === 0) return arrayBuffer;
+
+    // Calculate total size
+    var totalSize = 8; // signature
+    keptChunks.forEach(function(c) { totalSize += c.length; });
+
+    // Assemble output
+    var out = new Uint8Array(totalSize);
+    out.set(src.slice(0, 8), 0); // signature
+    var outPos = 8;
+    keptChunks.forEach(function(c) {
+        out.set(c, outPos);
+        outPos += c.length;
+    });
+
+    return out.buffer;
 }
 
 
@@ -4232,6 +4078,13 @@ function buildSystemPrompt(character, worldInfoByPos) {
     var parts = [];
     var charName = character ? character.name : 'Assistant';
     var userName = state.settings.userName || 'User';
+
+    // Inject jailbreak preset first (foundational rules, highest priority)
+    var jbName = state.settings.activeJailbreakPreset;
+    if (jbName && state.settings.jailbreakPresets && state.settings.jailbreakPresets[jbName]) {
+        var jbText = replacePlaceholders(state.settings.jailbreakPresets[jbName], charName, userName);
+        if (jbText.trim()) parts.push(jbText.trim());
+    }
 
     var sysPrompt = state.settings.systemPrompt;
     if (!sysPrompt && character && character.system_prompt) {
@@ -4826,8 +4679,9 @@ function getAllAvailableCharacters() {
                 }
             }
         });
-    } else {
-        // 兜底：从旧对话数据扫描（首次迁移或极端情况）
+    } else if (!state.characters) {
+        // 兜底：仅在角色库从未初始化时从旧对话数据扫描（首次迁移）
+        // 如果 state.characters 是空对象 {}，说明用户已删除所有角色卡，不要回退到对话数据
         Object.values(state.conversations || {}).forEach(conv => {
             if (conv.character && conv.character.name) {
                 const key = conv.character.name.trim().toLowerCase();
@@ -5364,9 +5218,9 @@ function duplicateCurrentEntry() {
     selectWIEntry(copy.uid);
 }
 
-function deleteCurrentEntry() {
+async function deleteCurrentEntry() {
     if (!wiState.selectedUid) return;
-    if (!confirm('删除当前条目？')) return;
+    if (!await showCustomConfirm('删除当前条目？')) return;
     var wi = getActiveWI();
     delete wi.entries[wiState.selectedUid];
     wiState.dirty = true;
@@ -5375,8 +5229,8 @@ function deleteCurrentEntry() {
     showNoSelection();
 }
 
-function deleteAllWIEntries() {
-    if (!confirm(t('world_book_confirm_delete_all'))) return;
+async function deleteAllWIEntries() {
+    if (!await showCustomConfirm(t('world_book_confirm_delete_all'))) return;
     var wi = getActiveWI();
     wi.entries = {};
     wiState.selectedUid = null;
@@ -5385,12 +5239,12 @@ function deleteAllWIEntries() {
     showNoSelection();
 }
 
-function deleteWorldBook(wbId) {
+async function deleteWorldBook(wbId) {
     if (!state.worldBooks || !state.worldBooks[wbId]) return;
     var wb = state.worldBooks[wbId];
     var name = wb.name || t('world_book_title');
     var msg = t('world_book_confirm_delete_book').replace('{name}', name);
-    if (!confirm(msg)) return;
+    if (!await showCustomConfirm(msg)) return;
 
     // 1. 先清理：从所有对话中移除此世界书的引用
     if (state.conversations) {
@@ -5568,9 +5422,9 @@ function renderWIEntryList(filter) {
         });
 
         // delete from list
-        row.querySelector('.wi-list-del').addEventListener('click', function(ev) {
+        row.querySelector('.wi-list-del').addEventListener('click', async function(ev) {
             ev.stopPropagation();
-            if (!confirm('删除此条目？')) return;
+            if (!await showCustomConfirm('删除此条目？')) return;
             delete wi.entries[uidStr];
             wiState.dirty = true;
             if (wiState.selectedUid === uidStr) {
@@ -5706,7 +5560,7 @@ function handleWIFileImport(e) {
                 updateWorldBookModalHeader();
                 renderWorldInfoBadge();
 
-                alert('已作为新世界书导入（' + Object.keys(newBook.entries).length + ' 条目）');
+                showCustomAlert('已作为新世界书导入（' + Object.keys(newBook.entries).length + ' 条目）');
             } else {
                 // Legacy / current book import
                 var wi = getActiveWI();
@@ -5721,10 +5575,10 @@ function handleWIFileImport(e) {
                 renderWIEntryList('');
                 showNoSelection();
                 renderWorldInfoBadge();
-                alert('世界书导入成功（' + Object.keys(wi.entries).length + ' 条目）');
+                showCustomAlert('世界书导入成功（' + Object.keys(wi.entries).length + ' 条目）');
             }
         } catch (err) {
-            alert('导入失败: ' + err.message);
+            showCustomAlert('导入失败: ' + err.message);
         }
         if (dom.wiImportFile) dom.wiImportFile.value = '';
     };
@@ -6578,7 +6432,7 @@ function triggerSummarization(turns) {
     performSummarization(subset, startIdx, endIdx, function(err) {
         if (dom.summarizeStatus) dom.summarizeStatus.classList.add('hidden');
         if (dom.summarizeConfirmBtn) dom.summarizeConfirmBtn.disabled = false;
-        if (err) { alert('Summary error: ' + (err.message || err)); return; }
+        if (err) { showCustomAlert('Summary error: ' + (err.message || err)); return; }
         if (dom.summarizeModal) dom.summarizeModal.classList.add('hidden');
         renderSummaryHistory();
     });
@@ -6780,8 +6634,8 @@ function editSummary(id) {
     });
 }
 
-function deleteSummary(id) {
-    if (!confirm(t('summary_delete_confirm'))) return;
+async function deleteSummary(id) {
+    if (!await showCustomConfirm(t('summary_delete_confirm'))) return;
     var conv = getActiveConv();
     if (!conv) return;
     conv.summaries = conv.summaries.filter(function(s) { return s.id !== id; });
@@ -6887,7 +6741,7 @@ function doGenerateSummary() {
 
     var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
     if (regularMsgs.length < 2) {
-        alert(t('nothing_to_archive'));
+        showCustomAlert(t('nothing_to_archive'));
         return;
     }
 
@@ -6932,7 +6786,7 @@ function doGenerateSummary() {
         dom.summaryGenerateBtn.disabled = false;
         dom.summaryManagerStatus.textContent = '';
         if (err) {
-            alert('Summary error: ' + (err.message || err));
+            showCustomAlert('Summary error: ' + (err.message || err));
             return;
         }
         // 刷新列表 + 关闭可能打开的旧小窗 + 更新 token 条
@@ -6950,7 +6804,7 @@ function openSummaryManager() {
     var conv = getActiveConv();
     if (!conv) return;
     var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
-    if (regularMsgs.length < 2) { alert(t('nothing_to_archive')); return; }
+    if (regularMsgs.length < 2) { showCustomAlert(t('nothing_to_archive')); return; }
 
     // 默认进入“最近 N 轮”模式
     if (dom.modeRecentPanel) dom.modeRecentPanel.classList.remove('hidden');
@@ -6976,7 +6830,7 @@ function archiveCurrentConversation() {
     var conv = getActiveConv();
     if (!conv) return;
     var hasMessages = conv.messages.some(function(m) { return m.role !== 'system'; });
-    if (!hasMessages) { alert(t('nothing_to_archive')); return; }
+    if (!hasMessages) { showCustomAlert(t('nothing_to_archive')); return; }
     var clone = JSON.parse(JSON.stringify(conv));
     clone.id = makeId();
     clone.title = conv.title + ' ' + t('copy_of');
@@ -7212,6 +7066,7 @@ function newConversation(charOrChars) {
         charForGreeting && charForGreeting.alternate_greetings && charForGreeting.alternate_greetings.length > 0) {
         // Persist conversation before showing selector (in case user refreshes)
         persistState();
+        if (isMobile()) closeSidebar();
         // Show greeting selector — it will handle rendering after user picks
         showGreetingSelector(charForGreeting, conv);
         return;
@@ -7265,11 +7120,12 @@ function showNewChatCharacterPicker() {
             card.className = `glass rounded-2xl p-3 cursor-pointer flex flex-col items-center text-center gap-2 border transition-all relative group
                 ${isSelected ? 'border-amber-400 bg-amber-500/10' : 'border-white/5 hover:border-white/10 hover:bg-white/5'}`;
 
-            const avatar = character.name ? character.name.charAt(0).toUpperCase() : '?';
+            var avatarLetter = character.name ? character.name.charAt(0).toUpperCase() : '?';
+            var avatarKey = character._avatarKey;
 
             card.innerHTML = `
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                    ${avatar}
+                <div class="card-avatar w-12 h-12 rounded-md bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0 overflow-hidden">
+                    ${avatarLetter}
                 </div>
                 <div class="min-w-0 w-full">
                     <p class="text-sm font-medium text-zinc-100 truncate">${escapeHtml(character.name || t('char_empty_name'))}</p>
@@ -7283,6 +7139,13 @@ function showNewChatCharacterPicker() {
                     <button class="char-delete-btn absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 hover:bg-red-500/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all" title="删除角色卡">×</button>
                 `}
             `;
+
+            if (avatarKey) {
+                var cAvDiv = card.querySelector('.card-avatar');
+                StorageService.getAvatarUrl(avatarKey).then(function(url) {
+                    if (url && cAvDiv) cAvDiv.innerHTML = '<img src="' + url + '" alt="" class="w-full h-full object-cover rounded-md">';
+                });
+            }
 
             card.addEventListener('click', () => {
                 if (!multiSelectMode) {
@@ -7305,10 +7168,10 @@ function showNewChatCharacterPicker() {
             // 删除按钮（仅非多选模式下存在）
             const delBtn = card.querySelector('.char-delete-btn');
             if (delBtn) {
-                delBtn.addEventListener('click', function(e) {
+                delBtn.addEventListener('click', async function(e) {
                     e.stopPropagation();
                     const displayName = character.name || '该角色卡';
-                    if (!confirm(`确定从角色库中删除「${displayName}」？\n已有对话中的角色卡数据不会受影响。`)) {
+                    if (!await showCustomConfirm(`确定从角色库中删除「${displayName}」？\n已有对话中的角色卡数据不会受影响。`)) {
                         return;
                     }
                     deleteCharacterFromLibrary(key);
@@ -7373,7 +7236,7 @@ function showNewChatCharacterPicker() {
                                 // 传递数组给新逻辑（下一阶段实现）
                                 newConversation(selectedChars);
                             } else {
-                                alert('请至少选择 2 个角色创建群组');
+                                showCustomAlert('请至少选择 2 个角色创建群组');
                             }
                         });
 
@@ -7416,10 +7279,9 @@ function showNewChatCharacterPicker() {
 
         dom.newChatImportCharacterBtn.addEventListener('click', () => {
             modal.classList.add('hidden');
-            if (dom.importModal) {
-                dom.importModal.classList.remove('hidden');
-                dom.importStatus.classList.add('hidden');
-                if (dom.importFileInput) dom.importFileInput.value = '';
+            if (dom.importFileInput) {
+                dom.importFileInput.value = '';
+                dom.importFileInput.click();
             }
         });
     }
@@ -7427,9 +7289,9 @@ function showNewChatCharacterPicker() {
     modal.classList.remove('hidden');
 }
 
-function loadConversation(id) {
+async function loadConversation(id) {
     if (state.isGenerating) {
-        if (!confirm(t('generation_abort_confirm'))) return;
+        if (!await showCustomConfirm(t('generation_abort_confirm'))) return;
         stopGeneration();
     }
     saveCurrentConversation();
@@ -7463,8 +7325,8 @@ function loadConversation(id) {
     if (isMobile()) closeSidebar();
 }
 
-function deleteConversation(id) {
-    if (!confirm(t('delete_confirm'))) return;
+async function deleteConversation(id) {
+    if (!await showCustomConfirm(t('delete_confirm'))) return;
     delete state.conversations[id];
     state.conversationOrder = state.conversationOrder.filter(function(x) { return x !== id; });
     if (state.activeConvId === id) {
@@ -7488,11 +7350,12 @@ function cacheDom() {
         'sidebar','convList','noConvHint','chatTopBar','charAvatar','chatTitle','chatSubtitle',
         'messagesContainer','emptyState','messageInput','sendBtn','stopBtn','mentionBtn',
         'settingsModal','settingsBackdrop','settingsCloseBtn',
-        'apiEndpoint','apiKey','saveApiKey','modelName','modelDropdown','fetchModelsBtn',
-        'presetDeepseek','presetGrok','presetOpenrouter','saveProviderBtn',
+        'apiEndpoint','apiKey','modelName','modelDropdown','fetchModelsBtn',
+        'presetDeepseek','presetGrok','presetOpenrouter','presetCustom','saveProviderBtn',
         'contextLength','contextLenVal',
         'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
-        'userName','systemPrompt',
+        'userName','userAvatar','userAvatarInput','systemPrompt','jbDropdownBtn','jbDropdownLabel','jbDropdownMenu','jbNewBtn',
+        'jbEditModal','jbEditBackdrop','jbEditTitle','jbEditName','jbEditContent','jbEditSave','jbEditCancel',
         'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
         'greetingModal','greetingBackdrop','greetingCloseBtn','greetingList','greetingCharName',
         'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn',
@@ -7505,6 +7368,7 @@ function cacheDom() {
         'charEditorModal','charEditorBackdrop','charEditorCloseBtn','charEditorCancelBtn','charEditorSaveBtn',
         'charEditName','charEditTags','charEditDescription','charEditPersonality','charEditScenario',
         'charEditFirstMes','charEditMesExample','charEditSystemPrompt','charEditPostHistory','charEditCreatorNotes',
+        'charEditAvatar','charEditAvatarInput',
         'summarizeBtn','summarizeModal','summarizeBackdrop','summarizeTurns',
         'summarizeStatus','summarizeCancelBtn','summarizeConfirmBtn',
         'githubBtn',
@@ -7517,7 +7381,7 @@ function cacheDom() {
         'summaryRecentTurns','rangeStart','rangeEnd','previewRangeBtn','rangePreview',
         'summaryGenerateBtn','summaryManagerStatus',
         'summaryEnabled', 'summaryThreshold', 'summaryThresholdVal', 'summaryThresholdWarning', 'summaryMaxWords',
-        'hamburgerBtn','sidebarCloseBtn','sidebarBackdrop',
+        'hamburgerBtn','sidebarCloseBtn','sidebarBackdrop','langToggleMobile','langMenuMobile','langToggleLabel',
         'worldBookModal','worldBookBackdrop','worldBookBtn','wiEntryCount',
         'wiImportBtn','wiExportBtn','wiDeleteAllBtn','wiAddEntryBtn','wiCloseBtn','wiNewBookBtn',
         'wiBookName','wiSearch','wiEntryList','wiEntryStats',
@@ -7565,7 +7429,7 @@ function exportConversation(id) {
 
 function exportAllConversations() {
     var convs = state.conversationOrder.map(function(id) { return state.conversations[id]; }).filter(Boolean);
-    if (convs.length === 0) { alert(t('nothing_to_archive')); return; }
+    if (convs.length === 0) { showCustomAlert(t('nothing_to_archive')); return; }
     downloadJsonFile(
         { version: 1, type: 'opentavern-export', exported_at: new Date().toISOString(), conversations: convs },
         'opentavern_all_' + new Date().toISOString().slice(0, 10) + '.json'
@@ -7591,7 +7455,7 @@ function importConversations(file) {
         try {
             var data = JSON.parse(ev.target.result);
             if (!data || data.type !== 'opentavern-export' || !Array.isArray(data.conversations)) {
-                alert(t('import_conv_error'));
+                showCustomAlert(t('import_conv_error'));
                 return;
             }
             var imported = 0;
@@ -7624,9 +7488,9 @@ function importConversations(file) {
             }
             var msg = t('import_conv_success') + imported + t('import_conv_success_suffix');
             if (skipped > 0) msg += ' ' + skipped + t('import_conv_duplicate');
-            alert(msg);
+            showCustomAlert(msg);
         } catch(e) {
-            alert(t('import_conv_error'));
+            showCustomAlert(t('import_conv_error'));
         }
     };
     reader.readAsText(file);
@@ -7677,6 +7541,22 @@ function renderConversationList() {
             if (id) exportConversation(id);
         });
     });
+}
+
+// Helper: generate avatar HTML for chat messages. Loads image async, shows initial letter placeholder.
+var _msgAvatarCounter = 0;
+function _msgAvatarHTML(conv, isUser, name) {
+    var initial = (name || '?').charAt(0).toUpperCase();
+    var avatarKey = isUser ? (state.settings._userAvatarKey || null) : (conv && conv.character ? conv.character._avatarKey : null);
+    var id = 'msgav-' + (++_msgAvatarCounter);
+    // Load image async if key exists
+    if (avatarKey) {
+        StorageService.getAvatarUrl(avatarKey).then(function(url) {
+            var el = document.getElementById(id);
+            if (el && url) el.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover rounded-md">';
+        });
+    }
+    return '<div id="' + id + '" class="w-8 h-8 rounded-md bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden">' + initial + '</div>';
 }
 
 function renderMessages() {
@@ -7736,10 +7616,14 @@ function renderMessages() {
             var senderName = getMessageSenderName(msg, conv);
             var actualIdx = conv.messages.indexOf(msg);
 
+            var charAvHtml = _msgAvatarHTML(conv, false, senderName);
+            var userAvHtml = _msgAvatarHTML(conv, true, state.settings.userName || 'User');
+
             var msgDiv = document.createElement('div');
-            msgDiv.className = 'msg-enter ' + (isUser ? 'msg-user flex justify-end' : 'msg-assistant flex justify-start');
+            msgDiv.className = 'msg-enter ' + (isUser ? 'msg-user' : 'msg-assistant') + ' flex items-start gap-2 ' + (isUser ? 'justify-end' : 'justify-start');
             msgDiv.innerHTML = `
-                <div class="max-w-[80%] msg-wrapper">
+                ${!isUser ? charAvHtml : ''}
+                <div class="max-w-[72%] msg-wrapper">
                     ${!isUser ? `<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">${escapeHtml(senderName)}</p>` : ''}
                     <div class="msg-bubble">${isUser ? escapeHtml(msg.content) : highlightDialogue(msg.content)}</div>
                     <div class="msg-actions">
@@ -7750,11 +7634,19 @@ function renderMessages() {
                         <button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="${actualIdx}" title="${t('regenerate')}">
                             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
                         </button>` : ''}
+                        ${isUser ? `
+                        <button class="msg-action-btn edit-btn" data-action="edit" data-msg-idx="${actualIdx}" title="编辑">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                        <button class="msg-action-btn refresh-btn" data-action="refresh" data-msg-idx="${actualIdx}" title="重新发送">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        </button>` : ''}
                         <button class="msg-action-btn del-btn" data-action="delete" data-msg-idx="${actualIdx}" title="${t('delete_msg')}">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
                     </div>
-                </div>`;
+                </div>
+                ${isUser ? userAvHtml : ''}`;
 
             fragment.appendChild(msgDiv);
         }
@@ -7782,8 +7674,11 @@ function renderMessages() {
         var senderName = getMessageSenderName(msg, conv);
         var actualIdx = conv.messages.indexOf(msg);
 
-        html += '<div class="msg-enter ' + (isUser ? 'msg-user flex justify-end' : 'msg-assistant flex justify-start') + '">';
-        html += '<div class="max-w-[80%] msg-wrapper">';
+        var charAvHtml = _msgAvatarHTML(conv, false, senderName);
+        var userAvHtml = _msgAvatarHTML(conv, true, state.settings.userName || 'User');
+        html += '<div class="msg-enter ' + (isUser ? 'msg-user' : 'msg-assistant') + ' flex items-start gap-2 ' + (isUser ? 'justify-end' : 'justify-start') + '">';
+        if (!isUser) html += charAvHtml;
+        html += '<div class="max-w-[72%] msg-wrapper">';
         if (!isUser) html += '<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(senderName) + '</p>';
         html += '<div class="msg-bubble">' + (isUser ? escapeHtml(msg.content) : highlightDialogue(msg.content)) + '</div>';
         html += '<div class="msg-actions">';
@@ -7791,9 +7686,15 @@ function renderMessages() {
         if (!isUser) {
             html += '<button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="' + actualIdx + '" title="' + t('regenerate') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>';
         }
+        if (isUser) {
+            html += '<button class="msg-action-btn edit-btn" data-action="edit" data-msg-idx="' + actualIdx + '" title="编辑"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+            html += '<button class="msg-action-btn refresh-btn" data-action="refresh" data-msg-idx="' + actualIdx + '" title="重新发送"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>';
+        }
         html += '<button class="msg-action-btn del-btn" data-action="delete" data-msg-idx="' + actualIdx + '" title="' + t('delete_msg') + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
         html += '</div>';
-        html += '</div></div>';
+        html += '</div>';
+        if (isUser) html += userAvHtml;
+        html += '</div>';
     }
 
     if (state.isGenerating) {
@@ -7839,8 +7740,11 @@ function renderMessagesFullHistory(conv) {
         var senderName = getMessageSenderName(msg, conv);
         var actualIdx = conv.messages.indexOf(msg);
 
-        html += '<div class="msg-enter ' + (isUser ? 'msg-user flex justify-end' : 'msg-assistant flex justify-start') + '">';
-        html += '<div class="max-w-[80%] msg-wrapper">';
+        var charAvHtml = _msgAvatarHTML(conv, false, senderName);
+        var userAvHtml = _msgAvatarHTML(conv, true, state.settings.userName || 'User');
+        html += '<div class="msg-enter ' + (isUser ? 'msg-user' : 'msg-assistant') + ' flex items-start gap-2 ' + (isUser ? 'justify-end' : 'justify-start') + '">';
+        if (!isUser) html += charAvHtml;
+        html += '<div class="max-w-[72%] msg-wrapper">';
         if (!isUser) html += '<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(senderName) + '</p>';
         html += '<div class="msg-bubble">' + (isUser ? escapeHtml(msg.content) : highlightDialogue(msg.content)) + '</div>';
         html += '<div class="msg-actions">';
@@ -7848,9 +7752,15 @@ function renderMessagesFullHistory(conv) {
         if (!isUser) {
             html += '<button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="' + actualIdx + '" title="' + t('regenerate') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>';
         }
+        if (isUser) {
+            html += '<button class="msg-action-btn edit-btn" data-action="edit" data-msg-idx="' + actualIdx + '" title="编辑"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+            html += '<button class="msg-action-btn refresh-btn" data-action="refresh" data-msg-idx="' + actualIdx + '" title="重新发送"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>';
+        }
         html += '<button class="msg-action-btn del-btn" data-action="delete" data-msg-idx="' + actualIdx + '" title="' + t('delete_msg') + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
         html += '</div>';
-        html += '</div></div>';
+        html += '</div>';
+        if (isUser) html += userAvHtml;
+        html += '</div>';
     }
 
     container.innerHTML = html;
@@ -7860,15 +7770,25 @@ function renderMessagesFullHistory(conv) {
 function renderTopBar() {
     var conv = getActiveConv();
     if (!conv) return;
-    dom.chatTitle.textContent = conv.title || t('new_chat_title');
     if (conv.character) {
-        dom.charAvatar.textContent = conv.character.name.charAt(0).toUpperCase();
-        dom.charAvatar.className = 'w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0';
+        dom.chatTitle.textContent = conv.character.name || t('new_chat_title');
+        var avatarKey = conv.character._avatarKey;
+        var initial = conv.character.name ? conv.character.name.charAt(0).toUpperCase() : '?';
+        dom.charAvatar.innerHTML = '<div class="w-full h-full rounded-md bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center"><span class="text-white text-sm font-bold">' + initial + '</span></div>';
+        dom.charAvatar.className = 'w-9 h-9 rounded-md flex-shrink-0 overflow-hidden';
+        if (avatarKey) {
+            StorageService.getAvatarUrl(avatarKey).then(function(url) {
+                if (url && getActiveConv() && getActiveConv().character && getActiveConv().character._avatarKey === avatarKey) {
+                    dom.charAvatar.innerHTML = '<img src="' + url + '" alt="" class="w-full h-full object-cover rounded-md">';
+                }
+            });
+        }
         var sep = t('char_tag_separator');
-        dom.chatSubtitle.textContent = conv.character.tags ? conv.character.tags.slice(0,3).join(sep) : conv.character.name;
+        dom.chatSubtitle.textContent = conv.character.tags ? conv.character.tags.slice(0,3).join(sep) : '';
     } else {
-        dom.charAvatar.textContent = '💬';
-        dom.charAvatar.className = 'w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500 text-sm flex-shrink-0';
+        dom.chatTitle.textContent = t('new_chat_title');
+        dom.charAvatar.innerHTML = '💬';
+        dom.charAvatar.className = 'w-9 h-9 rounded-md bg-white/5 flex items-center justify-center text-zinc-500 text-sm flex-shrink-0';
         dom.chatSubtitle.textContent = t('no_character');
     }
 }
@@ -7902,11 +7822,21 @@ function renderCharacterCard() {
         // Glowing accent bar when character is loaded
         if (dom.charCardAccent) dom.charCardAccent.style.opacity = '1';
         // Populate data
-        dom.charCardAvatar.textContent = character.name ? character.name.charAt(0).toUpperCase() : '?';
         dom.charCardName.textContent = character.name || t('char_empty_name');
         var tagCount = character.tags ? character.tags.length : 0;
         dom.charCardTagCount.textContent = tagCount + ' tag' + (tagCount !== 1 ? 's' : '');
         dom.charCardPersonality.textContent = character.personality || character.description ? (character.personality || character.description).slice(0, 120) : '';
+
+        // Avatar: load PNG from OPFS if available, otherwise gradient initial letter
+        var avatarKey = character._avatarKey;
+        var initial = character.name ? character.name.charAt(0).toUpperCase() : '?';
+        dom.charCardAvatar.className = 'w-11 h-11 rounded-lg flex-shrink-0 shadow-lg shadow-amber-500/10 ring-1 ring-white/10 overflow-hidden';
+        dom.charCardAvatar.innerHTML = '<div class="w-full h-full rounded-lg bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center"><span class="text-white text-sm font-bold">' + initial + '</span></div>';
+        if (avatarKey) {
+            StorageService.getAvatarUrl(avatarKey).then(function(url) {
+                if (url) dom.charCardAvatar.innerHTML = '<img src="' + url + '" alt="" class="w-full h-full object-cover rounded-lg">';
+            });
+        }
     } else {
         // Hide character preview, show empty state
         dom.charCardPreview.classList.add('hidden');
@@ -7921,8 +7851,8 @@ function renderCharacterCard() {
     renderWorldInfoBadge();
 }
 
-function removeCharacter() {
-    if (!confirm(t('char_remove_confirm'))) return;
+async function removeCharacter() {
+    if (!await showCustomConfirm(t('char_remove_confirm'))) return;
     var conv = getActiveConv();
     if (!conv) return;
     conv.character = null;
@@ -7947,6 +7877,24 @@ function deleteCharacterFromLibrary(nameOrKey) {
     var charData = state.characters[key];
     var charName = charData.name || '';
 
+    // Check if any conversation still references this character
+    var refConvTitles = [];
+    if (state.conversations) {
+        Object.keys(state.conversations).forEach(function(cid) {
+            var c = state.conversations[cid];
+            if (c && c.character && c.character.name && c.character.name.trim().toLowerCase() === key) {
+                refConvTitles.push(c.title || t('new_chat_title'));
+            }
+        });
+    }
+
+    if (refConvTitles.length > 0) {
+        var titleList = refConvTitles.slice(0, 5).map(function(t) { return '• ' + t; }).join('\n');
+        var moreHint = refConvTitles.length > 5 ? '\n... 还有 ' + (refConvTitles.length - 5) + ' 个对话' : '';
+        showCustomAlert('无法删除角色卡「' + charName + '」，仍有 ' + refConvTitles.length + ' 个对话引用了该角色卡：\n\n' + titleList + moreHint + '\n\n请先删除这些对话，再删除角色卡。');
+        return;
+    }
+
     // Delete world books associated with this character
     var deletedWbs = 0;
     if (state.worldBooks) {
@@ -7969,15 +7917,16 @@ function deleteCharacterFromLibrary(nameOrKey) {
         }
     }
 
+    // Delete avatar from OPFS
+    if (charData._avatarKey) StorageService.removeAvatar(charData._avatarKey);
+
     delete state.characters[key];
     persistState();
 
-    if (deletedWbs > 0) {
-    }
-
     // 如果当前正在显示选择器，刷新它
-    const pickerList = document.getElementById('newChatPickerList');
-    if (pickerList && !document.getElementById('newChatPickerModal').classList.contains('hidden')) {
+    var pickerList = document.getElementById('newChatPickerList');
+    var pickerModal = document.getElementById('newChatPickerModal');
+    if (pickerList && pickerModal && !pickerModal.classList.contains('hidden')) {
         showNewChatCharacterPicker();
     }
 }
@@ -7995,6 +7944,16 @@ function openCharacterEditor() {
     dom.charEditSystemPrompt.value = c ? c.system_prompt : '';
     dom.charEditPostHistory.value = c ? c.post_history_instructions : '';
     dom.charEditCreatorNotes.value = c ? c.creator_notes : '';
+    // Show avatar
+    var avatarKey = c ? c._avatarKey : null;
+    var initial = (c && c.name) ? c.name.charAt(0).toUpperCase() : '?';
+    dom.charEditAvatar.innerHTML = '<span>' + initial + '</span>';
+    dom.charEditAvatar.className = 'w-16 h-16 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xl font-bold overflow-hidden ring-1 ring-white/10';
+    if (avatarKey) {
+        StorageService.getAvatarUrl(avatarKey).then(function(url) {
+            if (url) dom.charEditAvatar.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover rounded-lg">';
+        });
+    }
     dom.charEditorModal.classList.remove('hidden');
 }
 
@@ -8022,6 +7981,7 @@ function saveCharacterEdits() {
         group_only_greetings: conv.character ? conv.character.group_only_greetings : [],
         talkativeness: conv.character ? conv.character.talkativeness : 0.5,
         creator: conv.character ? conv.character.creator : '',
+        _avatarKey: conv.character ? conv.character._avatarKey : null,
     };
 
     var wasNew = !conv.character || !conv.character.name || conv.character.name === 'Unnamed';
@@ -8440,76 +8400,7 @@ function regenerateMessage(actualIdx) {
     renderMessagesOnly();
     renderConversationListOnly(); // title/date may change
 
-    // Re-send to API (the last message should be from user now)
-    var lastMsg = conv.messages[conv.messages.length - 1];
-    if (!lastMsg || lastMsg.role !== 'user') return;
-
-    // 群组重试时也决定下一个发言者
-    if (isGroupChat(conv)) {
-        conv._nextGroupSpeaker = getNextGroupSpeaker(conv);
-    }
-
-    streamChat(
-        function onToken(token, fullContent) {
-            var streamingEl = document.getElementById('streamingContent');
-            if (streamingEl) {
-                streamingEl.innerHTML = highlightDialogue(fullContent);
-            } else {
-                var div = document.createElement('div');
-                div.id = 'streamingMsg';
-                div.className = 'msg-assistant flex justify-start msg-enter';
-                div.innerHTML = '<div class="max-w-[80%]"><p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' +
-                    escapeHtml(getCurrentGeneratingSpeakerName(conv)) +
-                    '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
-                    highlightDialogue(fullContent) + '</div></div>';
-                dom.messagesContainer.appendChild(div);
-            }
-            dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
-        },
-        function onComplete(fullContent) {
-            var streamingEl = document.getElementById('streamingMsg');
-            if (streamingEl) streamingEl.remove();
-            var c = getActiveConv();
-            if (c && fullContent) {
-                // 优先使用生成前决定的发言者
-                var speakerForMsg = isGroupChat(c) 
-                    ? (c._nextGroupSpeaker ? c._nextGroupSpeaker.name : getCurrentGeneratingSpeakerName(c))
-                    : null;
-
-                var pushObj = { role: 'assistant', content: fullContent };
-                if (speakerForMsg) pushObj.speaker = speakerForMsg;
-                c.messages.push(pushObj);
-                c.updated = Date.now();
-
-                // 生成结束后，预先计算下一次用户消息时该谁说话
-                if (isGroupChat(c)) {
-                    c._nextGroupSpeaker = getNextGroupSpeaker(c);
-                } else {
-                    delete c._nextGroupSpeaker;
-                }
-
-                persistState();
-            }
-            state.isGenerating = false;
-            appStore.notify('isGenerating');      // 关键修复：通知UI更新输入状态
-            // 使用增量追加而不是全量渲染，避免用户浏览历史时被强制滚到底部
-            appendFinalAssistantMessage(c, fullContent);
-            renderTokenBar();                     // lightweight
-            // 只要「启用自动总结」开启，回复后就会检查是否达到上下文长度并自动总结
-            if (state.settings.summaryEnabled) {
-                setTimeout(function() { autoSummarize(); }, 500);
-            }
-        },
-        function onError(err) {
-            var streamingEl = document.getElementById('streamingMsg');
-            if (streamingEl) streamingEl.remove();
-            state.isGenerating = false;
-            appStore.notify('isGenerating');
-            renderMessagesOnly();
-            alert('Error: ' + (err.message || err));
-        }
-    );
-    updateInputState();
+    _resendToAI();
 }
 
 function copyMessageText(text) {
@@ -8559,56 +8450,62 @@ function sendMessage() {
     persistState();
     requestFullRender();
 
+    // Create streaming placeholder immediately with avatar + wave animation
+    var charAvHtml2 = _msgAvatarHTML(conv, false, getCurrentGeneratingSpeakerName(conv));
+    var streamDiv = document.createElement('div');
+    streamDiv.id = 'streamingMsg';
+    streamDiv.className = 'msg-enter msg-assistant flex items-start gap-2 justify-start';
+    streamDiv.innerHTML = charAvHtml2 +
+        '<div class="max-w-[72%] msg-wrapper">' +
+        '<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(getCurrentGeneratingSpeakerName(conv)) + '</p>' +
+        '<div class="msg-bubble" id="streamingContent">' +
+        '<div class="think-wave"><span></span><span></span><span></span></div>' +
+        '</div>' +
+        '<div class="msg-actions"></div>' +
+        '</div>';
+    dom.messagesContainer.appendChild(streamDiv);
+    dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+
     streamChat(
         function onToken(token, fullContent) {
             var streamingEl = document.getElementById('streamingContent');
             if (streamingEl) {
                 streamingEl.innerHTML = highlightDialogue(fullContent);
-            } else {
-                var div = document.createElement('div');
-                div.id = 'streamingMsg';
-                div.className = 'msg-assistant flex justify-start msg-enter';
-                div.innerHTML = '<div class="max-w-[80%]"><p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' +
-                    escapeHtml(getCurrentGeneratingSpeakerName(conv)) +
-                    '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
-                    highlightDialogue(fullContent) + '</div></div>';
-                dom.messagesContainer.appendChild(div);
             }
             dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
         },
         function onComplete(fullContent) {
-            var streamingEl = document.getElementById('streamingMsg');
-            if (streamingEl) streamingEl.remove();
+            // Transform streaming div in-place (no flash)
+            var streamMsgEl = document.getElementById('streamingMsg');
+            if (streamMsgEl) streamMsgEl.removeAttribute('id');
             var conv = getActiveConv();
             if (conv && fullContent) {
-                // 优先使用生成前决定的发言者
-                var speakerForMsg = isGroupChat(conv) 
+                var speakerForMsg = isGroupChat(conv)
                     ? (conv._nextGroupSpeaker ? conv._nextGroupSpeaker.name : getCurrentGeneratingSpeakerName(conv))
                     : null;
-
                 var pushObj = { role: 'assistant', content: fullContent };
                 if (speakerForMsg) pushObj.speaker = speakerForMsg;
                 conv.messages.push(pushObj);
                 conv.updated = Date.now();
-
-                // 生成结束后，预先计算下一次用户消息时该谁说话
-                if (isGroupChat(conv)) {
-                    conv._nextGroupSpeaker = getNextGroupSpeaker(conv);
-                } else {
-                    delete conv._nextGroupSpeaker;
-                }
-
+                if (isGroupChat(conv)) { conv._nextGroupSpeaker = getNextGroupSpeaker(conv); }
+                else { delete conv._nextGroupSpeaker; }
                 persistState();
             }
             state.isGenerating = false;
-            appStore.notify('isGenerating');      // 关键修复：通知UI更新输入状态
-            // 使用增量追加而不是全量渲染，避免用户浏览历史时被强制滚到底部
-            appendFinalAssistantMessage(conv, fullContent);
-            renderTokenBar();
-            // 只要「启用自动总结」开启，回复后就会检查是否达到上下文长度并自动总结
-            if (state.settings.summaryEnabled) {
-                setTimeout(function() { autoSummarize(); }, 500);
+            appStore.notify('isGenerating');
+            // Add action buttons to the existing streaming div
+            if (streamMsgEl) {
+                var act = streamMsgEl.querySelector('.msg-actions');
+                var sIdx = (conv ? conv.messages.length - 1 : -1);
+                if (act && !act.querySelector('.msg-action-btn')) {
+                    act.innerHTML =
+                        '<button class="msg-action-btn copy-btn" data-action="copy" data-msg-idx="' + sIdx + '" title="' + t('copy') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+                        '<button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="' + sIdx + '" title="' + t('regenerate') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>' +
+                        '<button class="msg-action-btn del-btn" data-action="delete" data-msg-idx="' + sIdx + '" title="' + t('delete_msg') + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+                }
             }
+            renderTokenBar();
+            if (state.settings.summaryEnabled) { setTimeout(function() { autoSummarize(); }, 500); }
         },
         function onError(err) {
             var streamingEl = document.getElementById('streamingMsg');
@@ -8616,7 +8513,7 @@ function sendMessage() {
             state.isGenerating = false;
             appStore.notify('isGenerating');
             renderMessagesOnly();
-            alert('Error: ' + (err.message || err));
+            showCustomAlert('Error: ' + (err.message || err));
         }
     );
     updateInputState();
@@ -8638,7 +8535,7 @@ function bindEvents() {
         dom.mentionBtn.addEventListener('click', function() {
             const conv = getActiveConv();
             if (!isGroupChat(conv)) {
-                alert(t('group_mention_no_group'));
+                showCustomAlert(t('group_mention_no_group'));
                 return;
             }
             showGroupMentionPanel(conv);
@@ -8674,24 +8571,190 @@ function bindEvents() {
         } else if (action === 'retry') {
             if (state.isGenerating) return;
             regenerateMessage(idx);
+        } else if (action === 'edit') {
+            openEditModal(idx);
+        } else if (action === 'refresh') {
+            if (state.isGenerating) return;
+            refreshUserMessage(idx);
         }
     });
 
-    // Language switcher
+    // Edit message modal
+    var _editingMsgIdx = -1;
+    function openEditModal(idx) {
+        var conv = getActiveConv();
+        if (!conv || !conv.messages[idx] || conv.messages[idx].role !== 'user') return;
+        _editingMsgIdx = idx;
+        document.getElementById('editMsgTextarea').value = conv.messages[idx].content;
+        document.getElementById('editMsgModal').classList.remove('hidden');
+        document.getElementById('editMsgTextarea').focus();
+    }
+    document.getElementById('editMsgCancel').addEventListener('click', function() {
+        document.getElementById('editMsgModal').classList.add('hidden');
+        _editingMsgIdx = -1;
+    });
+    document.getElementById('editMsgBackdrop').addEventListener('click', function() {
+        document.getElementById('editMsgModal').classList.add('hidden');
+        _editingMsgIdx = -1;
+    });
+    document.getElementById('editMsgSend').addEventListener('click', function() {
+        var newContent = document.getElementById('editMsgTextarea').value.trim();
+        if (!newContent || _editingMsgIdx < 0) return;
+        var conv = getActiveConv();
+        if (!conv || !conv.messages[_editingMsgIdx]) return;
+        // Replace user message
+        conv.messages[_editingMsgIdx].content = newContent;
+        // Delete following assistant message if exists
+        var nextIdx = _editingMsgIdx + 1;
+        if (nextIdx < conv.messages.length && conv.messages[nextIdx].role === 'assistant') {
+            conv.messages.splice(nextIdx, 1);
+        }
+        conv.updated = Date.now();
+        conv._wiCache = null;
+        conv._lastRenderedVisibleCount = 0;
+        document.getElementById('editMsgModal').classList.add('hidden');
+        _editingMsgIdx = -1;
+        persistState();
+        renderMessagesOnly();
+        // Resend to AI
+        _resendToAI();
+    });
+    // Close edit modal on Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !document.getElementById('editMsgModal').classList.contains('hidden')) {
+            document.getElementById('editMsgModal').classList.add('hidden');
+            _editingMsgIdx = -1;
+        }
+    });
+
+    // Shared helper: stream the current conversation to AI.
+    function _resendToAI() {
+        var conv = getActiveConv();
+        if (!conv) return;
+        if (state.isGenerating) return;
+        var lastMsg = conv.messages[conv.messages.length - 1];
+        if (!lastMsg || lastMsg.role !== 'user') return;
+        // Set generating state (changes send button to stop, etc.)
+        state.isGenerating = true;
+        appStore.notify('isGenerating');
+        updateInputState();
+        if (isGroupChat(conv)) {
+            conv._nextGroupSpeaker = getNextGroupSpeaker(conv);
+        }
+        // Create streaming placeholder immediately with avatar + wave animation
+        var charAvHtml = _msgAvatarHTML(conv, false, getCurrentGeneratingSpeakerName(conv));
+        var div = document.createElement('div');
+        div.id = 'streamingMsg';
+        div.className = 'msg-enter msg-assistant flex items-start gap-2 justify-start';
+        div.innerHTML = charAvHtml +
+            '<div class="max-w-[72%] msg-wrapper">' +
+            '<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(getCurrentGeneratingSpeakerName(conv)) + '</p>' +
+            '<div class="msg-bubble" id="streamingContent">' +
+            '<div class="think-wave"><span></span><span></span><span></span></div>' +
+            '</div>' +
+            '<div class="msg-actions"></div>' +
+            '</div>';
+        dom.messagesContainer.appendChild(div);
+        dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+        streamChat(
+            function onToken(token, fullContent) {
+                var streamingEl = document.getElementById('streamingContent');
+                if (streamingEl) streamingEl.innerHTML = highlightDialogue(fullContent);
+            },
+            function onComplete(fullContent) {
+                // Transform streaming div into permanent message (no flash)
+                var streamMsgEl = document.getElementById('streamingMsg');
+                if (streamMsgEl) streamMsgEl.removeAttribute('id');
+                var c = getActiveConv();
+                if (c && fullContent) {
+                    var speakerForMsg = isGroupChat(c)
+                        ? (c._nextGroupSpeaker ? c._nextGroupSpeaker.name : getCurrentGeneratingSpeakerName(c))
+                        : null;
+                    var pushObj = { role: 'assistant', content: fullContent };
+                    if (speakerForMsg) pushObj.speaker = speakerForMsg;
+                    c.messages.push(pushObj);
+                    c.updated = Date.now();
+                    if (isGroupChat(c)) c._nextGroupSpeaker = getNextGroupSpeaker(c);
+                    else delete c._nextGroupSpeaker;
+                    persistState();
+                }
+                state.isGenerating = false;
+                appStore.notify('isGenerating');
+                // Add action buttons to existing streaming div
+                if (streamMsgEl) {
+                    var act = streamMsgEl.querySelector('.msg-actions');
+                    var actualIdx = (c ? c.messages.length - 1 : -1);
+                    if (act && !act.querySelector('.msg-action-btn')) {
+                        act.innerHTML =
+                            '<button class="msg-action-btn copy-btn" data-action="copy" data-msg-idx="' + actualIdx + '" title="' + t('copy') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>' +
+                            '<button class="msg-action-btn retry-btn" data-action="retry" data-msg-idx="' + actualIdx + '" title="' + t('regenerate') + '"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>' +
+                            '<button class="msg-action-btn del-btn" data-action="delete" data-msg-idx="' + actualIdx + '" title="' + t('delete_msg') + '"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+                    }
+                }
+                renderTokenBar();
+                if (state.settings.summaryEnabled) setTimeout(function() { autoSummarize(); }, 500);
+            },
+            function onError(err) {
+                var se = document.getElementById('streamingMsg');
+                if (se) se.remove();
+                state.isGenerating = false;
+                appStore.notify('isGenerating');
+                renderMessagesOnly();
+                showCustomAlert('Error: ' + (err.message || err));
+            }
+        );
+    }
+
+    function refreshUserMessage(idx) {
+        var conv = getActiveConv();
+        if (!conv) return;
+        var msg = conv.messages[idx];
+        if (!msg || msg.role !== 'user') return;
+        var nextIdx = idx + 1;
+        if (nextIdx < conv.messages.length && conv.messages[nextIdx].role === 'assistant') {
+            conv.messages.splice(nextIdx, 1);
+        }
+        conv.updated = Date.now();
+        conv._wiCache = null;
+        conv._lastRenderedVisibleCount = 0;
+        persistState();
+        renderMessagesOnly();
+        _resendToAI();
+    }
+
+    // Language switcher (desktop buttons)
     document.querySelectorAll('.lang-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             setLanguage(this.getAttribute('data-lang'));
         });
     });
 
+    // Language switcher (mobile custom dropdown)
+    if (dom.langToggleMobile && dom.langMenuMobile) {
+        dom.langToggleMobile.addEventListener('click', function(e) {
+            e.stopPropagation();
+            dom.langMenuMobile.classList.toggle('hidden');
+        });
+        dom.langMenuMobile.querySelectorAll('.lang-menu-item').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                setLanguage(this.getAttribute('data-lang'));
+                dom.langMenuMobile.classList.add('hidden');
+            });
+        });
+        // Close menu when clicking outside
+        document.addEventListener('click', function() {
+            dom.langMenuMobile.classList.add('hidden');
+        });
+    }
+
     // Create new character from scratch
     dom.charCreateBtn.addEventListener('click', openCharacterEditor);
 
     // Import character — always-visible import button
     dom.charImportBtn.addEventListener('click', function() {
-        dom.importModal.classList.remove('hidden');
-        dom.importStatus.classList.add('hidden');
         dom.importFileInput.value = '';
+        dom.importFileInput.click();
     });
 
     // Character editor
@@ -8700,6 +8763,64 @@ function bindEvents() {
     dom.charEditorBackdrop.addEventListener('click', function() { dom.charEditorModal.classList.add('hidden'); });
     dom.charEditorCancelBtn.addEventListener('click', function() { dom.charEditorModal.classList.add('hidden'); });
     dom.charEditorSaveBtn.addEventListener('click', saveCharacterEdits);
+
+    // Avatar upload — click shows overlay briefly, then auto-hides after 100ms
+    document.querySelectorAll('.av-upload-wrap').forEach(function(wrap) {
+        wrap.addEventListener('mouseenter', function() { this.classList.add('hovering'); });
+        wrap.addEventListener('mouseleave', function() { this.classList.remove('hovering'); });
+        wrap.addEventListener('click', function() {
+            this.classList.add('hovering');
+            setTimeout(function() { wrap.classList.remove('hovering'); }, 100);
+        });
+    });
+
+    // Character editor avatar upload — handle file selection
+    if (dom.charEditAvatarInput) {
+        dom.charEditAvatarInput.addEventListener('change', async function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            try {
+                var arrayBuffer = await file.arrayBuffer();
+                var cleanBuffer = (file.type === 'image/png' || file.name.endsWith('.png')) ? stripPNGMetadata(arrayBuffer) : arrayBuffer;
+                var conv = getActiveConv();
+                var charName = (conv && conv.character && conv.character.name) || dom.charEditName.value.trim() || 'character';
+                var avatarKey = charName.trim().toLowerCase();
+                var blob = new Blob([cleanBuffer], { type: 'image/png' });
+                await StorageService.saveAvatar(avatarKey, blob);
+                if (conv && conv.character) conv.character._avatarKey = avatarKey;
+                var url = await StorageService.getAvatarUrl(avatarKey);
+                if (url) dom.charEditAvatar.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover rounded-xl">';
+            } catch (err) {
+                console.warn('[Editor] Avatar upload failed:', err);
+                showCustomAlert('头像上传失败：' + (err.message || err));
+            }
+            dom.charEditAvatarInput.value = '';
+        });
+    }
+
+    // Settings user avatar upload — handle file selection
+    if (dom.userAvatarInput) {
+        dom.userAvatarInput.addEventListener('change', async function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+            try {
+                var arrayBuffer = await file.arrayBuffer();
+                var cleanBuffer = (file.type === 'image/png' || file.name.endsWith('.png')) ? stripPNGMetadata(arrayBuffer) : arrayBuffer;
+                var blob = new Blob([cleanBuffer], { type: 'image/png' });
+                await StorageService.saveAvatar('_user_avatar', blob);
+                state.settings._userAvatarKey = '_user_avatar';
+                persistState();
+                var url = await StorageService.getAvatarUrl('_user_avatar');
+                if (url) dom.userAvatar.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover rounded-xl">';
+            } catch (err) {
+                console.warn('[Settings] User avatar upload failed:', err);
+                showCustomAlert('头像上传失败：' + (err.message || err));
+            }
+            dom.userAvatarInput.value = '';
+            var uw = document.getElementById('userAvatarWrap');
+            if (uw) { uw.style.display = 'none'; uw.offsetHeight; uw.style.display = ''; }
+        });
+    }
 
     // Conversation export all
     dom.exportAllBtn.addEventListener('click', exportAllConversations);
@@ -8722,14 +8843,18 @@ function bindEvents() {
     dom.worldBookBtn.addEventListener('click', openWorldBookModal);
 
     // Settings modal
-    function openSettings() {
+    async function openSettings() {
         applyTranslations(); // 确保设置弹窗内的 data-i18n 标签（包括新增的预设标签）被正确翻译
         dom.apiEndpoint.value = state.settings.apiEndpoint;
         dom.apiKey.value = state.settings.apiKey;
-        if (dom.saveApiKey) dom.saveApiKey.checked = !!state.settings.saveApiKey;
         dom.modelName.value = state.settings.model;
         if (state._cachedModels) updateModelDropdown(state._cachedModels, state.settings.model);
-        updateProviderBadges();
+        // Detect active provider from stored endpoint; mark as custom if no preset matches
+        var detected = detectCurrentProvider();
+        if (!detected && (state.settings.apiEndpoint || '').trim()) {
+            state._activeProvider = 'custom';
+        }
+        await updateProviderBadges();
         dom.contextLength.value = state.settings.contextLength;
         dom.contextLenVal.textContent = state.settings.contextLength;
         dom.maxTokens.value = state.settings.maxTokens;
@@ -8739,7 +8864,16 @@ function bindEvents() {
         dom.topP.value = state.settings.topP;
         dom.topPVal.textContent = state.settings.topP;
         dom.userName.value = state.settings.userName;
+        // Load user avatar
+        var userAvKey = state.settings._userAvatarKey;
+        if (userAvKey) {
+            StorageService.getAvatarUrl(userAvKey).then(function(url) {
+                if (url) dom.userAvatar.innerHTML = '<img src="' + url + '" class="w-full h-full object-cover rounded-xl">';
+            });
+        }
         dom.systemPrompt.value = state.settings.systemPrompt;
+        // Load jailbreak presets
+        _jbRefreshUI();
         dom.summaryEnabled.checked = state.settings.summaryEnabled !== false;
         if (dom.summaryThreshold) {
             dom.summaryThreshold.value = state.settings.summaryThreshold || 12;
@@ -8777,17 +8911,9 @@ function bindEvents() {
         const backend = StorageService.getBackend();
 
         if (backendEl) {
-            let label = t('storage_backend');
-            if (backend === 'opfs') {
-                label += ' (OPFS)';
-                backendEl.style.background = 'rgba(16,185,129,0.15)';
-                backendEl.style.color = '#4ade80';
-            } else {
-                label += ' (LS)';
-                backendEl.style.background = 'rgba(255,255,255,0.05)';
-                backendEl.style.color = '';
-            }
-            backendEl.textContent = label;
+            backendEl.textContent = t('storage_backend') + ' (OPFS)';
+            backendEl.style.background = 'rgba(245,158,11,0.15)';
+            backendEl.style.color = '#fbbf24';
         }
 
         // 获取并显示存储用量 + 进度条 (Phase 3)
@@ -8812,13 +8938,7 @@ function bindEvents() {
                         if (bar) bar.style.background = '#f59e0b';
                     }
                 } else {
-                    if (backend === 'opfs') {
-                        usageEl.textContent = 'OPFS（浏览器私有文件系统）';
-                    } else if (backend === 'indexeddb') {
-                        usageEl.textContent = '较高（IndexedDB）';
-                    } else {
-                        usageEl.textContent = '受限（~5-10MB）';
-                    }
+                    usageEl.textContent = 'OPFS（~50MB+）';
                     if (bar) bar.style.width = '0%';
                 }
             }).catch(function() {
@@ -8831,55 +8951,149 @@ function bindEvents() {
         // 动态调整提示文案 (使用 i18n)
         const hintEl = document.getElementById('storageHint');
         if (hintEl) {
-            let hintKey = 'storage_hint_ls';
-            if (backend === 'opfs') {
-                hintKey = 'storage_hint_opfs';
-            }
-            hintEl.textContent = t(hintKey);
+            hintEl.textContent = t('storage_hint_ls');
         }
 
         // 同步更新侧边栏的极简存储状态
         updateStorageStatusUI();
 
-        // OPFS 清理按钮（仅在 OPFS 模式下显示）
-        const clearBtn = document.getElementById('clearOPFSBtn');
+        // 清理存储按钮
+        var clearBtn = document.getElementById('clearStorageBtn');
         if (clearBtn) {
-            if (backend === 'opfs') {
-                clearBtn.style.display = 'flex';
-                // 使用 i18n 设置按钮文字
-                clearBtn.textContent = t('clear_opfs_data');
-            } else {
-                clearBtn.style.display = 'none';
-            }
-
             clearBtn.onclick = async function() {
-                if (!confirm('确定要永久删除 OPFS 中的所有数据吗？\n此操作不可恢复，页面将重新加载。')) {
+                if (!await showCustomConfirm('确定要永久删除所有本地数据吗？\n此操作不可恢复，页面将重新加载。')) {
                     return;
                 }
-
                 try {
-                    if (typeof OPFSStorage !== 'undefined' && OPFSStorage.clear) {
-                        await OPFSStorage.clear();
-                    }
-
-                    // 清理 localStorage 中的旧数据（可选）
-                    try { localStorage.removeItem('opentavern-data-v1'); } catch (e) {}
-
-                    alert('OPFS 数据已清除。页面即将重新加载...');
+                    await StorageService.clear();
+                    showCustomAlert('本地数据已清除。页面即将重新加载...');
                     location.reload();
                 } catch (err) {
-                    console.error('[Storage] 清除 OPFS 失败:', err);
-                    alert('清除失败：' + (err.message || err));
+                    showCustomAlert('清除失败：' + (err.message || err));
                 }
             };
         }
 
         dom.settingsModal.classList.remove('hidden');
     }
-    function closeSettings() {
+    // ==================== Jailbreak Presets ====================
+    var _jbEditingName = null; // non-null = editing existing, null = creating new
+    function _jbGetPresets() {
+        if (!state.settings.jailbreakPresets) state.settings.jailbreakPresets = {};
+        return state.settings.jailbreakPresets;
+    }
+    function _jbSelectPreset(name) {
+        state.settings.activeJailbreakPreset = name;
+        _jbRefreshUI();
+        dom.jbDropdownMenu.classList.add('hidden');
+    }
+    function _jbRefreshUI() {
+        var presets = _jbGetPresets();
+        var active = state.settings.activeJailbreakPreset || '';
+        dom.jbDropdownLabel.textContent = active || '-- 不使用 --';
+        // Rebuild menu
+        var html = '<button class="jb-menu-item flex items-center justify-between w-full text-left px-3 py-2 text-sm text-zinc-300 transition-all" data-jb-name="">-- 不使用 --<span></span></button>';
+        Object.keys(presets).forEach(function(name) {
+            var dot = name === active ? ' ●' : '';
+            html += '<div class="jb-menu-item flex items-center justify-between w-full text-left px-3 py-2 text-sm ' + (name === active ? 'text-amber-400' : 'text-zinc-300') + ' cursor-pointer" data-jb-name="' + name.replace(/"/g, '&quot;') + '">' +
+                '<span class="flex-1 jb-item-name">' + name + '</span>' +
+                '<span class="flex items-center gap-1.5 flex-shrink-0">' +
+                '<span class="jb-item-dot text-[10px]">' + dot + '</span>' +
+                '<span class="jb-item-edit w-5 h-5 rounded-full flex items-center justify-center text-[10px] bg-blue-500/40 text-white" title="编辑">&#9998;</span>' +
+                '<span class="jb-item-del w-5 h-5 rounded-full flex items-center justify-center text-[11px] bg-red-500/40 text-white" title="删除">&#128465;</span>' +
+                '</span></div>';
+        });
+        dom.jbDropdownMenu.innerHTML = html;
+        // Wire clicks: name area = select, edit icon = open modal
+        dom.jbDropdownMenu.querySelectorAll('.jb-menu-item').forEach(function(item) {
+            var name = item.getAttribute('data-jb-name');
+            var nameEl = item.querySelector('.jb-item-name');
+            if (nameEl) {
+                nameEl.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    _jbSelectPreset(name);
+                });
+            } else {
+                // Plain button (-- 不使用 --), click on the whole item
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    _jbSelectPreset(name);
+                });
+            }
+            var editBtn = item.querySelector('.jb-item-edit');
+            if (editBtn && name) {
+                editBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    _jbOpenEditModal(name);
+                });
+            }
+            var delBtn = item.querySelector('.jb-item-del');
+            if (delBtn && name) {
+                delBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var nameToDelete = name;
+                    showCustomConfirm('删除预设「' + nameToDelete + '」？', '删除', '取消').then(function(ok) {
+                        if (!ok) return;
+                        delete _jbGetPresets()[nameToDelete];
+                        if (state.settings.activeJailbreakPreset === nameToDelete) state.settings.activeJailbreakPreset = '';
+                        persistState();
+                        _jbRefreshUI();
+                    });
+                });
+            }
+        });
+    }
+    // Open edit modal (name=null for new, name=string for edit)
+    function _jbOpenEditModal(name) {
+        _jbEditingName = name || null;
+        dom.jbEditTitle.textContent = name ? '编辑预设' : '新建预设';
+        dom.jbEditName.value = name || '';
+        dom.jbEditContent.value = name ? (_jbGetPresets()[name] || '') : '';
+        dom.jbEditModal.classList.remove('hidden');
+        (dom.jbEditName || dom.jbEditContent).focus();
+    }
+    function _jbCloseEditModal() {
+        dom.jbEditModal.classList.add('hidden');
+        _jbEditingName = null;
+    }
+    // Save from modal
+    if (dom.jbEditSave) dom.jbEditSave.addEventListener('click', function() {
+        var newName = dom.jbEditName.value.trim();
+        var content = dom.jbEditContent.value;
+        if (!newName) { showToast('请输入预设名称'); return; }
+        var presets = _jbGetPresets();
+        // Check duplicate (only if creating new or renaming to a different existing name)
+        if (presets[newName] && _jbEditingName !== newName) {
+            showToast('预设名称「' + newName + '」已存在');
+            return;
+        }
+        // If renaming, delete old key
+        if (_jbEditingName && _jbEditingName !== newName) {
+            delete presets[_jbEditingName];
+        }
+        presets[newName] = content;
+        state.settings.activeJailbreakPreset = newName;
+        persistState();
+        _jbCloseEditModal();
+        _jbRefreshUI();
+    });
+    if (dom.jbEditCancel) dom.jbEditCancel.addEventListener('click', _jbCloseEditModal);
+    if (dom.jbEditBackdrop) dom.jbEditBackdrop.addEventListener('click', _jbCloseEditModal);
+    // Dropdown toggle
+    if (dom.jbDropdownBtn) dom.jbDropdownBtn.addEventListener('click', function(e) {
+        e.stopPropagation(); _jbRefreshUI(); dom.jbDropdownMenu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', function(e) {
+        if (dom.jbDropdownMenu && !dom.jbDropdownMenu.classList.contains('hidden')) {
+            if (!dom.jbDropdownMenu.parentElement.contains(e.target)) dom.jbDropdownMenu.classList.add('hidden');
+        }
+    });
+    // New preset button
+    if (dom.jbNewBtn) dom.jbNewBtn.addEventListener('click', function() { _jbOpenEditModal(null); });
+
+    async function closeSettings() {
         state.settings.apiEndpoint = dom.apiEndpoint.value.trim();
         state.settings.apiKey = dom.apiKey.value.trim();
-        state.settings.saveApiKey = dom.saveApiKey ? !!dom.saveApiKey.checked : false;
         state.settings.model = dom.modelName.value.trim() || 'gpt-4o';
         state.settings.contextLength = parseInt(dom.contextLength.value) || 10;
         state.settings.maxTokens = parseInt(dom.maxTokens.value) || 1024;
@@ -8908,12 +9122,12 @@ function bindEvents() {
         // Auto-save provider config
         var providerKey = detectCurrentProvider();
         if (providerKey) {
-            saveProviderConfig(providerKey, {
+            await saveProviderConfig(providerKey, {
                 endpoint: dom.apiEndpoint.value.trim(),
                 apiKey: dom.apiKey.value.trim(),
                 model: dom.modelName.value.trim()
             });
-            showToast('✓ Auto-saved config for ' + API_PRESETS[providerKey].label);
+            showToast('AI供应商信息已保存');
         }
 
         persistState();
@@ -8944,6 +9158,7 @@ function bindEvents() {
     if (dom.presetDeepseek) dom.presetDeepseek.addEventListener('click', function() { applyMainApiPreset('deepseek'); });
     if (dom.presetGrok) dom.presetGrok.addEventListener('click', function() { applyMainApiPreset('grok'); });
     if (dom.presetOpenrouter) dom.presetOpenrouter.addEventListener('click', function() { applyMainApiPreset('openrouter'); });
+    if (dom.presetCustom) dom.presetCustom.addEventListener('click', function() { applyMainApiPreset('custom'); });
 
     // Update provider button active state when endpoint is manually edited
     if (dom.apiEndpoint) dom.apiEndpoint.addEventListener('input', updateProviderBadges);
@@ -9051,88 +9266,124 @@ function bindEvents() {
     dom.greetingBackdrop.addEventListener('click', finalizeGreetingModal);
 
     // File import
-    dom.importFileInput.addEventListener('change', function(e) {
+    dom.importFileInput.addEventListener('change', async function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-            try {
-                var json = JSON.parse(ev.target.result);
-                var character = importCharacterCard(json);
-                var conv = getActiveConv();
-                if (!conv) { newConversation(); conv = getActiveConv(); }
+        var isPNG = file.name && file.name.toLowerCase().endsWith('.png');
+        try {
+            var json, arrayBuffer;
+            if (isPNG) {
+                // Read PNG as ArrayBuffer, parse embedded chardata
+                arrayBuffer = await file.arrayBuffer();
+                json = parsePNGCharacterCard(arrayBuffer);
+            } else {
+                // Read JSON as text
+                var text = await file.text();
+                json = JSON.parse(text);
+            }
+            var character = importCharacterCard(json);
+            var conv = getActiveConv();
+            if (!conv) { newConversation(); conv = getActiveConv(); }
 
-                // Always create a new conversation when importing — preserves old conversation
-                // and its world books intact. Avoids accidentally deleting previous character's data.
-                var hasMsgs = conv.messages.some(function(m) { return m.role !== 'system'; });
-                var hasChar = !!(conv.character && conv.character.name);
-                if (hasMsgs || hasChar) {
-                    saveCurrentConversation();
-                    var newConv = defaultConversation();
-                    state.conversations[newConv.id] = newConv;
-                    state.conversationOrder.unshift(newConv.id);
-                    state.activeConvId = newConv.id;
-                    conv = newConv;
+            // Always create a new conversation when importing — preserves old conversation
+            // and its world books intact. Avoids accidentally deleting previous character's data.
+            var hasMsgs = conv.messages.some(function(m) { return m.role !== 'system'; });
+            var hasChar = !!(conv.character && conv.character.name);
+            if (hasMsgs || hasChar) {
+                saveCurrentConversation();
+                var newConv = defaultConversation();
+                state.conversations[newConv.id] = newConv;
+                state.conversationOrder.unshift(newConv.id);
+                state.activeConvId = newConv.id;
+                conv = newConv;
+            }
+
+            // Store avatar as clean PNG blob in OPFS
+            if (isPNG && arrayBuffer) {
+                try {
+                    var cleanBuffer = stripPNGMetadata(arrayBuffer);
+                    var avatarKey = character.name.trim().toLowerCase();
+                    var avatarBlob = new Blob([cleanBuffer], { type: 'image/png' });
+                    await StorageService.saveAvatar(avatarKey, avatarBlob);
+                    character._avatarKey = avatarKey;
+                } catch (avErr) {
+                    console.warn('[Import] Avatar storage failed:', avErr);
                 }
+            }
 
-                conv.character = character;
-                conv.title = t('chat_with') + character.name;
-                conv.messages = [];
-                conv.worldBookIds = [];
+            conv.character = character;
+            conv.title = t('chat_with') + character.name;
+            conv.messages = [];
+            conv.worldBookIds = [];
 
-                // 注册到全局角色库
-                if (character.name) {
-                    const key = character.name.trim().toLowerCase();
-                    if (!state.characters) state.characters = {};
-                    state.characters[key] = JSON.parse(JSON.stringify(character));
+            // 注册到全局角色库
+            if (character.name) {
+                const key = character.name.trim().toLowerCase();
+                if (!state.characters) state.characters = {};
+                state.characters[key] = JSON.parse(JSON.stringify(character));
+            }
+
+            // 从角色卡导入世界书 (character_book / world book)
+            // V2/V3: under data; also check top-level for variant formats
+            var charBook = (json.data && (json.data.character_book || json.data.world_book))
+                || json.character_book
+                || json.world_book;
+            if (charBook && charBook.entries && charBook.entries.length > 0) {
+                try {
+                    var normalized = normalizeImportedWorldInfo(charBook);
+                    var wbName = normalized.name || (character.name + ' 世界书');
+                    var wbId = 'wb-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+                    if (!state.worldBooks) state.worldBooks = {};
+                    state.worldBooks[wbId] = {
+                        id: wbId,
+                        name: wbName,
+                        characterName: character.name,
+                        entries: normalized.entries,
+                        created: Date.now()
+                    };
+                    conv.worldBookIds.push(wbId);
+                } catch (wbErr) {
+                    console.warn('[Import] 世界书导入失败:', wbErr);
                 }
+            }
 
-                // 从角色卡导入世界书 (character_book / world book)
-                // V2/V3: under data; also check top-level for variant formats
-                var charBook = (json.data && (json.data.character_book || json.data.world_book))
-                    || json.character_book
-                    || json.world_book;
-                if (charBook && charBook.entries && charBook.entries.length > 0) {
-                    try {
-                        var normalized = normalizeImportedWorldInfo(charBook);
-                        var wbName = normalized.name || (character.name + ' 世界书');
-                        var wbId = 'wb-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-                        if (!state.worldBooks) state.worldBooks = {};
-                        state.worldBooks[wbId] = {
-                            id: wbId,
-                            name: wbName,
-                            characterName: character.name,
-                            entries: normalized.entries,
-                            created: Date.now()
-                        };
-                        conv.worldBookIds.push(wbId);
-                    } catch (wbErr) {
-                        console.warn('[Import] 世界书导入失败:', wbErr);
-                    }
-                }
+            var charName = character.name;
+            var userName = state.settings.userName || 'User';
+            // Collect all unique greetings (first_mes + alternate_greetings)
+            var allG = [character.first_mes].concat(character.alternate_greetings || []).filter(function(g) { return g && g.trim(); });
+            var seenG = {}, uniqG = [];
+            for (var gi = 0; gi < allG.length; gi++) {
+                if (!seenG[allG[gi].trim()]) { seenG[allG[gi].trim()] = true; uniqG.push(allG[gi].trim()); }
+            }
+            var hasMultipleGreetings = uniqG.length > 1;
 
-                var charName = character.name;
-                var userName = state.settings.userName || 'User';
+            if (!hasMultipleGreetings) {
                 var firstMes = replacePlaceholders(character.first_mes, charName, userName);
                 if (firstMes) {
                     conv.messages.push({ role: 'assistant', content: firstMes });
                 }
-
-                conv.updated = Date.now();
-                persistState();
-                renderAll();
-                dom.importModal.classList.add('hidden');
-                dom.importStatus.classList.remove('hidden');
-                dom.importStatus.textContent = t('import_success') + character.name;
-                dom.importStatus.className = 'text-xs text-emerald-400 mt-3 text-center';
-                setTimeout(function() { dom.importStatus.classList.add('hidden'); }, 2500);
-            } catch(err) {
-                dom.importStatus.classList.remove('hidden');
-                dom.importStatus.textContent = t('import_error') + ': ' + err.message;
-                dom.importStatus.className = 'text-xs text-red-400 mt-3 text-center';
             }
-        };
-        reader.readAsText(file);
+
+            conv.updated = Date.now();
+            persistState();
+            if (hasMultipleGreetings) {
+                // Show greeting selector, which will handle rendering after user picks
+                showGreetingSelector(character, conv);
+            } else {
+                renderAll();
+            }
+            if (isMobile()) closeSidebar();
+            dom.importModal.classList.add('hidden');
+            showToast(character.name + ' ' + t('import_success') + (isPNG ? ' (PNG)' : ''));
+        } catch(err) {
+            console.error('[Import] Failed:', err);
+            // Show import modal so the error message is visible
+            dom.importModal.classList.remove('hidden');
+            dom.importStatus.classList.remove('hidden');
+            dom.importStatus.textContent = t('import_error') + ': ' + err.message;
+            dom.importStatus.className = 'text-xs text-red-400 mt-3 text-center';
+            showToast(t('import_error') + ': ' + err.message);
+        }
     });
 
     // Prompt viewer
@@ -9148,7 +9399,7 @@ function bindEvents() {
             dom.promptViewerModal.classList.remove('hidden');
         } catch (err) {
             console.error('showFullPrompt error:', err);
-            alert('无法生成提示词预览：' + (err.message || err));
+            showCustomAlert('无法生成提示词预览：' + (err.message || err));
         }
     }
     dom.viewPromptBtn.addEventListener('click', showFullPrompt);
@@ -9301,6 +9552,19 @@ async function init() {
         }
     });
 
+    // Sync mobile language toggle label + active item
+    if (dom.langToggleLabel) {
+        var initLabels = { 'zh-CN': '简', 'zh-TW': '繁', 'en': 'EN' };
+        dom.langToggleLabel.textContent = initLabels[state.settings.lang] || state.settings.lang;
+    }
+    if (dom.langMenuMobile) {
+        dom.langMenuMobile.querySelectorAll('.lang-menu-item').forEach(function(item) {
+            if (item.getAttribute('data-lang') === state.settings.lang) {
+                item.classList.add('text-amber-400');
+            }
+        });
+    }
+
     applyTranslations();
     renderAll();
 
@@ -9330,7 +9594,7 @@ async function init() {
     if (shouldShowAnnouncement()) {
         setTimeout(function() {
             // 只有在没有任何其他弹窗打开时才显示，避免冲突
-            var hasOtherModalOpen = 
+            var hasOtherModalOpen =
                 (dom.settingsModal && !dom.settingsModal.classList.contains('hidden')) ||
                 (dom.importModal && !dom.importModal.classList.contains('hidden')) ||
                 (dom.charEditorModal && !dom.charEditorModal.classList.contains('hidden')) ||
@@ -9341,6 +9605,7 @@ async function init() {
             }
         }, 680);
     }
+
 }
 
 // 启动应用（支持异步存储初始化）
@@ -9348,26 +9613,9 @@ init().then(function() {
     // 更新侧边栏极简存储状态图标
     updateStorageStatusUI();
 
-    // Phase 4: 备份提醒（仅在使用 IndexedDB 时强提醒）
+    // Phase 4: 备份提醒（仅在使用 OPFS 时强提醒）
     showBackupReminderIfNeeded();
 
-    // 成功迁移到 IndexedDB 后的友好提示
-    if (window._showStorageMigrationNotice) {
-        setTimeout(function() {
-            const notice = document.createElement('div');
-            notice.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(16,185,129,0.9);color:white;padding:10px 18px;border-radius:999px;font-size:13px;z-index:9999;';
-            notice.textContent = '✓ 数据已迁移到 IndexedDB（支持更大容量）';
-            document.body.appendChild(notice);
-
-            setTimeout(function() {
-                notice.style.transition = 'opacity 0.4s ease';
-                notice.style.opacity = '0';
-                setTimeout(function() { notice.remove(); }, 400);
-            }, 2800);
-        }, 900);
-
-        delete window._showStorageMigrationNotice;
-    }
 }).catch(function(err) {
     console.error('[App] Initialization failed:', err);
     // 极端降级：确保 DOM 缓存和事件绑定至少能工作
