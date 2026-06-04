@@ -25,6 +25,15 @@ tailwind.config = {
     }
 }
 </script>
+<script>
+// Prevent theme flash: apply saved theme before page renders
+(function() {
+    try {
+        var theme = localStorage.getItem('opentavern-theme');
+        if (theme === 'light') document.documentElement.classList.add('light-mode');
+    } catch(e) {}
+})();
+</script>
 <style>
 :root {
     --blur-intensity: 20px;
@@ -36,6 +45,371 @@ tailwind.config = {
     --accent: #f59e0b;
     --accent-secondary: #ec4899;
     --accent-glow: rgba(245,158,11,0.25);
+}
+
+/* ============================================================
+   Light Mode — "Warm Paper" Theme
+   Design: cream paper + deep amber ink
+   Accent shifts from #f59e0b (bright amber) to #c2410c (deep amber)
+   Depth: shadows replace glow, white frosted glass replaces dark glass
+   ============================================================ */
+
+body.light-mode {
+    background: #f8f4ef;
+    color: #1c1917;
+}
+
+/* ---- Shader & vignette: subtly warm, barely visible ---- */
+body.light-mode #shaderCanvas { opacity: 0.08; }
+body.light-mode #vignetteOverlay {
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(248,244,239,0.35) 80%, rgba(240,235,228,0.55) 100%);
+}
+
+/* ===== Glass panels — white frosted glass + shadow depth ===== */
+body.light-mode .glass {
+    --glass-bg: rgba(255,255,255,0.72);
+    --glass-bg-hover: rgba(255,255,255,0.88);
+    --glass-bg-active: rgba(255,255,255,0.95);
+    --glass-border: rgba(0,0,0,0.10);
+    --glass-border-hover: rgba(0,0,0,0.16);
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04);
+}
+body.light-mode .glass-hover:hover { background: var(--glass-bg-hover); }
+
+/* ---- Buttons: ALL buttons get visible border, no more flat blending ---- */
+body.light-mode button {
+    border: 1px solid rgba(0,0,0,0.11);
+}
+/* Glass buttons already define border via --glass-border, keep in sync */
+body.light-mode button.glass {
+    border-color: rgba(0,0,0,0.10);
+}
+/* Solid amber buttons: border matches bg, depth comes from shadow */
+body.light-mode button.bg-amber-500 {
+    border-color: rgba(194,65,12,0.15);
+}
+
+/* ---- Dialogue highlight (quoted text in messages) ---- */
+body.light-mode .dialogue-highlight {
+    color: #c2410c !important;
+}
+
+/* ===== Accent: deep amber (like ink on paper) ===== */
+body.light-mode {
+    --accent: #c2410c;
+    --accent-glow: rgba(194,65,12,0.12);
+}
+
+/* --- Tailwind amber utility overrides → #c2410c --- */
+/* Solid backgrounds */
+body.light-mode .bg-amber-500 { background-color: #c2410c !important; }
+body.light-mode .hover\\:bg-amber-400:hover { background-color: #d97706 !important; }
+body.light-mode .active\\:bg-amber-600:active { background-color: #9a3412 !important; }
+/* Tinted backgrounds */
+body.light-mode .bg-amber-500\/10 { background: rgba(194,65,12,0.08) !important; }
+body.light-mode .bg-amber-500\/20 { background: rgba(194,65,12,0.14) !important; }
+body.light-mode .bg-amber-500\/30 { background: rgba(194,65,12,0.18) !important; }
+body.light-mode .hover\\:bg-amber-500\/10:hover { background: rgba(194,65,12,0.08) !important; }
+body.light-mode .hover\\:bg-amber-500\/20:hover { background: rgba(194,65,12,0.14) !important; }
+body.light-mode .hover\\:bg-amber-500\/30:hover { background: rgba(194,65,12,0.20) !important; }
+/* Text */
+body.light-mode .text-amber-200 { color: #c2410c !important; }
+body.light-mode .text-amber-300,
+body.light-mode .text-amber-400 { color: #c2410c !important; }
+body.light-mode .text-amber-500 { color: #b45309 !important; }
+body.light-mode .hover\\:text-amber-300:hover,
+body.light-mode .hover\\:text-amber-400:hover { color: #c2410c !important; }
+/* Borders */
+body.light-mode .border-amber-500,
+body.light-mode .border-amber-400 { border-color: rgba(194,65,12,0.40) !important; }
+body.light-mode .border-amber-500\/30 { border-color: rgba(194,65,12,0.25) !important; }
+body.light-mode .border-amber-500\/40 { border-color: rgba(194,65,12,0.32) !important; }
+body.light-mode .hover\\:border-amber-500\/30:hover { border-color: rgba(194,65,12,0.28) !important; }
+body.light-mode .hover\\:border-amber-500\/40:hover { border-color: rgba(194,65,12,0.38) !important; }
+/* Shadows */
+body.light-mode .shadow-amber-500\/20,
+body.light-mode .shadow-amber-500\/35 {
+    --tw-shadow: 0 0 15px -3px rgba(194,65,12,0.18) !important;
+    --tw-shadow-colored: 0 0 15px -3px rgba(194,65,12,0.18) !important;
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important;
+}
+body.light-mode .hover\\:shadow-amber-500\/35:hover {
+    --tw-shadow: 0 0 20px -5px rgba(194,65,12,0.22) !important;
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow) !important;
+}
+body.light-mode .shadow-lg {
+    --tw-shadow-colored: 0 10px 15px -3px rgba(0,0,0,0.10), 0 4px 6px -4px rgba(0,0,0,0.08) !important;
+}
+/* Checkbox accent */
+body.light-mode input[type="checkbox"].accent-amber-500 { accent-color: #c2410c; }
+/* Focus rings */
+body.light-mode .ring-amber-500 { --tw-ring-color: rgba(194,65,12,0.5) !important; }
+body.light-mode .focus\\:ring-amber-500:focus { --tw-ring-color: rgba(194,65,12,0.5) !important; }
+
+/* ===== Range slider — visible track on light bg ===== */
+body.light-mode input[type="range"] {
+    background: rgba(0,0,0,0.14);
+}
+body.light-mode input[type="range"]::-webkit-slider-thumb {
+    background: #c2410c;
+    border-color: rgba(0,0,0,0.10);
+    box-shadow: 0 0 8px rgba(194,65,12,0.20);
+}
+
+/* ===== Sidebar ===== */
+body.light-mode #sidebar {
+    background: rgba(248,244,239,0.85);
+    border-color: rgba(0,0,0,0.07);
+    box-shadow: 8px 0 30px rgba(0,0,0,0.06) !important;
+}
+body.light-mode #sidebar .border-white\/5,
+body.light-mode #sidebar .border-white\/10 { border-color: rgba(0,0,0,0.06); }
+
+/* ===== Top bar & input area ===== */
+body.light-mode #chatTopBar {
+    background: rgba(248,244,239,0.78);
+    border-color: rgba(0,0,0,0.07);
+}
+body.light-mode #chatTopBar + div { border-color: rgba(0,0,0,0.07); }
+body.light-mode .flex-shrink-0.px-4.py-3.border-t.border-white\/5 {
+    background: rgba(248,244,239,0.78);
+    border-color: rgba(0,0,0,0.07);
+}
+
+/* ===== Text — warm charcoals ===== */
+body.light-mode .text-zinc-100 { color: #1c1917; }
+body.light-mode .text-zinc-200 { color: #292524; }
+body.light-mode .text-zinc-300 { color: #3d3935; }
+body.light-mode .text-zinc-400 { color: #57534e; }
+body.light-mode .text-zinc-500 { color: #78716c; }
+body.light-mode .text-zinc-600 { color: #a8a29e; }
+
+/* Character name above message → accent */
+body.light-mode .msg-assistant .msg-wrapper > p {
+    color: #c2410c !important;
+}
+
+/* Hint / tip text → warmer, more visible */
+body.light-mode [data-i18n$="_hint"],
+body.light-mode [data-i18n*="_hint"] {
+    color: #b45309;
+}
+
+/* ===== Background overrides ===== */
+body.light-mode .bg-zinc-950\/25 { background: rgba(248,244,239,0.78); }
+body.light-mode .bg-zinc-950\/15 { background: rgba(248,244,239,0.65); }
+body.light-mode .bg-zinc-950\/30 { background: rgba(248,244,239,0.82); }
+body.light-mode .bg-zinc-900 { background: #f0ebe4; }
+body.light-mode .bg-zinc-800 { background: #e8e3db; }
+body.light-mode .bg-zinc-950 { background: #f5f0ea; }
+body.light-mode .bg-black\/10 { background: rgba(0,0,0,0.03); }
+body.light-mode .bg-black\/20 { background: rgba(0,0,0,0.04); }
+body.light-mode .bg-black\/30 { background: rgba(0,0,0,0.06); }
+body.light-mode .bg-black\/40 { background: rgba(0,0,0,0.08); }
+body.light-mode .bg-black\/50 { background: rgba(0,0,0,0.12); }
+body.light-mode .bg-black\/65 { background: rgba(0,0,0,0.22); }
+body.light-mode .bg-black\/70 { background: rgba(0,0,0,0.25); }
+body.light-mode .bg-white\/5 { background: rgba(0,0,0,0.05); }
+body.light-mode .bg-white\/10 { background: rgba(0,0,0,0.08); }
+body.light-mode .bg-white\/15 { background: rgba(0,0,0,0.11); }
+body.light-mode .bg-white\/20 { background: rgba(0,0,0,0.14); }
+
+/* ===== Hover states ===== */
+body.light-mode .hover\\:bg-white\/5:hover { background: rgba(0,0,0,0.05); }
+body.light-mode .hover\\:bg-white\/10:hover { background: rgba(0,0,0,0.08); }
+body.light-mode .hover\\:bg-white\/15:hover { background: rgba(0,0,0,0.11); }
+body.light-mode .hover\\:bg-white\/20:hover { background: rgba(0,0,0,0.14); }
+body.light-mode .hover\\:text-zinc-200:hover { color: #292524; }
+body.light-mode .hover\\:text-zinc-300:hover { color: #3d3935; }
+
+/* ===== Messages ===== */
+body.light-mode .msg-user .msg-bubble {
+    background: rgba(194,65,12,0.06);
+    border-color: rgba(194,65,12,0.16);
+}
+body.light-mode .msg-assistant .msg-bubble {
+    background: rgba(255,255,255,0.65);
+    border-color: rgba(0,0,0,0.07);
+}
+
+/* ===== Conversation list ===== */
+body.light-mode .conv-item.active {
+    background: rgba(194,65,12,0.06);
+    border-left-color: #c2410c;
+}
+body.light-mode .conv-item:hover:not(.active) { background: rgba(0,0,0,0.025); }
+
+/* ===== Inputs & textareas ===== */
+body.light-mode input, body.light-mode textarea {
+    background: rgba(0,0,0,0.018);
+    color: #1c1917;
+    border-color: rgba(0,0,0,0.10);
+}
+body.light-mode input::placeholder,
+body.light-mode textarea::placeholder { color: #a8a29e; }
+
+/* ===== Scrollbar ===== */
+body.light-mode ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.10); }
+body.light-mode ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.18); }
+
+/* ===== Modal system ===== */
+/* Lighter overlay */
+body.light-mode .modal-overlay {
+    background: rgba(0,0,0,0.22);
+}
+/* Modal cards — clean white with prominent shadow */
+body.light-mode .modal-overlay .glass {
+    background: rgba(255,255,255,0.94);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+    border-color: rgba(0,0,0,0.08);
+}
+/* Modal headers with dark backgrounds → lighten */
+body.light-mode .modal-overlay .bg-black\/20,
+body.light-mode .modal-overlay .bg-black\/30,
+body.light-mode .modal-overlay .bg-black\/40 {
+    background: rgba(0,0,0,0.03);
+    border-bottom-color: rgba(0,0,0,0.07);
+}
+/* World book sidebar panel */
+body.light-mode #wiMobileNav { background: rgba(0,0,0,0.03); }
+body.light-mode #worldBookModal .bg-black\/10 { background: rgba(0,0,0,0.03); }
+body.light-mode #worldBookModal .bg-black\/20 { background: rgba(0,0,0,0.04); }
+body.light-mode #worldBookModal .bg-black\/30 { background: rgba(0,0,0,0.06); }
+
+/* World book — editor pane + chip container */
+body.light-mode #worldBookModal #wiEditorContainer {
+    background: transparent !important;
+}
+body.light-mode #wiKeyChips {
+    background: rgba(0,0,0,0.03) !important;
+}
+
+/* ===== Dividers & borders ===== */
+body.light-mode .border-white\/5 { border-color: rgba(0,0,0,0.06); }
+body.light-mode .border-white\/10 { border-color: rgba(0,0,0,0.10); }
+
+/* ===== Status blocks ===== */
+body.light-mode .status-block {
+    background: rgba(0,0,0,0.022);
+    border-color: rgba(0,0,0,0.07);
+}
+body.light-mode .status-block .status-row { color: #3d3935; }
+body.light-mode .status-block .status-row .status-icon { color: #78716c; }
+body.light-mode .status-block .status-row .status-label { color: #3d3935; }
+body.light-mode .status-block .status-row b { color: #1c1917; }
+body.light-mode .status-block .status-info { color: #44403c; }
+body.light-mode .status-block .status-section { color: #b45309; font-weight: 600; }
+body.light-mode .status-block .status-header { color: #b45309; }
+body.light-mode .status-block .status-badge {
+    background: rgba(194,65,12,0.10);
+    color: #b45309;
+}
+body.light-mode .status-block.script-rendered {
+    background: transparent;
+    border-color: rgba(0,0,0,0.07);
+}
+
+/* ===== Mobile sidebar backdrop ===== */
+body.light-mode #sidebarBackdrop {
+    background: rgba(0,0,0,0.18) !important;
+}
+
+/* ===== Dropdown menus (model selector, jailbreak selector, etc.) ===== */
+body.light-mode [style*="background:rgba(24,24,27,0.95)"],
+body.light-mode [style*="background: rgba(24,24,27,0.95)"] {
+    background: rgba(255,255,255,0.96) !important;
+    border-color: rgba(0,0,0,0.10) !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10) !important;
+}
+
+/* ===== Avatar overlay ===== */
+body.light-mode .av-overlay { background: rgba(0,0,0,0.05); }
+
+/* ===== Action buttons (amber → deep amber on hover) ===== */
+body.light-mode .hover\\:bg-amber-500\/20:hover { background: rgba(194,65,12,0.10); }
+body.light-mode .hover\\:bg-amber-500\/10:hover { background: rgba(194,65,12,0.06); }
+body.light-mode .hover\\:bg-amber-500\/5:hover { background: rgba(194,65,12,0.04); }
+
+/* ===== Preset buttons ===== */
+/* Non-active preset buttons: visible border + readable text on light bg */
+body.light-mode .preset-btn {
+    background: rgba(0,0,0,0.04) !important;
+    color: #4a4a4a !important;
+    border-color: rgba(0,0,0,0.12) !important;
+}
+body.light-mode .preset-btn:hover {
+    background: rgba(0,0,0,0.07) !important;
+    border-color: rgba(0,0,0,0.18) !important;
+}
+/* Active state — already handled below, but keeping both for clarity */
+body.light-mode .preset-btn.active {
+    background: rgba(194,65,12,0.12) !important;
+    color: #c2410c !important;
+    border-color: rgba(194,65,12,0.30) !important;
+}
+
+/* ===== JS-injected inline amber styles → deep amber ===== */
+body.light-mode [style*="rgba(245,158,11,0.15)"] { background: rgba(194,65,12,0.10) !important; }
+body.light-mode [style*="rgba(245,158,11,0.2)"] { background: rgba(194,65,12,0.12) !important; }
+body.light-mode [style*="rgba(245,158,11,0.6)"] { border-color: rgba(194,65,12,0.40) !important; }
+body.light-mode [style*="rgba(245,158,11,0.9)"] { background: rgba(194,65,12,0.88) !important; }
+
+/* ===== Emerald green → deep amber in light mode ===== */
+body.light-mode .text-emerald-400,
+body.light-mode .text-emerald-400\/70 { color: #c2410c !important; }
+body.light-mode .hover\\:text-emerald-300:hover { color: #d97706 !important; }
+body.light-mode .border-emerald-500\/20 { border-color: rgba(194,65,12,0.25) !important; }
+body.light-mode .bg-emerald-500\/10 { background: rgba(194,65,12,0.08) !important; }
+body.light-mode .bg-emerald-500\/20 { background: rgba(194,65,12,0.14) !important; }
+body.light-mode .hover\\:bg-emerald-500\/20:hover { background: rgba(194,65,12,0.12) !important; }
+
+/* ===== Think wave dots (loading indicator) ===== */
+body.light-mode .think-wave span { background: rgba(194,65,12,0.35); }
+body.light-mode .think-wave span:nth-child(2) { background: rgba(194,65,12,0.50); }
+body.light-mode .think-wave span:nth-child(3) { background: rgba(194,65,12,0.65); }
+
+/* ===== Retry button hover ===== */
+body.light-mode .msg-action-btn.retry-btn:hover {
+    color: #c2410c;
+    border-color: rgba(194,65,12,0.25);
+    background: rgba(194,65,12,0.06);
+}
+
+/* ===== Avatar upload hover ===== */
+body.light-mode .av-upload-wrap.hovering .av-preview {
+    box-shadow: 0 0 0 2px rgba(194,65,12,0.30);
+}
+
+/* Quick Reply buttons — light mode */
+body.light-mode .qr-btn {
+    color: #4a4a4a;
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.10);
+}
+body.light-mode .qr-btn:hover { background: rgba(194,65,12,0.10); border-color: rgba(194,65,12,0.25); color: #c2410c; }
+body.light-mode .qr-btn:active { background: rgba(194,65,12,0.16); }
+body.light-mode #qrManagerBarBtn { color: #78716c; border-color: rgba(0,0,0,0.10); }
+body.light-mode #qrManagerBarBtn:hover { color: #c2410c; border-color: rgba(194,65,12,0.25); background: rgba(194,65,12,0.06); }
+body.light-mode .qr-list-item { background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.06); }
+body.light-mode .qr-list-item .qr-list-label { color: #3d3935; }
+body.light-mode .qr-list-item .qr-list-msg { color: #78716c; }
+body.light-mode .qr-list-item .qr-list-btn { color: #78716c; }
+body.light-mode .qr-list-item .qr-list-btn:hover { background: rgba(0,0,0,0.06); }
+
+/* Character manager — light mode */
+body.light-mode .char-mgr-card { border-color: rgba(0,0,0,0.12); }
+body.light-mode .char-mgr-card:hover { border-color: rgba(0,0,0,0.22); }
+body.light-mode .char-mgr-card .char-mgr-name { color: #fff; }
+/* Picker checkmark — light mode uses deep amber */
+body.light-mode .picker-check { background: #c2410c; border-color: #c2410c; color: #fff; }
+body.light-mode .char-mgr-card.picker-card:not(.selected) .picker-check { background: rgba(0,0,0,0.25); border-color: rgba(0,0,0,0.2); color: transparent; }
+body.light-mode .char-mgr-card.picker-card.selected { border-color: #c2410c; box-shadow: 0 0 0 2px rgba(194,65,12,0.30); }
+
+/* ===== Token bar ===== */
+body.light-mode #tokenBar {
+    background: rgba(194,65,12,0.50) !important;
 }
 
 *,*::before,*::after { box-sizing:border-box; }
@@ -83,18 +457,91 @@ body {
 /* StatusBlock — rendered status panel inside chat messages */
 .status-block { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 12px 14px; margin: 10px 0; font-size: 0.875rem; }
 .status-block .status-header { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; color: rgba(245,158,11,0.7); }
-.status-block .status-header span:first-child { font-size: 1rem; }
+.status-block .status-header span:nth-child(2) { font-size: 1rem; }
 .status-block .status-section { color: rgba(245,158,11,0.65); font-weight: 500; font-size: 0.75rem; padding-top: 3px; }
 .status-block .status-row { display: flex; align-items: center; gap: 5px; padding-left: 2px; color: #d1d5db; }
 .status-block .status-row .status-icon { color: #6b7280; width: 14px; text-align: center; flex-shrink: 0; font-size: 0.75rem; }
 .status-block .status-row .status-label { font-size: 0.8rem; }
 .status-block .status-info { color: #d1d5db; font-size: 0.8rem; padding-left: 2px; }
 .status-block .status-badge { font-size: 0.65rem; padding: 1px 6px; border-radius: 99px; background: rgba(245,158,11,0.15); color: rgba(245,158,11,0.7); margin-left: auto; }
-.status-block.status-placeholder { border-style: dashed; opacity: 0.7; }
 .status-block .status-row b { color: #d1d5db; font-weight: 500; }
 .status-block.script-rendered { padding: 0; background: transparent; border: 1px solid rgba(255,255,255,0.06); overflow: hidden; max-height: 420px; overflow-y: auto; }
 .status-block.script-rendered > * { max-width: 100%; }
 .status-block.script-rendered style { display: block; }
+
+/* Collapsible status */
+.status-header { cursor: pointer; user-select: none; }
+.status-header:hover { opacity: 0.85; }
+.status-toggle { display: inline-block; transition: transform 0.2s ease; font-size: 0.65rem; margin-right: 2px; }
+.status-body { display: none; }
+.status-block.expanded .status-body { display: block; }
+.status-block.expanded .status-toggle { transform: rotate(90deg); }
+/* Placeholder stays non-collapsible */
+/* Quick Reply buttons */
+.qr-btn {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #d1d5db;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.18s ease;
+    user-select: none;
+}
+.qr-btn:hover { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.25); color: #f59e0b; }
+.qr-btn:active { background: rgba(245,158,11,0.18); transform: scale(0.96); }
+#qrManagerBarBtn {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center;
+    color: #6b7280;
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.08);
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+#qrManagerBarBtn:hover { color: #f59e0b; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); }
+
+/* Hide scrollbar in QR scroll area + smooth momentum scroll */
+.qr-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+.qr-scroll::-webkit-scrollbar { display: none; }
+
+/* QR manager list items */
+.qr-list-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); }
+.qr-list-item .qr-list-label { flex: 1; font-size: 0.8rem; color: #d1d5db; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qr-list-item .qr-list-msg { font-size: 0.7rem; color: #6b7280; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qr-list-item .qr-list-btn { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #6b7280; cursor: pointer; transition: all 0.15s; background: transparent; border: none; flex-shrink: 0; }
+.qr-list-item .qr-list-btn:hover { background: rgba(255,255,255,0.08); }
+.qr-list-item .qr-list-btn.qr-edit:hover { color: #f59e0b; }
+.qr-list-item .qr-list-btn.qr-del:hover { color: #ef4444; }
+
+/* Character manager — card grid overlay design */
+.char-mgr-card { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 3/4; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; user-select: none; }
+.char-mgr-card:hover { border-color: rgba(255,255,255,0.18); }
+.char-mgr-card:active { transform: scale(0.97); }
+.char-mgr-card .char-mgr-avatar { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 2.5rem; color: #fff; position: absolute; inset: 0; }
+.char-mgr-card .char-mgr-avatar img { width: 100%; height: 100%; object-fit: cover; }
+/* Name overlay — bottom */
+.char-mgr-card .char-mgr-name { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 8px 6px; font-size: 0.7rem; color: #fff; font-weight: 500; text-align: center; background: linear-gradient(transparent, rgba(0,0,0,0.65)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Long-press feedback ripple */
+.char-mgr-card.long-press-active { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.4); }
+
+/* Picker card — selected state */
+.char-mgr-card.picker-card.selected { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.35); }
+/* Picker checkmark — top-right overlay, works in both themes */
+.picker-check { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; background: #f59e0b; color: #000; border: 2px solid #f59e0b; }
+.char-mgr-card.picker-card:not(.selected) .picker-check { background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.35); color: transparent; }
 
 .msg-actions { display: flex; gap: 4px; margin-top: 6px; opacity: 0; transition: opacity 0.2s ease; }
 .msg-wrapper:hover .msg-actions { opacity: 1; }
@@ -148,7 +595,7 @@ body {
 
     /* Mobile: status block font +1 level */
     .status-block { font-size: 1rem !important; }
-    .status-block .status-header span:first-child { font-size: 1.125rem !important; }
+    .status-block .status-header span:nth-child(2) { font-size: 1.125rem !important; }
     .status-block .status-section { font-size: 0.85rem !important; }
     .status-block .status-row .status-icon { font-size: 0.85rem !important; }
     .status-block .status-row .status-label { font-size: 0.875rem !important; }
@@ -164,12 +611,7 @@ body {
     .conv-export-btn { font-size: 13px; }
     .conv-delete-btn { font-size: 14px; }
 
-    /* Mobile: always show character picker delete button */
-    .char-delete-btn {
-        opacity: 1 !important;
-        width: 28px !important; height: 28px !important;
-        font-size: 14px !important;
-    }
+
 
     /* Mobile: world book delete buttons always visible */
     .wi-book-del,
@@ -528,6 +970,7 @@ input[type="range"] { -webkit-appearance:none; appearance:none; height:4px; back
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background: var(--accent); cursor:pointer; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 0 10px var(--accent-glow); }
 
 #messageInput { resize: none; max-height: 160px; }
+#messageInput::placeholder { font-size: 0.8rem; }
 #messageInput:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 
 .modal-overlay { transition: opacity 0.25s ease, visibility 0.25s ease; }
@@ -832,30 +1275,19 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
 </div>
 
 <!-- ===== Character Import Modal ===== -->
-<div id="importModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
-    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="importBackdrop"></div>
-    <div class="relative glass rounded-3xl w-[92%] max-w-md p-7 shadow-2xl animate-fade-in">
-        <div class="flex items-center justify-between mb-5">
-            <h2 class="text-lg font-bold text-zinc-100" data-i18n="import_title">Import Character Card</h2>
-            <button id="importCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
-        </div>
-        <p class="text-sm text-zinc-400 mb-4"><span data-i18n="import_desc">Supports SillyTavern</span> <code class="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">chara_card_v3</code> <span data-i18n="import_desc2">format JSON files.</span></p>
-        <label class="flex flex-col items-center gap-3 p-8 glass rounded-2xl border-dashed border-2 border-white/10 hover:border-amber-500/30 cursor-pointer transition-all">
-            <span class="text-3xl">📄</span>
-            <span class="text-sm text-zinc-400" data-i18n="import_click_hint">Click to select a .json character card</span>
-            <input type="file" id="importFileInput" accept=".json,.png,image/png" class="hidden">
-        </label>
-        <p id="importStatus" class="text-xs text-zinc-500 mt-3 text-center hidden"></p>
-    </div>
-</div>
+<!-- Hidden file input for importing character cards -->
+<input type="file" id="importFileInput" accept=".json,.png,image/png" class="hidden">
 
 <!-- ===== Character Editor Modal ===== -->
-<div id="charEditorModal" class="modal-overlay fixed inset-0 z-[100] flex items-center justify-center hidden">
+<div id="charEditorModal" class="modal-overlay fixed inset-0 z-[150] flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="charEditorBackdrop"></div>
     <div class="relative glass rounded-3xl w-[92%] max-w-2xl p-7 shadow-2xl animate-fade-in max-h-[90vh] flex flex-col">
         <div class="flex items-center justify-between mb-5 flex-shrink-0">
             <h2 class="text-lg font-bold text-zinc-100" data-i18n="char_editor_title">Edit Character Card</h2>
-            <button id="charEditorCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+            <div class="flex items-center gap-2">
+                <button id="charEditorExportBtn" class="px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-dashed border-white/10 hover:border-emerald-500/30 transition-all" data-i18n-title="char_export_title" title="Export JSON">📥 导出</button>
+                <button id="charEditorCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+            </div>
         </div>
         <div class="flex-1 overflow-y-auto space-y-4 pr-1">
             <!-- Avatar + Name row -->
@@ -957,7 +1389,46 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
     </div>
 </div>
 
+<!-- ===== Quick Reply Manager Modal ===== -->
+<div id="qrManagerModal" class="modal-overlay fixed inset-0 z-[130] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="qrManagerBackdrop"></div>
+    <div class="relative glass rounded-2xl w-[92%] max-w-md p-5 shadow-2xl animate-fade-in flex flex-col border border-white/10" style="min-height:80vh;max-height:80vh">
+        <div class="flex items-center justify-between mb-4 flex-shrink-0">
+            <h2 class="text-base font-bold text-zinc-100">⚡ 快捷回复</h2>
+            <button id="qrManagerCloseBtn" class="w-7 h-7 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+        </div>
+        <div id="qrManagerList" class="flex-1 overflow-y-auto space-y-2 pr-1 mb-3"></div>
+        <button id="qrAddBtn" class="w-full py-2 rounded-xl text-sm font-medium bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-zinc-200 border border-dashed border-white/10 transition-all flex-shrink-0">+ 添加快捷回复</button>
+    </div>
+</div>
+
+<!-- ===== Quick Reply Edit Modal ===== -->
+<div id="qrEditModal" class="modal-overlay fixed inset-0 z-[140] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="qrEditBackdrop"></div>
+    <div class="relative glass rounded-2xl w-[92%] max-w-sm p-5 shadow-2xl animate-fade-in border border-white/10">
+        <h3 id="qrEditTitle" class="text-sm font-semibold text-zinc-200 mb-3">编辑快捷回复</h3>
+        <input id="qrEditLabel" type="text" class="w-full px-3 py-2 glass rounded-xl text-sm text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all mb-2.5" placeholder="按钮标签">
+        <textarea id="qrEditMessage" rows="3" class="w-full px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none" placeholder="发送的消息内容（支持 {{user}} {{char}}）"></textarea>
+        <div class="flex gap-3 mt-4 justify-end">
+            <button id="qrEditCancel" class="px-4 py-2 rounded-xl text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-all">取消</button>
+            <button id="qrEditSave" class="px-4 py-2 rounded-xl text-sm font-medium bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-all">保存</button>
+        </div>
+    </div>
+</div>
+
 <!-- ===== Jailbreak Preset Edit Modal ===== -->
+<!-- ===== Character Card Manager Modal ===== -->
+<div id="charManagerModal" class="modal-overlay fixed inset-0 z-[135] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="charManagerBackdrop"></div>
+    <div class="relative glass rounded-3xl w-[92%] max-w-lg p-5 shadow-2xl animate-fade-in max-h-[90vh] flex flex-col overflow-hidden border border-white/10" style="min-height:80vh">
+        <div class="flex items-center justify-between mb-3 flex-shrink-0">
+            <h2 class="text-base font-bold text-zinc-100">🎴 角色卡管理</h2>
+            <button id="charManagerCloseBtn" class="w-7 h-7 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
+        </div>
+        <div id="charManagerList" class="overflow-y-auto pr-1 grid grid-cols-4 gap-2"></div>
+    </div>
+</div>
+
 <div id="jbEditModal" class="modal-overlay fixed inset-0 z-[300] flex items-center justify-center hidden">
     <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="jbEditBackdrop"></div>
     <div class="relative glass rounded-2xl w-[92%] max-w-lg p-6 shadow-2xl animate-fade-in border border-white/10">
@@ -1402,7 +1873,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <button id="newChatPickerCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-xl leading-none">&times;</button>
         </div>
 
-        <div id="newChatPickerList" class="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 overflow-y-auto pr-1 custom-scroll">
+        <div id="newChatPickerList" class="grid grid-cols-4 gap-2 flex-1 overflow-y-auto pr-1">
             <!-- Populated dynamically by JS -->
         </div>
 
@@ -1474,53 +1945,47 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
 
             <!-- ═══════ Section 1: Character Card Display ═══════ -->
             <div class="glass rounded-2xl overflow-hidden transition-all duration-300 border border-white/5 hover:border-white/10">
-                <!-- Card top accent bar (visible only when character loaded) -->
-                <div id="charCardAccent" class="h-0.5 bg-gradient-to-r from-amber-400 via-rose-400 to-purple-400 opacity-0 transition-opacity duration-300"></div>
 
                 <!-- Loaded Character Preview -->
                 <div id="charCardPreview" class="hidden">
-                    <div class="p-3.5">
-                        <div class="flex items-start gap-3">
-                            <!-- Avatar -->
-                            <div id="charCardAvatar" class="w-11 h-11 rounded-lg bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-lg shadow-amber-500/10 ring-1 ring-white/10">?</div>
-                            <!-- Info -->
-                            <div class="min-w-0 flex-1 pt-0.5">
-                                <p id="charCardName" class="text-sm font-semibold text-zinc-100 truncate leading-tight"></p>
-                                <p id="charCardTagCount" class="text-[10px] text-zinc-500 mt-0.5"></p>
-                            </div>
-                            <!-- Actions -->
-                            <div id="charCardActions" class="flex items-center gap-1 flex-shrink-0">
-                                <button id="charEditBtn" class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 active:bg-amber-500/20 transition-all text-xs hidden" data-i18n-title="char_edit_title" title="Edit">&#9998;</button>
-                                <button id="charExportBtn" class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-emerald-400 hover:bg-emerald-500/10 active:bg-emerald-500/20 transition-all text-xs hidden" data-i18n-title="char_export_title" title="Export">&#128230;</button>
-                                <button id="charRemoveBtn" class="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-red-400 hover:bg-red-500/10 active:bg-red-500/20 transition-all text-xs hidden" data-i18n-title="char_remove_title" title="Remove">&#10005;</button>
-                            </div>
+                    <div class="p-3 flex items-start gap-3">
+                        <!-- Avatar — tall portrait, click to edit -->
+                        <div id="charCardAvatar" class="w-[52px] h-[72px] rounded-xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-500/40 transition-all" title="点击编辑角色卡"></div>
+                        <!-- Info -->
+                        <div class="min-w-0 flex-1 min-h-[72px] flex flex-col justify-center">
+                            <p id="charCardName" class="text-sm font-semibold text-zinc-100 truncate leading-tight"></p>
+                            <p id="charCardDescription" class="text-[11px] text-zinc-400 leading-relaxed line-clamp-2 mt-1"></p>
                         </div>
-                        <!-- Personality / Description snippet -->
-                        <p id="charCardPersonality" class="text-[11px] text-zinc-400 leading-relaxed line-clamp-2 mt-2.5 pl-[3.25rem]"></p>
                     </div>
                 </div>
 
                 <!-- Empty State -->
-                <div id="charCardEmpty" class="p-5 flex flex-col items-center justify-center text-center">
-                    <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-2.5 ring-1 ring-white/5">
-                        <span class="text-xl opacity-50">👤</span>
+                <div id="charCardEmpty" class="p-3 flex items-center gap-3">
+                    <div class="w-[52px] h-[72px] rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 ring-1 ring-white/5">
+                        <span class="text-2xl opacity-40">👤</span>
                     </div>
-                    <p id="charCardEmptyHint" class="text-xs text-zinc-400 font-medium">
-                        <span data-i18n="char_card_empty">No character loaded</span>
-                    </p>
-                    <p class="text-[10px] text-zinc-600 mt-1 leading-relaxed">Import a card or create one to start</p>
+                    <div class="min-w-0 flex-1 min-h-[72px] flex flex-col justify-center">
+                        <p id="charCardEmptyHint" class="text-sm text-zinc-400 font-medium">
+                            <span data-i18n="char_card_empty">No character loaded</span>
+                        </p>
+                        <p class="text-[10px] text-zinc-600 mt-0.5 leading-relaxed">Import a card or create one to start</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- ═══════ Section 2: Import & Create ═══════ -->
+            <!-- ═══════ Section 2: Import & Create & Manage ═══════ -->
             <div class="flex gap-2">
-                <button id="charImportBtn" class="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/5 hover:bg-white/10 active:bg-white/15 border border-dashed border-white/10 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all group">
+                <button id="charImportBtn" class="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/5 hover:bg-white/10 active:bg-white/15 border border-dashed border-white/10 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all group">
                     <span class="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">📥</span>
                     <span class="text-zinc-300" data-i18n="char_btn_import">Import</span>
                 </button>
-                <button id="charCreateBtn" class="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/5 hover:bg-white/10 active:bg-white/15 border border-dashed border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all group">
+                <button id="charCreateBtn" class="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/5 hover:bg-white/10 active:bg-white/15 border border-dashed border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all group">
                     <span class="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">✨</span>
                     <span class="text-zinc-300" data-i18n="char_btn_create">Create</span>
+                </button>
+                <button id="charManagerBtn" class="flex-1 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-medium bg-white/5 hover:bg-white/10 active:bg-white/15 border border-dashed border-white/10 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all group">
+                    <span class="text-sm flex-shrink-0 group-hover:scale-110 transition-transform">🎴</span>
+                    <span class="text-zinc-300">角色卡</span>
                 </button>
             </div>
 
@@ -1535,17 +2000,14 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
         <div id="convList" class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
             <p id="noConvHint" class="text-xs text-zinc-500 text-center py-8 px-2" data-i18n="no_conversations">No saved conversations yet.<br>Start a new chat to begin.</p>
         </div>
-        <div class="px-3 py-2 border-t border-white/5 space-y-1.5">
+        <div class="px-3 py-2 border-t border-white/5">
             <div class="flex items-center gap-1.5">
                 <button id="exportAllBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all" data-i18n="conv_export_all_btn" data-i18n-title="conv_export_all_title">Export All</button>
-                <button id="importConvBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all" data-i18n="conv_import_btn" data-i18n-title="conv_import_title">Import</button>
-            </div>
-            <div class="flex items-center gap-1.5">
-                <button id="sidebarSettingsBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all">
-                    <span>⚙️</span> <span data-i18n="settings">Settings</span>
-                </button>
                 <button id="viewPromptBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all" data-i18n-title="view_prompt_title">
                     <span>🔍</span>
+                </button>
+                <button id="themeToggleBtn" class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-sm glass hover:bg-white/5 transition-all" title="切换深色/浅色主题">
+                    <span id="themeToggleIcon">🌙</span>
                 </button>
             </div>
         </div>
@@ -1627,17 +2089,24 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
 
         <!-- Input Area -->
         <div class="flex-shrink-0 px-4 py-3 border-t border-white/5 bg-zinc-950/15 backdrop-blur-2xl">
-            <div id="tokenInfo" class="flex items-center justify-between mb-2 px-1 hidden">
-                <span class="text-[10px] text-zinc-500"><span data-i18n="context_label">Context:</span> <span id="tokenCount">0</span> <span data-i18n="msgs_label">msgs</span></span>
-                <div class="flex-1 mx-3 h-1 bg-white/5 rounded-full overflow-hidden">
-                    <div id="tokenBar" class="token-bar h-full bg-amber-500/60 rounded-full" style="width:0%"></div>
+            <!-- Row 1: Quick Reply bar: [+] fixed left | scrollable QR | [token] fixed right -->
+            <div id="quickReplyBar" class="flex items-center gap-0 mb-2.5">
+                <!-- + manager button (fixed left) -->
+                <button id="qrManagerBarBtn" class="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm text-zinc-500 border border-dashed border-white/10 hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all" title="管理快捷回复">+</button>
+                <!-- Scrollable QR area (scrollbar hidden via CSS) -->
+                <div id="qrScrollArea" class="flex-1 flex items-center gap-1.5 overflow-x-auto mx-2 qr-scroll"></div>
+                <!-- Compact token pill (fixed right, only shows when messages exist) -->
+                <div id="tokenPill" class="flex-shrink-0 flex items-center gap-1.5 hidden">
+                    <span class="text-[10px] text-zinc-500 tabular-nums whitespace-nowrap"><span id="tokenCount">0</span>/<span id="tokenMax">10</span></span>
+                    <div class="w-10 h-1 bg-white/10 rounded-full overflow-hidden">
+                        <div id="tokenBar" class="h-full bg-amber-500/60 rounded-full" style="width:0%"></div>
+                    </div>
                 </div>
-                <span id="tokenMax" class="text-[10px] text-zinc-500">max 10</span>
             </div>
+            <!-- Row 2: Input -->
             <div class="flex items-center gap-2.5">
-                <!-- @ 按钮移到左侧，与输入框高度对齐（手机端优化） -->
                 <button id="mentionBtn"
-                        class="flex-shrink-0 w-11 h-11 rounded-xl glass text-zinc-400 hover:text-amber-300 hover:bg-white/10 active:bg-white/15 transition-all flex items-center justify-center text-xl font-bold touch-manipulation"
+                        class="hidden flex-shrink-0 w-11 h-11 rounded-xl glass text-zinc-400 hover:text-amber-300 hover:bg-white/10 active:bg-white/15 transition-all flex items-center justify-center text-xl font-bold touch-manipulation"
                         data-i18n-title="mention_button_title"
                         aria-label="Mention Character">
                     @
@@ -2807,8 +3276,8 @@ function showBackupReminderIfNeeded() {
         document.getElementById('backup-reminder-btn').onclick = () => {
             reminder.remove();
             recordBackupMade();
-            // 打开设置或直接触发导出（这里简单打开设置让用户操作）
-            const settingsBtn = document.getElementById('sidebarSettingsBtn') || document.getElementById('topSettingsBtn');
+            // 打开设置
+            const settingsBtn = document.getElementById('topSettingsBtn');
             if (settingsBtn) settingsBtn.click();
         };
 
@@ -2939,6 +3408,7 @@ function defaultSettings() {
         summaryMaxWords: 0,
         jailbreakPresets: {},
         activeJailbreakPreset: '',
+        quickReplies: [],
         // World Info (World Book) budget control
         worldInfoBudgetEnabled: true,
         worldInfoBudget: 2048,
@@ -3688,17 +4158,9 @@ async function initState() {
             }
         }
 
-        // 只有在真正完全没有对话时，才创建全新的默认对话
+        // No conversations → stay empty, don't force a default
         if (!state.activeConvId || !state.conversations[state.activeConvId]) {
-            var conv = defaultConversation();
-            state.conversations[conv.id] = conv;
-            state.conversationOrder.unshift(conv.id);
-            state.activeConvId = conv.id;
-
-            // 只有真正新建了默认对话，才需要立即落盘一次
-            if (typeof persistState === 'function') {
-                persistState(true);
-            }
+            state.activeConvId = null;
         }
     }
 }
@@ -4567,6 +5029,10 @@ function navigateMobilePanel(panel, title) {
     if (backBtn) {
         backBtn.style.display = (panel === 'books') ? 'none' : '';
     }
+    // Show add-entry button only on level 2 (entries), hide on books & editor
+    if (dom.wiAddEntryBtn) {
+        dom.wiAddEntryBtn.style.display = (panel === 'entries') ? '' : 'none';
+    }
 }
 
 // Handle mobile back button navigation
@@ -5160,6 +5626,7 @@ function showNoSelection() {
     wiState.selectedUid = null;
     wiState.primaryKeys = [];
     wiState.secondaryKeys = [];
+    dom.wiAddEntryBtn.style.display = ''; // back to level 2 → show
     // On mobile, navigate back to entries panel if we were in editor
     if (isMobileView() && wiState.mobilePanel === 'editor') {
         var wb = state.worldBooks && state.worldBooks[wiState.currentWorldBookId];
@@ -5189,8 +5656,12 @@ function updateWorldBookModalHeader() {
     if (wiState.currentWorldBookId) {
         const wb = state.worldBooks && state.worldBooks[wiState.currentWorldBookId];
         titleEl.textContent = wb ? `世界书：${wb.name || '未命名'}` : '世界书管理器';
+        // Level 2 (entries) → show add button; Level 3 (editor) → hide
+        dom.wiAddEntryBtn.style.display = wiState.selectedUid ? 'none' : '';
     } else {
         titleEl.textContent = '世界书管理器（全局）';
+        // Level 1 (books) → hide add button
+        dom.wiAddEntryBtn.style.display = 'none';
     }
 }
 
@@ -5281,6 +5752,7 @@ function selectWIEntry(uid) {
     wiState.selectedUid = String(uid);
     var entry = getActiveWI().entries[wiState.selectedUid];
     fillEditorFromEntry(entry);
+    dom.wiAddEntryBtn.style.display = 'none'; // level 3 → hide
     // On mobile, transition to editor panel
     if (isMobileView()) {
         navigateMobilePanel('editor', entry.comment || t('world_book_mobile_editor'));
@@ -5585,8 +6057,9 @@ function handleWIFileImport(e) {
     reader.readAsText(file);
 }
 
-function exportCurrentWorldInfo() {
+async function exportCurrentWorldInfo() {
     var wi = getActiveWI();
+    if (!await showCustomConfirm('确定导出世界书「' + (wi.name || '未命名') + '」？')) return;
     var data = entriesToSTFormat(wi);
     var name = (wi.name || 'world_info').replace(/[^a-zA-Z0-9一-鿿]/g, '_');
     downloadJsonFile(data, name + '.json');
@@ -7018,6 +7491,7 @@ function newConversation(charOrChars) {
     else if (Array.isArray(charOrChars) && charOrChars.length === 1) {
         const character = charOrChars[0];
         conv.character = JSON.parse(JSON.stringify(character));
+        conv.group = null; // ensure non-group chat has no group data
         const charName = conv.character.name;
         const userName = state.settings.userName || 'User';
         conv.title = t('chat_with') + conv.character.name;
@@ -7077,6 +7551,7 @@ function newConversation(charOrChars) {
     persistState();
     requestRender('activeConvId');
     renderTokenBar();
+    updateInputState();
 
     if (isMobile()) closeSidebar();
 }
@@ -7093,9 +7568,16 @@ function showNewChatCharacterPicker() {
 
     listContainer.innerHTML = '';
 
-    const characters = getAllAvailableCharacters();
     let multiSelectMode = false;
     const selectedKeys = new Set(); // 使用 name.toLowerCase() 作为 key
+
+    // Reset any stale DOM state from previous open
+    var tgl = modal.querySelector('#newChatGroupToggleBtn');
+    if (tgl) tgl.textContent = '多选创建群组聊天';
+    var bar = modal.querySelector('#newChatGroupConfirmBar');
+    if (bar) bar.style.display = 'none';
+    if (dom.newChatNoCharacterBtn) dom.newChatNoCharacterBtn.style.display = '';
+    if (dom.newChatImportCharacterBtn) dom.newChatImportCharacterBtn.style.display = '';
 
     function updateMultiBar() {
         if (!dom.newChatPickerMultiBar) return;
@@ -7111,39 +7593,33 @@ function showNewChatCharacterPicker() {
 
     function renderCards() {
         listContainer.innerHTML = '';
+        var characters = getAllAvailableCharacters();
 
         characters.forEach(character => {
             const key = (character.name || '').trim().toLowerCase();
             const isSelected = selectedKeys.has(key);
-
-            const card = document.createElement('div');
-            card.className = `glass rounded-2xl p-3 cursor-pointer flex flex-col items-center text-center gap-2 border transition-all relative group
-                ${isSelected ? 'border-amber-400 bg-amber-500/10' : 'border-white/5 hover:border-white/10 hover:bg-white/5'}`;
-
-            var avatarLetter = character.name ? character.name.charAt(0).toUpperCase() : '?';
+            const name = escapeHtml(character.name || t('char_empty_name'));
+            const initial = (character.name || '?').charAt(0).toUpperCase();
             var avatarKey = character._avatarKey;
 
-            card.innerHTML = `
-                <div class="card-avatar w-12 h-12 rounded-md bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0 overflow-hidden">
-                    ${avatarLetter}
-                </div>
-                <div class="min-w-0 w-full">
-                    <p class="text-sm font-medium text-zinc-100 truncate">${escapeHtml(character.name || t('char_empty_name'))}</p>
-                </div>
-                ${multiSelectMode ? `
-                    <div class="absolute top-1 right-1 w-5 h-5 rounded-full border flex items-center justify-center text-[10px]
-                        ${isSelected ? 'bg-amber-400 border-amber-300 text-black' : 'border-white/40 bg-black/30'}">
-                        ${isSelected ? '✓' : ''}
-                    </div>
-                ` : `
-                    <button class="char-delete-btn absolute top-1 right-1 w-5 h-5 rounded-full bg-black/50 hover:bg-red-500/80 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all" title="删除角色卡">×</button>
-                `}
-            `;
+            const card = document.createElement('div');
+            card.className = 'char-mgr-card picker-card' + (isSelected ? ' selected' : '');
+
+            card.innerHTML = ''
+                + '<div class="char-mgr-avatar bg-gradient-to-br from-amber-500 to-rose-500">' + initial + '</div>'
+                + '<div class="char-mgr-name">' + name + '</div>'
+                + (multiSelectMode ? ''
+                    + '<div class="picker-check">'
+                    + (isSelected ? '✓' : '')
+                    + '</div>'
+                : '');
 
             if (avatarKey) {
-                var cAvDiv = card.querySelector('.card-avatar');
                 StorageService.getAvatarUrl(avatarKey).then(function(url) {
-                    if (url && cAvDiv) cAvDiv.innerHTML = '<img src="' + url + '" alt="" class="w-full h-full object-cover rounded-md">';
+                    if (url) {
+                        var avDiv = card.querySelector('.char-mgr-avatar');
+                        if (avDiv) avDiv.innerHTML = '<img src="' + url + '" alt="">';
+                    }
                 });
             }
 
@@ -7165,19 +7641,6 @@ function showNewChatCharacterPicker() {
                 updateMultiBar();
             });
 
-            // 删除按钮（仅非多选模式下存在）
-            const delBtn = card.querySelector('.char-delete-btn');
-            if (delBtn) {
-                delBtn.addEventListener('click', async function(e) {
-                    e.stopPropagation();
-                    const displayName = character.name || '该角色卡';
-                    if (!await showCustomConfirm(`确定从角色库中删除「${displayName}」？\n已有对话中的角色卡数据不会受影响。`)) {
-                        return;
-                    }
-                    deleteCharacterFromLibrary(key);
-                });
-            }
-
             listContainer.appendChild(card);
         });
     }
@@ -7194,6 +7657,7 @@ function showNewChatCharacterPicker() {
         const bottomArea = modal.querySelector('.mt-4.pt-4.border-t');
         if (bottomArea) {
             const toggleBtn = document.createElement('button');
+            toggleBtn.id = 'newChatGroupToggleBtn';
             toggleBtn.className = 'w-full mt-3 mb-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/5 hover:bg-white/10 border border-white/10 transition-all';
             toggleBtn.textContent = '多选创建群组聊天';
 
@@ -7204,6 +7668,10 @@ function showNewChatCharacterPicker() {
                 renderCards();
                 updateMultiBar();
 
+                // Show/hide bottom action buttons
+                if (dom.newChatNoCharacterBtn) dom.newChatNoCharacterBtn.style.display = multiSelectMode ? 'none' : '';
+                if (dom.newChatImportCharacterBtn) dom.newChatImportCharacterBtn.style.display = multiSelectMode ? 'none' : '';
+
                 // 动态显示/隐藏确认按钮
                 let confirmBar = modal.querySelector('#newChatGroupConfirmBar');
                 if (multiSelectMode) {
@@ -7213,40 +7681,27 @@ function showNewChatCharacterPicker() {
                         confirmBar.className = 'mt-3 flex gap-2';
                         confirmBar.innerHTML = `
                             <button id="newChatCreateGroupBtn"
-                                    class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-black transition-all">
+                                    class="w-full px-4 py-2.5 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 text-black transition-all">
                                 创建群组聊天
-                            </button>
-                            <button id="newChatCancelMultiBtn"
-                                    class="px-4 py-2.5 rounded-xl text-sm font-semibold bg-white/10 hover:bg-white/15 transition-all">
-                                取消
                             </button>
                         `;
                         bottomArea.parentNode.insertBefore(confirmBar, bottomArea);
 
                         // 绑定确认按钮
                         const createBtn = confirmBar.querySelector('#newChatCreateGroupBtn');
-                        const cancelBtn = confirmBar.querySelector('#newChatCancelMultiBtn');
 
                         createBtn.addEventListener('click', () => {
-                            const selectedChars = characters.filter(c =>
+                            const allChars = getAllAvailableCharacters();
+                            const selectedChars = allChars.filter(c =>
                                 selectedKeys.has((c.name || '').trim().toLowerCase())
                             );
                             if (selectedChars.length >= 2) {
+                                resetPickerState();
                                 modal.classList.add('hidden');
-                                // 传递数组给新逻辑（下一阶段实现）
                                 newConversation(selectedChars);
                             } else {
                                 showCustomAlert('请至少选择 2 个角色创建群组');
                             }
-                        });
-
-                        cancelBtn.addEventListener('click', () => {
-                            multiSelectMode = false;
-                            selectedKeys.clear();
-                            toggleBtn.textContent = '多选创建群组聊天';
-                            confirmBar.style.display = 'none';
-                            renderCards();
-                            updateMultiBar();
                         });
                     } else {
                         confirmBar.style.display = 'flex';
@@ -7261,14 +7716,32 @@ function showNewChatCharacterPicker() {
     }
 
     // 绑定原有静态按钮（只绑定一次）
+    function resetPickerState() {
+        multiSelectMode = false;
+        selectedKeys.clear();
+        // Reset toggle button text
+        var tgl = modal.querySelector('#newChatGroupToggleBtn');
+        if (tgl) tgl.textContent = '多选创建群组聊天';
+        // Hide confirm bar
+        var bar = modal.querySelector('#newChatGroupConfirmBar');
+        if (bar) bar.style.display = 'none';
+        // Show bottom buttons
+        if (dom.newChatNoCharacterBtn) dom.newChatNoCharacterBtn.style.display = '';
+        if (dom.newChatImportCharacterBtn) dom.newChatImportCharacterBtn.style.display = '';
+        renderCards();
+        updateMultiBar();
+    }
+
     if (!modal._wired) {
         modal._wired = true;
 
         dom.newChatPickerCloseBtn.addEventListener('click', () => {
+            resetPickerState();
             modal.classList.add('hidden');
         });
 
         dom.newChatPickerBackdrop.addEventListener('click', () => {
+            resetPickerState();
             modal.classList.add('hidden');
         });
 
@@ -7315,6 +7788,8 @@ async function loadConversation(id) {
 
     // 确保切换对话时进度条也实时更新
     renderTokenBar();
+    renderQuickReplyBar();
+    updateInputState();
 
     // 关键修复：切换到历史对话时，主动用当前阈值检查一次自动总结
     // 解决用户打开旧对话后修改阈值（尤其是调低）却不触发的问题
@@ -7330,14 +7805,7 @@ async function deleteConversation(id) {
     delete state.conversations[id];
     state.conversationOrder = state.conversationOrder.filter(function(x) { return x !== id; });
     if (state.activeConvId === id) {
-        if (state.conversationOrder.length > 0) {
-            state.activeConvId = state.conversationOrder[0];
-        } else {
-            var conv = defaultConversation();
-            state.conversations[conv.id] = conv;
-            state.conversationOrder.push(conv.id);
-            state.activeConvId = conv.id;
-        }
+        state.activeConvId = state.conversationOrder.length > 0 ? state.conversationOrder[0] : null;
     }
     persistState();
     requestRender(['conversations', 'conversationOrder', 'activeConvId']);
@@ -7356,22 +7824,28 @@ function cacheDom() {
         'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
         'userName','userAvatar','userAvatarInput','systemPrompt','jbDropdownBtn','jbDropdownLabel','jbDropdownMenu','jbNewBtn',
         'jbEditModal','jbEditBackdrop','jbEditTitle','jbEditName','jbEditContent','jbEditSave','jbEditCancel',
-        'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
+        'importFileInput',
         'greetingModal','greetingBackdrop','greetingCloseBtn','greetingList','greetingCharName',
         'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn',
-        'archiveBtn','tokenInfo','tokenCount','tokenBar','tokenMax','newChatBtn',
-        'sidebarSettingsBtn','topSettingsBtn','viewPromptBtn',
-        'exportAllBtn','importConvBtn','convImportFile',
-        'charCardEmpty','charCardPreview','charCardAccent','charCardActions','charCardAvatar','charCardName',
-        'charCardTagCount','charCardPersonality','charCardEmptyHint',
-        'charImportBtn','charCreateBtn','charEditBtn','charExportBtn','charRemoveBtn',
-        'charEditorModal','charEditorBackdrop','charEditorCloseBtn','charEditorCancelBtn','charEditorSaveBtn',
+        'archiveBtn','tokenPill','tokenCount','tokenBar','tokenMax','newChatBtn',
+        'topSettingsBtn','viewPromptBtn',
+        'exportAllBtn','convImportFile',
+        'themeToggleBtn','themeToggleIcon',
+        'charCardEmpty','charCardPreview','charCardAvatar','charCardName',
+        'charCardDescription','charCardEmptyHint',
+        'charImportBtn','charCreateBtn','charManagerBtn',
+        'charManagerModal','charManagerBackdrop','charManagerCloseBtn','charManagerList',
+        'charEditorModal','charEditorBackdrop','charEditorCloseBtn','charEditorCancelBtn','charEditorSaveBtn','charEditorExportBtn',
         'charEditName','charEditTags','charEditDescription','charEditPersonality','charEditScenario',
         'charEditFirstMes','charEditMesExample','charEditSystemPrompt','charEditPostHistory','charEditCreatorNotes',
         'charEditAvatar','charEditAvatarInput',
         'summarizeBtn','summarizeModal','summarizeBackdrop','summarizeTurns',
         'summarizeStatus','summarizeCancelBtn','summarizeConfirmBtn',
         'githubBtn',
+        // Quick Reply
+        'quickReplyBar','qrScrollArea','qrManagerBarBtn',
+        'qrManagerModal','qrManagerBackdrop','qrManagerCloseBtn','qrManagerList','qrAddBtn',
+        'qrEditModal','qrEditBackdrop','qrEditTitle','qrEditLabel','qrEditMessage','qrEditCancel','qrEditSave',
         // 保留旧引用（即使 modal 已删除）避免其他地方报错
         'summaryHistoryModal','summaryHistoryBackdrop','summaryHistoryCloseBtn','summaryHistoryList',
         'summaryNoHistory',
@@ -7427,9 +7901,10 @@ function exportConversation(id) {
     );
 }
 
-function exportAllConversations() {
+async function exportAllConversations() {
     var convs = state.conversationOrder.map(function(id) { return state.conversations[id]; }).filter(Boolean);
     if (convs.length === 0) { showCustomAlert(t('nothing_to_archive')); return; }
+    if (!await showCustomConfirm('确定导出全部对话？共 ' + convs.length + ' 个对话。')) return;
     downloadJsonFile(
         { version: 1, type: 'opentavern-export', exported_at: new Date().toISOString(), conversations: convs },
         'opentavern_all_' + new Date().toISOString().slice(0, 10) + '.json'
@@ -7578,12 +8053,12 @@ function renderMessages() {
     if (allMessages.length === 0) {
         container.innerHTML = '';
         if (dom.emptyState) dom.emptyState.style.display = '';
-        if (dom.tokenInfo) dom.tokenInfo.classList.add('hidden');
+        if (dom.tokenPill) dom.tokenPill.classList.add('hidden');
         return;
     }
 
     if (dom.emptyState) dom.emptyState.style.display = 'none';
-    dom.tokenInfo.classList.remove('hidden');
+    dom.tokenPill.classList.remove('hidden');
 
     // === 增量 DOM 更新 + Windowed Rendering ===
     var MAX_VISIBLE = 80;
@@ -7796,15 +8271,273 @@ function renderTopBar() {
 function renderTokenBar() {
     var conv = getActiveConv();
     if (!conv) return;
-    // 【核心修复2】必须使用 buildMessagesForAPI 的实际输出，而不是存储层消息总数
     var apiMessages = buildMessagesForAPI();
     var msgCount = apiMessages.filter(function(m) { return m.role !== 'system'; }).length;
     var max = state.settings.contextLength;
+    if (msgCount > 0 && dom.tokenPill) dom.tokenPill.classList.remove('hidden');
     dom.tokenCount.textContent = msgCount;
-    dom.tokenMax.textContent = 'max ' + max + ' ' + t('msgs_label');
+    dom.tokenMax.textContent = max;
     var pct = Math.min(100, (msgCount / max) * 100);
     dom.tokenBar.style.width = pct + '%';
     dom.tokenBar.style.background = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : 'rgba(245,158,11,0.5)';
+}
+
+// ==================== Quick Reply ====================
+function renderQuickReplyBar() {
+    var area = dom.qrScrollArea;
+    if (!area) return;
+    var qrs = state.settings.quickReplies || [];
+    area.innerHTML = '';
+
+    qrs.forEach(function(qr, i) {
+        var btn = document.createElement('button');
+        btn.className = 'qr-btn';
+        btn.textContent = qr.label || ('QR ' + (i + 1));
+        btn.title = qr.message || '';
+        btn.addEventListener('click', function() { executeQuickReply(qr); });
+        area.appendChild(btn);
+    });
+}
+
+function executeQuickReply(qr) {
+    if (state.isGenerating) return;
+    if (!state.settings.apiKey || !state.settings.apiEndpoint) {
+        showCustomAlert(t('no_api_error'));
+        return;
+    }
+    var msg = qr.message || '';
+    if (!msg) return;
+    var conv = getActiveConv();
+    if (!conv) return;
+    var charName = conv.character ? conv.character.name : 'Assistant';
+    var userName = state.settings.userName || 'User';
+    msg = replacePlaceholders(msg, charName, userName);
+    dom.messageInput.value = msg;
+    sendMessage();
+}
+
+// ==================== Quick Reply Manager ====================
+var _qrEditingIndex = -1;
+
+function openQuickReplyManager() {
+    _qrEditingIndex = -1;
+    renderQuickReplyManagerList();
+    dom.qrManagerModal.classList.remove('hidden');
+}
+
+function closeQuickReplyManager() {
+    dom.qrManagerModal.classList.add('hidden');
+}
+
+function renderQuickReplyManagerList() {
+    var list = dom.qrManagerList;
+    if (!list) return;
+    var qrs = state.settings.quickReplies || [];
+    if (!qrs.length) {
+        list.innerHTML = '<p class="text-xs text-zinc-500 text-center py-4">暂无快捷回复，点击下方按钮添加</p>';
+        return;
+    }
+    var html = '';
+    qrs.forEach(function(qr, i) {
+        html += '<div class="qr-list-item">'
+            + '<span class="qr-list-label">' + escapeHtml(qr.label || '未命名') + '</span>'
+            + '<span class="qr-list-msg">' + escapeHtml(qr.message || '').substring(0, 30) + '</span>'
+            + '<button class="qr-list-btn qr-edit" data-qr-idx="' + i + '" title="编辑">✎</button>'
+            + '<button class="qr-list-btn qr-del" data-qr-idx="' + i + '" title="删除">✕</button>'
+            + '</div>';
+    });
+    list.innerHTML = html;
+
+    // Wire edit/delete buttons
+    list.querySelectorAll('.qr-edit').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openQuickReplyEditor(parseInt(this.getAttribute('data-qr-idx')));
+        });
+    });
+    list.querySelectorAll('.qr-del').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            deleteQuickReply(parseInt(this.getAttribute('data-qr-idx')));
+        });
+    });
+}
+
+function openQuickReplyEditor(idx) {
+    var qrs = state.settings.quickReplies || [];
+    if (idx >= 0 && idx < qrs.length) {
+        _qrEditingIndex = idx;
+        dom.qrEditTitle.textContent = '编辑快捷回复';
+        dom.qrEditLabel.value = qrs[idx].label || '';
+        dom.qrEditMessage.value = qrs[idx].message || '';
+    } else {
+        _qrEditingIndex = -1;
+        dom.qrEditTitle.textContent = '新建快捷回复';
+        dom.qrEditLabel.value = '';
+        dom.qrEditMessage.value = '';
+    }
+    dom.qrEditModal.classList.remove('hidden');
+}
+
+function closeQuickReplyEditor() {
+    dom.qrEditModal.classList.add('hidden');
+}
+
+function saveQuickReply() {
+    var label = dom.qrEditLabel.value.trim();
+    var message = dom.qrEditMessage.value.trim();
+    if (!label) { showCustomAlert('请输入按钮标签'); return; }
+    if (!message) { showCustomAlert('请输入消息内容'); return; }
+
+    var qrs = state.settings.quickReplies || [];
+    var qr = { label: label, message: message };
+
+    if (_qrEditingIndex >= 0 && _qrEditingIndex < qrs.length) {
+        qrs[_qrEditingIndex] = qr;
+    } else {
+        qrs.push(qr);
+    }
+
+    state.settings.quickReplies = qrs;
+    persistState();
+    closeQuickReplyEditor();
+    renderQuickReplyManagerList();
+    renderQuickReplyBar();
+}
+
+function deleteQuickReply(idx) {
+    var qrs = state.settings.quickReplies || [];
+    if (idx < 0 || idx >= qrs.length) return;
+    var label = qrs[idx].label || '未命名';
+    showCustomConfirm('确定删除快捷回复「' + label + '」？').then(function(ok) {
+        if (!ok) return;
+        qrs.splice(idx, 1);
+        state.settings.quickReplies = qrs;
+        persistState();
+        renderQuickReplyManagerList();
+        renderQuickReplyBar();
+    });
+}
+
+// ==================== Character Card Manager ====================
+function openCharManager() {
+    renderCharManagerList();
+    dom.charManagerModal.classList.remove('hidden');
+}
+
+function closeCharManager() {
+    dom.charManagerModal.classList.add('hidden');
+}
+
+function renderCharManagerList() {
+    var list = dom.charManagerList;
+    if (!list) return;
+    var chars = getAllAvailableCharacters();
+    if (!chars.length) {
+        list.innerHTML = '<p class="text-xs text-zinc-500 text-center py-12 col-span-full">暂无已导入的角色卡</p>';
+        return;
+    }
+    list.innerHTML = '';
+
+    chars.forEach(function(ch) {
+        var name = escapeHtml(ch.name || '未命名');
+        var initial = (ch.name || '?').charAt(0).toUpperCase();
+        var key = (ch.name || '').trim().toLowerCase();
+        var card = document.createElement('div');
+        card.className = 'char-mgr-card';
+        card.title = name + '\n点击编辑 | 长按或右键删除';
+        card.innerHTML = ''
+            + '<div class="char-mgr-avatar bg-gradient-to-br from-amber-500 to-rose-500">' + initial + '</div>'
+            + '<div class="char-mgr-name">' + name + '</div>';
+
+        // Load avatar async
+        if (ch._avatarKey) {
+            StorageService.getAvatarUrl(ch._avatarKey).then(function(url) {
+                if (url) {
+                    var avDiv = card.querySelector('.char-mgr-avatar');
+                    if (avDiv) avDiv.innerHTML = '<img src="' + url + '" alt="">';
+                }
+            });
+        }
+
+        // --- Interaction: click → edit, long-press / right-click → delete ---
+        var pressTimer = null;
+        var isLongPress = false;
+
+        function doEdit() {
+            if (state.characters && state.characters[key]) {
+                openCharacterEditor(state.characters[key]);
+            }
+        }
+
+        async function doDelete() {
+            card.classList.remove('long-press-active');
+            var charData = state.characters && state.characters[key];
+            var displayName = (charData && charData.name) || key;
+
+            var linkedConvs = [];
+            if (state.conversations) {
+                Object.keys(state.conversations).forEach(function(cid) {
+                    var c = state.conversations[cid];
+                    if (c && c.character && c.character.name && c.character.name.trim().toLowerCase() === key) {
+                        linkedConvs.push(c.title || '新对话');
+                    }
+                    if (c && c.group && Array.isArray(c.group.members)) {
+                        var inGroup = c.group.members.some(function(m) {
+                            return m.character && m.character.name && m.character.name.trim().toLowerCase() === key;
+                        });
+                        if (inGroup && linkedConvs.indexOf(c.title || '新对话') === -1) {
+                            linkedConvs.push((c.title || '新对话') + ' (群聊)');
+                        }
+                    }
+                });
+            }
+            if (linkedConvs.length > 0) {
+                var titleList = linkedConvs.slice(0, 5).map(function(t) { return '• ' + t; }).join('\n');
+                showCustomAlert('无法删除「' + displayName + '」，仍有 ' + linkedConvs.length + ' 个对话引用：\n\n' + titleList + '\n\n请先删除这些对话。');
+                return;
+            }
+
+            if (!await showCustomConfirm('确定删除角色卡「' + displayName + '」？')) return;
+            deleteCharacterFromLibrary(key);
+            renderCharManagerList();
+        }
+
+        function clearPress() {
+            if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        }
+
+        function finishPress() {
+            clearPress();
+            card.classList.remove('long-press-active');
+            if (isLongPress) doDelete();
+            else doEdit();
+        }
+
+        // Long press (touch & mouse)
+        card.addEventListener('mousedown', function(e) {
+            if (e.button !== 0) return;
+            isLongPress = false;
+            pressTimer = setTimeout(function() {
+                isLongPress = true;
+                card.classList.add('long-press-active');
+            }, 500);
+        });
+        card.addEventListener('mouseup', finishPress);
+        card.addEventListener('mouseleave', function() { clearPress(); card.classList.remove('long-press-active'); });
+
+        card.addEventListener('touchstart', function(e) {
+            isLongPress = false;
+            pressTimer = setTimeout(function() {
+                isLongPress = true;
+                card.classList.add('long-press-active');
+            }, 500);
+        }, { passive: true });
+        card.addEventListener('touchend', finishPress);
+        card.addEventListener('touchmove', function() { clearPress(); card.classList.remove('long-press-active'); });
+
+        list.appendChild(card);
+    });
 }
 
 function renderCharacterCard() {
@@ -7812,56 +8545,28 @@ function renderCharacterCard() {
     var character = conv && conv.character;
 
     if (character) {
-        // Show character preview, hide empty state
         dom.charCardPreview.classList.remove('hidden');
         dom.charCardEmpty.classList.add('hidden');
-        // Show header actions
-        dom.charEditBtn.classList.remove('hidden');
-        dom.charExportBtn.classList.remove('hidden');
-        dom.charRemoveBtn.classList.remove('hidden');
-        // Glowing accent bar when character is loaded
-        if (dom.charCardAccent) dom.charCardAccent.style.opacity = '1';
-        // Populate data
         dom.charCardName.textContent = character.name || t('char_empty_name');
-        var tagCount = character.tags ? character.tags.length : 0;
-        dom.charCardTagCount.textContent = tagCount + ' tag' + (tagCount !== 1 ? 's' : '');
-        dom.charCardPersonality.textContent = character.personality || character.description ? (character.personality || character.description).slice(0, 120) : '';
+        var desc = character.description || character.personality || '';
+        dom.charCardDescription.textContent = desc ? desc.slice(0, 100) : '该角色卡暂无描述';
+        dom.charCardDescription.style.opacity = desc ? '1' : '0.5';
 
-        // Avatar: load PNG from OPFS if available, otherwise gradient initial letter
+        // Avatar: tall portrait, load PNG from OPFS if available
         var avatarKey = character._avatarKey;
         var initial = character.name ? character.name.charAt(0).toUpperCase() : '?';
-        dom.charCardAvatar.className = 'w-11 h-11 rounded-lg flex-shrink-0 shadow-lg shadow-amber-500/10 ring-1 ring-white/10 overflow-hidden';
-        dom.charCardAvatar.innerHTML = '<div class="w-full h-full rounded-lg bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center"><span class="text-white text-sm font-bold">' + initial + '</span></div>';
+        dom.charCardAvatar.innerHTML = '<span>' + initial + '</span>';
+        dom.charCardAvatar.className = 'w-[52px] h-[72px] rounded-xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 overflow-hidden';
         if (avatarKey) {
             StorageService.getAvatarUrl(avatarKey).then(function(url) {
-                if (url) dom.charCardAvatar.innerHTML = '<img src="' + url + '" alt="" class="w-full h-full object-cover rounded-lg">';
+                if (url) dom.charCardAvatar.innerHTML = '<img src="' + url + '" alt="" class="w-full h-full object-cover rounded-xl">';
             });
         }
     } else {
-        // Hide character preview, show empty state
         dom.charCardPreview.classList.add('hidden');
         dom.charCardEmpty.classList.remove('hidden');
-        // Hide header actions
-        dom.charEditBtn.classList.add('hidden');
-        dom.charExportBtn.classList.add('hidden');
-        dom.charRemoveBtn.classList.add('hidden');
-        // Remove accent bar glow
-        if (dom.charCardAccent) dom.charCardAccent.style.opacity = '0';
     }
     renderWorldInfoBadge();
-}
-
-async function removeCharacter() {
-    if (!await showCustomConfirm(t('char_remove_confirm'))) return;
-    var conv = getActiveConv();
-    if (!conv) return;
-    conv.character = null;
-    if (conv.title.indexOf(t('chat_with')) === 0) {
-        conv.title = t('new_chat_title');
-    }
-    conv.updated = Date.now();
-    persistState();
-    requestFullRender();
 }
 
 // Remove world books that are ONLY used by this conversation (not shared)
@@ -7876,24 +8581,6 @@ function deleteCharacterFromLibrary(nameOrKey) {
     if (!state.characters || !state.characters[key]) return;
     var charData = state.characters[key];
     var charName = charData.name || '';
-
-    // Check if any conversation still references this character
-    var refConvTitles = [];
-    if (state.conversations) {
-        Object.keys(state.conversations).forEach(function(cid) {
-            var c = state.conversations[cid];
-            if (c && c.character && c.character.name && c.character.name.trim().toLowerCase() === key) {
-                refConvTitles.push(c.title || t('new_chat_title'));
-            }
-        });
-    }
-
-    if (refConvTitles.length > 0) {
-        var titleList = refConvTitles.slice(0, 5).map(function(t) { return '• ' + t; }).join('\n');
-        var moreHint = refConvTitles.length > 5 ? '\n... 还有 ' + (refConvTitles.length - 5) + ' 个对话' : '';
-        showCustomAlert('无法删除角色卡「' + charName + '」，仍有 ' + refConvTitles.length + ' 个对话引用了该角色卡：\n\n' + titleList + moreHint + '\n\n请先删除这些对话，再删除角色卡。');
-        return;
-    }
 
     // Delete world books associated with this character
     var deletedWbs = 0;
@@ -7931,9 +8618,10 @@ function deleteCharacterFromLibrary(nameOrKey) {
     }
 }
 
-function openCharacterEditor() {
-    var conv = getActiveConv();
-    var c = conv && conv.character;
+function openCharacterEditor(explicitChar) {
+    var c = explicitChar !== undefined ? explicitChar : (function() { var conv = getActiveConv(); return conv && conv.character; })();
+    // Show export button only when editing, not when creating
+    dom.charEditorExportBtn.style.display = c ? '' : 'none';
     dom.charEditName.value = c ? c.name : '';
     dom.charEditTags.value = c && c.tags ? c.tags.join(', ') : '';
     dom.charEditDescription.value = c ? c.description : '';
@@ -8015,10 +8703,11 @@ function saveCharacterEdits() {
     appStore.notify('conversations'); // 对话列表可能显示角色名
 }
 
-function exportCharacter() {
+async function exportCharacter() {
     var conv = getActiveConv();
     var c = conv && conv.character;
     if (!c) return;
+    if (!await showCustomConfirm('确定导出角色卡「' + (c.name || '未命名') + '」？')) return;
 
     var card = {
         spec: 'chara_card_v3',
@@ -8059,6 +8748,7 @@ function renderAll() {
     renderMessages();
     renderTopBar();
     renderTokenBar();
+    renderQuickReplyBar();
     updateInputState();
     renderWorldInfoBudgetWarning();
 }
@@ -8067,6 +8757,12 @@ function updateInputState() {
     var hasApiKey = !!(state.settings.apiKey && state.settings.apiEndpoint);
     dom.messageInput.disabled = !hasApiKey || state.isGenerating;
     dom.sendBtn.disabled = !hasApiKey || state.isGenerating;
+    // Show @ button only for group chats
+    var conv = getActiveConv();
+    if (dom.mentionBtn) {
+        if (conv && isGroupChat(conv)) dom.mentionBtn.classList.remove('hidden');
+        else dom.mentionBtn.classList.add('hidden');
+    }
     if (state.isGenerating) {
         dom.stopBtn.classList.remove('hidden');
         dom.sendBtn.classList.add('hidden');
@@ -8243,12 +8939,8 @@ function buildUniversalStatusPanel(frag) {
     var inner = frag.content.trim();
     var tag = frag.tag;
 
-    // Self-closing placeholder (e.g. <StatusPlaceHolderImpl/>)
-    if (!inner) {
-        return '<div class="status-block status-placeholder">'
-            + '<div class="status-header"><span>📊</span><span>STATUS</span><span class="status-badge">Generated</span></div>'
-            + '</div>';
-    }
+    // Self-closing placeholder (e.g. <StatusPlaceHolderImpl/>) — suppress, no content to show
+    if (!inner) return '';
 
     // ---- Format Detectors ----
     // 1. Markdown code block (most common: ```markdown / ```)
@@ -8280,7 +8972,7 @@ function buildStatusFromLines(tag, rawLines) {
     if (!lines.length) return '';
 
     var html = '<div class="status-block">';
-    html += '<div class="status-header"><span>📊</span><span>STATUS</span></div>';
+    html += '<div class="status-header"><span class="status-toggle">▶</span><span>📊</span><span>STATUS</span></div>';
     html += '<div class="status-body">';
 
     for (var i = 0; i < lines.length; i++) {
@@ -8567,6 +9259,14 @@ function bindEvents() {
 
     // Message action buttons (event delegation)
     dom.messagesContainer.addEventListener('click', function(e) {
+        // Status block collapse/expand toggle
+        var statusHeader = e.target.closest('.status-header');
+        if (statusHeader) {
+            var block = statusHeader.closest('.status-block');
+            block.classList.toggle('expanded');
+            return;
+        }
+
         var btn = e.target.closest('.msg-action-btn');
         if (!btn) return;
         var action = btn.getAttribute('data-action');
@@ -8760,7 +9460,12 @@ function bindEvents() {
     }
 
     // Create new character from scratch
-    dom.charCreateBtn.addEventListener('click', openCharacterEditor);
+    dom.charCreateBtn.addEventListener('click', function() { openCharacterEditor(null); });
+
+    // Character card manager
+    dom.charManagerBtn.addEventListener('click', openCharManager);
+    dom.charManagerCloseBtn.addEventListener('click', closeCharManager);
+    dom.charManagerBackdrop.addEventListener('click', closeCharManager);
 
     // Import character — always-visible import button
     dom.charImportBtn.addEventListener('click', function() {
@@ -8769,11 +9474,12 @@ function bindEvents() {
     });
 
     // Character editor
-    dom.charEditBtn.addEventListener('click', openCharacterEditor);
+    dom.charCardAvatar.addEventListener('click', function() { openCharacterEditor(); });
     dom.charEditorCloseBtn.addEventListener('click', function() { dom.charEditorModal.classList.add('hidden'); });
     dom.charEditorBackdrop.addEventListener('click', function() { dom.charEditorModal.classList.add('hidden'); });
     dom.charEditorCancelBtn.addEventListener('click', function() { dom.charEditorModal.classList.add('hidden'); });
     dom.charEditorSaveBtn.addEventListener('click', saveCharacterEdits);
+    dom.charEditorExportBtn.addEventListener('click', exportCharacter);
 
     // Avatar upload — click shows overlay briefly, then auto-hides after 100ms
     document.querySelectorAll('.av-upload-wrap').forEach(function(wrap) {
@@ -8836,8 +9542,7 @@ function bindEvents() {
     // Conversation export all
     dom.exportAllBtn.addEventListener('click', exportAllConversations);
 
-    // Conversation import
-    dom.importConvBtn.addEventListener('click', function() { dom.convImportFile.click(); });
+    // Conversation import (file input still available for other import paths)
     dom.convImportFile.addEventListener('change', function(e) {
         var file = e.target.files[0];
         if (file) importConversations(file);
@@ -8845,10 +9550,9 @@ function bindEvents() {
     });
 
     // Character remove
-    dom.charRemoveBtn.addEventListener('click', removeCharacter);
 
-    // Character export
-    dom.charExportBtn.addEventListener('click', exportCharacter);
+
+
 
     // World Book button (below character card)
     dom.worldBookBtn.addEventListener('click', openWorldBookModal);
@@ -9150,6 +9854,7 @@ function bindEvents() {
             conv._wiCache = null;
         }
         renderTokenBar();
+        renderQuickReplyBar();
 
         // 关键修复：用户在中途修改总结阈值后，关闭设置时主动检查一次
         // 让改阈值能立即对当前对话产生效果（尤其是调低阈值时）
@@ -9160,8 +9865,26 @@ function bindEvents() {
         // 显式通知 settings 变更
         appStore.notify('settings');
     }
-    if (dom.sidebarSettingsBtn) dom.sidebarSettingsBtn.addEventListener('click', openSettings);
     if (dom.topSettingsBtn) dom.topSettingsBtn.addEventListener('click', openSettings);
+
+    // ==================== Theme Toggle ====================
+    function applyTheme(mode) {
+        if (mode === 'light') {
+            document.documentElement.classList.add('light-mode');
+            document.body.classList.add('light-mode');
+            if (dom.themeToggleIcon) dom.themeToggleIcon.textContent = '☀️';
+        } else {
+            document.documentElement.classList.remove('light-mode');
+            document.body.classList.remove('light-mode');
+            if (dom.themeToggleIcon) dom.themeToggleIcon.textContent = '🌙';
+        }
+        try { localStorage.setItem('opentavern-theme', mode); } catch(e) {}
+    }
+
+    function toggleTheme() {
+        var current = document.documentElement.classList.contains('light-mode') ? 'light' : 'dark';
+        applyTheme(current === 'light' ? 'dark' : 'light');
+    }
     if (dom.settingsCloseBtn) dom.settingsCloseBtn.addEventListener('click', closeSettings);
     if (dom.settingsBackdrop) dom.settingsBackdrop.addEventListener('click', closeSettings);
 
@@ -9256,8 +9979,7 @@ function bindEvents() {
     }
 
     // Import modal close
-    dom.importCloseBtn.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
-    dom.importBackdrop.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
+
 
     // Greeting selector modal close — use first greeting as default
     function finalizeGreetingModal() {
@@ -9384,16 +10106,10 @@ function bindEvents() {
                 renderAll();
             }
             if (isMobile()) closeSidebar();
-            dom.importModal.classList.add('hidden');
             showToast(character.name + ' ' + t('import_success') + (isPNG ? ' (PNG)' : ''));
         } catch(err) {
             console.error('[Import] Failed:', err);
-            // Show import modal so the error message is visible
-            dom.importModal.classList.remove('hidden');
-            dom.importStatus.classList.remove('hidden');
-            dom.importStatus.textContent = t('import_error') + ': ' + err.message;
-            dom.importStatus.className = 'text-xs text-red-400 mt-3 text-center';
-            showToast(t('import_error') + ': ' + err.message);
+            showCustomAlert('导入角色卡失败：' + (err.message || '未知错误'));
         }
     });
 
@@ -9414,6 +10130,17 @@ function bindEvents() {
         }
     }
     dom.viewPromptBtn.addEventListener('click', showFullPrompt);
+    dom.themeToggleBtn.addEventListener('click', toggleTheme);
+
+    // Quick Reply Manager
+    dom.qrManagerCloseBtn.addEventListener('click', closeQuickReplyManager);
+    dom.qrManagerBackdrop.addEventListener('click', closeQuickReplyManager);
+    dom.qrManagerBarBtn.addEventListener('click', openQuickReplyManager);
+    dom.qrAddBtn.addEventListener('click', function() { openQuickReplyEditor(-1); });
+    dom.qrEditCancel.addEventListener('click', closeQuickReplyEditor);
+    dom.qrEditBackdrop.addEventListener('click', closeQuickReplyEditor);
+    dom.qrEditSave.addEventListener('click', saveQuickReply);
+
     dom.promptViewerCloseBtn.addEventListener('click', function() { dom.promptViewerModal.classList.add('hidden'); });
     dom.promptViewerBackdrop.addEventListener('click', function() { dom.promptViewerModal.classList.add('hidden'); });
 
@@ -9529,7 +10256,6 @@ function bindEvents() {
             if (isMobile() && dom.sidebar.classList.contains('open')) { closeSidebar(); return; }
             if (!dom.settingsModal.classList.contains('hidden')) closeSettings();
             if (!dom.charEditorModal.classList.contains('hidden')) dom.charEditorModal.classList.add('hidden');
-            if (!dom.importModal.classList.contains('hidden')) dom.importModal.classList.add('hidden');
             if (!dom.promptViewerModal.classList.contains('hidden')) dom.promptViewerModal.classList.add('hidden');
             // 兼容旧引用 + 新管理器
             if (dom.summarizeModal && !dom.summarizeModal.classList.contains('hidden')) dom.summarizeModal.classList.add('hidden');
@@ -9546,6 +10272,11 @@ function bindEvents() {
 async function init() {
     cacheDom();
     await initState();
+    // Sync theme: flash script sets on <html>, mirror to <body> for CSS selectors
+    if (document.documentElement.classList.contains('light-mode')) {
+        document.body.classList.add('light-mode');
+        if (dom.themeToggleIcon) dom.themeToggleIcon.textContent = '☀️';
+    }
     bindEvents();
 
     // Apply initial language
@@ -9607,7 +10338,6 @@ async function init() {
             // 只有在没有任何其他弹窗打开时才显示，避免冲突
             var hasOtherModalOpen =
                 (dom.settingsModal && !dom.settingsModal.classList.contains('hidden')) ||
-                (dom.importModal && !dom.importModal.classList.contains('hidden')) ||
                 (dom.charEditorModal && !dom.charEditorModal.classList.contains('hidden')) ||
                 (dom.summaryManagerModal && !dom.summaryManagerModal.classList.contains('hidden')) ||
                 (dom.worldBookModal && !dom.worldBookModal.classList.contains('hidden'));
