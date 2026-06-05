@@ -563,6 +563,11 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 <input id="userName" type="text" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" placeholder="User">
             </div>
             <div>
+                <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_user_description">User Description / Persona</label>
+                <p class="text-[10px] text-zinc-600 mt-0.5" data-i18n="settings_user_description_hint">This will be injected into the prompt as your character setting / background (similar to a character's Description).</p>
+                <textarea id="userDescription" rows="3" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none" data-i18n-placeholder="settings_user_description_placeholder"></textarea>
+            </div>
+            <div>
                 <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider"><span data-i18n="settings_system_prompt">Custom System Prompt</span> <span class="text-zinc-600" data-i18n="settings_system_prompt_hint">(overrides character's system prompt)</span></label>
                 <textarea id="systemPrompt" rows="4" class="w-full mt-1.5 px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none" data-i18n-placeholder="settings_system_prompt_placeholder"></textarea>
             </div>
@@ -1462,6 +1467,9 @@ var i18n = {
         settings_system_prompt: '自定义系统提示词',
         settings_system_prompt_hint: '（覆盖角色卡的系统提示词）',
         settings_system_prompt_placeholder: '可选：自定义系统级指令...',
+        settings_user_description: '用户设定描述（你的角色/背景设定）',
+        settings_user_description_hint: '会作为你的角色信息注入到提示词中（类似角色卡的 Description）。支持 {{char}} / {{user}} 占位符。',
+        settings_user_description_placeholder: '例如：你是一个来自现代都市的年轻侦探，擅长逻辑推理与观察...（此内容将注入提示词）',
         prompt_viewer_title: '完整提示词（发送给 API）',
         copy: '复制',
         copied: '已复制！',
@@ -1732,6 +1740,9 @@ var i18n = {
         settings_system_prompt: '自訂系統提示詞',
         settings_system_prompt_hint: '（覆蓋角色卡的系統提示詞）',
         settings_system_prompt_placeholder: '可選：自訂系統級指令...',
+        settings_user_description: '用戶設定描述（你的角色/背景設定）',
+        settings_user_description_hint: '會作為你的角色資訊注入到提示詞中（類似角色卡的 Description）。支援 {{char}} / {{user}} 佔位符。',
+        settings_user_description_placeholder: '例如：你是一個來自現代都市的年輕偵探，擅長邏輯推理與觀察...（此內容將注入提示詞）',
         prompt_viewer_title: '完整提示詞（傳送給 API）',
         copy: '複製',
         copied: '已複製！',
@@ -1985,6 +1996,9 @@ var i18n = {
         settings_system_prompt: 'Custom System Prompt',
         settings_system_prompt_hint: '(overrides character\'s system prompt)',
         settings_system_prompt_placeholder: 'Optional: Custom system-level instructions...',
+        settings_user_description: 'User Description / Persona',
+        settings_user_description_hint: 'This describes your character/background and will be injected into the system prompt (similar to a character\'s Description). Supports {{char}} / {{user}} placeholders.',
+        settings_user_description_placeholder: 'e.g. You are a young detective from the modern city, skilled at deduction and observation... (this will be injected into the prompt)',
         prompt_viewer_title: 'Full Prompt (sent to API)',
         copy: 'Copy',
         copied: 'Copied!',
@@ -3116,6 +3130,7 @@ function defaultSettings() {
         topP: 0.9,
         userName: 'User',
         systemPrompt: '',
+        userDescription: '',
         lang: 'zh-CN',
         // 超过设定轮数后自动总结旧消息并注入上下文（主功能，默认开启）
         summaryEnabled: true,
@@ -3438,6 +3453,12 @@ function buildGroupSystemPrompt(conv, wiByPos) {
     var customSysPrompt = state.settings.systemPrompt;
     if (customSysPrompt && customSysPrompt.trim()) {
         parts.push(replacePlaceholders(customSysPrompt.trim(), 'Assistant', userName));
+    }
+
+    // Inject user description / persona (user's own setting) - also in group chats
+    var userDesc = state.settings.userDescription || '';
+    if (userDesc && userDesc.trim()) {
+        parts.push('User\'s Persona: ' + replacePlaceholders(userDesc.trim(), 'Assistant', userName));
     }
 
     // ========== 群组多角色严格指令（放在自定义提示词之后） ==========
@@ -4025,6 +4046,12 @@ function buildSystemPrompt(character, worldInfoByPos) {
     }
     if (sysPrompt) {
         parts.push(replacePlaceholders(sysPrompt, charName, userName));
+    }
+
+    // Inject user description / persona (user's own setting)
+    var userDesc = state.settings.userDescription || '';
+    if (userDesc && userDesc.trim()) {
+        parts.push('User\'s Persona: ' + replacePlaceholders(userDesc.trim(), charName, userName));
     }
 
     if (character && character.post_history_instructions) {
@@ -7028,7 +7055,7 @@ function cacheDom() {
         'settingsModal','settingsBackdrop','settingsCloseBtn',
         'apiEndpoint','apiKey','saveApiKey','modelName','contextLength','contextLenVal',
         'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
-        'userName','systemPrompt',
+        'userName','systemPrompt','userDescription',
         'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
         'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn',
         'archiveBtn','tokenInfo','tokenCount','tokenBar','tokenMax','newChatBtn',
@@ -8269,6 +8296,7 @@ function bindEvents() {
         dom.topPVal.textContent = state.settings.topP;
         dom.userName.value = state.settings.userName;
         dom.systemPrompt.value = state.settings.systemPrompt;
+        if (dom.userDescription) dom.userDescription.value = state.settings.userDescription || '';
         dom.summaryEnabled.checked = state.settings.summaryEnabled !== false;
         if (dom.summaryThreshold) {
             dom.summaryThreshold.value = state.settings.summaryThreshold || 12;
@@ -8416,6 +8444,7 @@ function bindEvents() {
         state.settings.topP = parseFloat(dom.topP.value) || 0.9;
         state.settings.userName = dom.userName.value.trim() || 'User';
         state.settings.systemPrompt = dom.systemPrompt.value.trim();
+        if (dom.userDescription) state.settings.userDescription = dom.userDescription.value.trim();
         state.settings.summaryEnabled = dom.summaryEnabled.checked;
         if (dom.summaryThreshold) {
             state.settings.summaryThreshold = parseInt(dom.summaryThreshold.value) || 12;
