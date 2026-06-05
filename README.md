@@ -1,269 +1,372 @@
 # OpenTavern
 
-**A lightweight, powerful, single-file AI character chat app**  
-with full SillyTavern compatibility, advanced memory, and **Group Chat support**.
+**一款轻量、强大的单文件 AI 角色扮演聊天应用**  
+完美兼容 SillyTavern 角色卡，支持群组聊天、世界书（Lorebook）与高级记忆系统。
 
-> Open one HTML file and enjoy professional role-playing with multiple characters. No backend, no installation required.
-
----
-
-## 🚀 Quick Access (Live Demo)
-
-**Recommended (Faster & More Stable in China):**
-- **Cloudflare Pages**: [https://opentavern.pages.dev](https://opentavern.pages.dev)
-
-**Backup:**
-- **GitHub Pages**: [https://hajimides.github.io/OpenTavern](https://hajimides.github.io/OpenTavern)
+> 打开一个 HTML 文件即可开始专业级多角色角色扮演。无需后端，无需安装。
 
 ---
 
-## ✨ Key Features & Major Updates
+## 🚀 快速访问
 
-OpenTavern continues to evolve with cutting-edge browser storage technology. The latest version introduces **OPFS (Origin Private File System)** as the default storage backend — delivering significantly higher capacity, better performance, and long-term reliability compared to IndexedDB or localStorage.
-
-### Core Strengths
-- **Zero Setup** — Single HTML file. Double-click to run. Works offline after first load.
-- **Full SillyTavern Compatibility** — Import/export `chara_card_v3` character cards. Complete World Info (Lorebook) implementation.
-- **Advanced Memory System** — Automatic + manual summarization with history, edit, delete, and custom range support.
-- **Separate Summarization API** — Use a different (cheaper / uncensored) model for long-term memory compression.
-- **Modern Glassmorphism UI** — Beautiful dark theme with animated WebGL background, smooth animations, and mobile-first design.
-- **OPFS Storage (New)** — Origin Private File System for massive capacity (often hundreds of MB to GB), superior performance, and future-proofing. Real-time usage statistics included.
-- **Full Transparency** — View the exact prompt sent to the API at any time.
-- **Three Languages** — 简体中文 / 繁體中文 / English (full UI translation with instant switching).
-- **Privacy First** — Everything stays in your browser. Nothing is sent except to your chosen API provider.
+- **GitHub Pages**: [https://PawNzZi.github.io/OpenTavern](https://PawNzZi.github.io/OpenTavern)
 
 ---
 
-## 📸 Screenshots
+## ✨ 核心功能
 
-| Main Chat Interface                  | Character Card & Sidebar                  |
-|--------------------------------------|-------------------------------------------|
-| ![Main Chat](screenshots/main-chat.png) | ![Character Card](screenshots/character-card.png) |
-
-| World Book Editor                    | Settings Panel                            |
-|--------------------------------------|-------------------------------------------|
-| ![World Book](screenshots/world-book.png) | ![Settings](screenshots/settings.png)     |
-
-| Mobile View                          | Summary Manager                           |
-|--------------------------------------|-------------------------------------------|
-| ![Mobile](screenshots/mobile.png)    | ![Summary Manager](screenshots/summary-manager.png) |
-
-> **Note**: Place your screenshots in a `screenshots/` folder for the images above to display correctly on GitHub.
+- **零配置** — 单个 HTML 文件，双击打开即用，首次加载后可离线使用。
+- **完美兼容 SillyTavern** — 支持导入/导出 `chara_card_v3` 角色卡，完整实现 World Info（Lorebook/世界书）。
+- **高级记忆系统** — 自动 + 手动总结，支持历史记录、编辑、删除、自定义范围。
+- **独立总结 API** — 可为长期记忆压缩使用不同（更便宜/无审查）的模型。
+- **现代毛玻璃 UI** — 深色主题 + 动态 WebGL 背景 + 流畅动画 + 移动优先设计。
+- **OPFS 存储** — Origin Private File System，容量巨大（数百 MB~GB），性能卓越。
+- **提示词完全透明** — 随时查看发送给 API 的完整提示词。
+- **隐私优先** — 一切数据保存在浏览器本地，仅与您选择的 API 提供商通信。
 
 ---
 
-## 🚀 Quick Start
+## 🆕 本分支新增功能与优化
 
-1. Download the latest `index.html` (or `OpenTavern.html`)
-2. Open it in any modern browser (Chrome / Edge / Firefox / Safari recommended)
-3. Click the **⚙️ Settings** button (top right or sidebar)
-4. Configure your **API Endpoint** and **API Key** (one-click preset for DeepSeek available)
-5. (Optional) Import a SillyTavern character card
-6. Start chatting!
+本分支在原始 OpenTavern 基础上进行了大量功能增强和体验优化，以下是主要新增内容：
 
-**Recommended first-time setup**:
-- Use **DeepSeek** (fast, cheap, excellent Chinese/English performance)
-- Set **Context Length** to 20–30
-- Enable **Auto Summarize** with threshold ~12–18
+### 🌓 深色/浅色主题切换
+- 新增 **"暖纸"（Warm Paper）浅色主题**，奶油色纸张 + 深琥珀色墨水设计
+- 所有 UI 组件（玻璃面板、按钮、输入框、消息气泡等）均有完整的浅色模式适配
+- 主题状态自动保存到 localStorage，刷新后保持
+- 侧边栏底部一键切换按钮
 
----
+### 🎴 角色卡管理器
+- **网格视图角色卡管理**：以 4 列卡片网格展示所有已保存的角色卡
+- 卡片显示角色头像 + 名称叠加层，支持点击选择
+- 选择/取消选择状态清晰可见（对勾标记）
+- 支持在管理器中直接点击打开编辑
 
-## 👥 Group Chat & @ Mention Guide
+### 📥 角色卡导入流程优化
+- 移除了独立的导入弹窗，改为隐藏文件输入，更简洁
+- 支持导入 `.json` 和 `.png`（嵌入了角色卡的图片）格式
+- 导入成功后直接进入角色编辑器
 
-### How to Start a Group Chat
-1. Click **New Chat**
-2. In the character picker, **long-press or use multi-select** to choose multiple characters
-3. Start chatting
+### ✏️ 角色编辑器增强
+- **头像上传**：支持为角色上传自定义头像图片，实时预览
+- **删除按钮**：在编辑器中一键从角色库删除
+- **导出按钮**：直接从编辑器导出角色卡 JSON
+- **系统提示词/历史后指令/作者备注** 输入框从 2 行扩大到 5 行
+- 新增 **编辑专用弹窗**（Textarea Editor Modal），便于编辑长文本
 
-### Using @ Mention (Recommended)
-- Click the **@** button to the left of the input box
-- Select a character from the popup panel (beautiful glassmorphism design with blur)
-- Or manually type `@角色名` in the input
+### 👤 用户头像
+- 设置中新增用户头像上传功能
+- 支持自定义头像图片，在对话中区分用户和 AI 消息
 
-The selected character will be the one who replies this turn, and their full character card will be injected into the prompt.
+### ⚡ 快捷回复系统
+- 输入框上方新增快捷回复栏，预设消息一键发送
+- 支持 `{{user}}` 和 `{{char}}` 变量替换
+- **快捷回复管理器**：支持添加、编辑、删除快捷回复
+- 可滚动标签栏，不影响主输入区域
+- Token 用量以紧凑药丸形显示在快捷回复栏右侧
 
-### No @ Behavior
-If you send a message without @ anyone, the **last character who spoke** will automatically reply (great for natural back-and-forth).
+### 🛡️ Jailbreak 预设系统
+- 设置中新增 Jailbreak 预设管理器
+- 支持创建、编辑、删除多条破甲提示词预设
+- 下拉选择器快速切换，可随时切换或关闭
 
-### Tips
-- Only the mentioned character's detailed information is sent (efficient context usage)
-- You can still have rich multi-character scenes by @ switching between them
-- Works great on mobile
+### 🏢 多 API 提供商预设
+- 新增 **Grok、OpenRouter、自定义** 三个预设按钮（原仅 DeepSeek）
+- 每个提供商可保存独立的 API Endpoint、Key、Model 配置
+- 一键切换并自动加载对应的已保存配置
 
----
+### 🔍 模型自动获取与补全
+- **Fetch Models** 按钮：自动从 API 的 `/v1/models` 接口获取可用模型列表
+- 输入框下方弹出下拉菜单，点击即可选择模型
+- 支持输入过滤，快速定位目标模型
 
-## 📋 Main Features (Detailed)
+### 💬 消息编辑功能
+- 点击消息上的编辑按钮，打开专门的编辑弹窗
+- 编辑后可替换原内容并重新生成 AI 回复
+- 支持编辑用户消息和 AI 消息
 
-### 1. Character Cards
-- Import any `chara_card_v3` JSON from SillyTavern
-- Built-in full editor (name, description, personality, scenario, first message, example dialogues, system prompt, post-history instructions, creator notes, tags)
-- One-click export back to SillyTavern format
-- Automatic first message injection when starting a new chat
-- **New Character Picker** when creating fresh conversations
+### 🔄 消息重新生成优化
+- 新增**刷新按钮**（绿色），与重新生成按钮（琥珀色）并列
+- 两种重新生成方式可选
 
-### 2. World Book / World Info (Lorebook)
-Complete SillyTavern implementation with modern UI:
-- Searchable entry list
-- Rich editor: Memo, Primary Keys (supports regex `/pattern/i`), Secondary Keys, Selective Logic (AND ANY / AND ALL / NOT ANY / NOT ALL)
-- Strategy: Constant (always active) or Keyword-triggered
-- Probability, Insertion Order, Group scoring, Timed effects (Sticky / Cooldown / Delay)
-- **Token Budget Control** — Limit total tokens injected per generation (prevents context overflow)
-- Full mobile-optimized editor with advanced filters
+### 🎬 开场白选择器
+- 如果角色卡包含多个开场白，启动对话时弹出选择器
+- 清晰展示所有可选开场白，点击即可选用
 
-### 3. Intelligent Summarization System
-- **Auto Summarize**: Automatically compresses old messages when threshold is reached (configurable, with safety warnings)
-- **Summary Manager** (dedicated modal):
-  - Two modes: **Recent Messages** or **Custom Range** (start–end turn)
-  - Live preview before generating
-  - Summary History list with edit / delete
-  - Max word limit per summary
-- **Separate Summarization API**: Configure a completely different endpoint/model/key for summarization (ideal for NSFW content or cost optimization)
-- Summaries are injected as system messages and can be manually managed
+### 📊 StatusBlock 状态面板系统
+- AI 消息中支持渲染结构化的状态信息面板
+- 可折叠/展开，含图标、标签、徽章等丰富样式
+- 支持纯文本和 JSON 脚本两种渲染模式
+- 移动端字体放大优化
 
-### 4. Chat Experience
-- Real-time streaming responses
-- Stop generation button
-- Message actions: Copy, Regenerate (AI messages), Delete
-- Visual token/context usage bar with color warnings
-- Full prompt viewer modal (see exactly what is sent to the API)
-- Dialogue highlighting for Chinese quotes 「」 “”
-- Responsive input area with auto-resize
+### 💭 思考动画
+- AI 回复生成中显示弹跳波浪点动画（wave bounce）
+- 视觉反馈更生动
 
-### 5. Data Management & Storage (Major Upgrade)
-- Export single conversation or **all conversations** (JSON)
-- Import previously exported chats
-- **OPFS (Origin Private File System)** — Default backend offering:
-  - Much higher capacity (often 100MB–several GB)
-  - Better performance than IndexedDB
-  - Private to the origin (more secure)
-- Real-time storage usage display in Settings (used MB / quota with progress bar)
-- Automatic migration handling
-- Backup reminder system
+### 📱 世界书移动端重构
+- 完整的面板堆叠导航：世界书列表 → 条目列表 → 编辑器
+- 底部导航栏 + 返回按钮，操作路径清晰
+- 平滑滑动切换动画
+- 隐藏"删除全部"按钮以防止误触
+- 条目列表中操作按钮始终可见
 
-### 6. Settings & Customization
-- API: Endpoint, Key (with optional localStorage save + security warning), Model
-- Generation params: Temperature, Top P, Max Tokens, Context Length
-- User name (replaces `{{user}}`)
-- Custom global system prompt (overrides character prompt)
-- World Info token budget + enable toggle
-- Summarization threshold, max words, separate API settings
-- Language switcher (affects entire UI instantly)
-- Storage backend status and usage statistics (now prominently shows **OPFS**)
+### 🎨 消息气泡样式调整
+- 用户气泡：左上角圆角（原右上角）
+- AI 气泡：右上角圆角（原左上角）
+- 视觉上更符合对话流向
 
-### 7. Group Chat with @ Mention (New)
-- Create conversations with **multiple characters** at once.
-- Use the **@ button** (left of input) to open a beautiful character selection panel.
-- Explicitly @ a character (e.g. `@普拉娜` or via panel) to make them reply this turn.
-- If you don't @ anyone, the **last replying character** will automatically continue the conversation.
-- Full Switch-mode prompt injection — only the mentioned character's complete card is sent.
-- Clean, mobile-friendly UI with backdrop blur.
+### 🖱️ 滚动条全局隐藏
+- 所有滚动条全局隐藏，保持界面干净
+- 滚动功能不受影响，支持触控惯性滚动
 
-This provides precise control in multi-character scenes while keeping prompts efficient.
+### 🗑️ 自定义对话框
+- 使用主题风格的自定义对话框替代浏览器原生 `alert()`/`confirm()`
+- 保持 UI 一致性
 
-### 8. Mobile Experience
-- Hamburger sidebar
-- Fully optimized modals
-- Touch-friendly design
-- Excellent @ mention panel on phones
+### 📦 存储系统精简
+- 移除 IndexedDB 兼容层，默认且仅使用 **OPFS**
+- 存储状态指示器始终显示 OPFS
+- 存储提示文案简化
+- 清除数据按钮功能统一
 
----
-
-## ⚙️ API Configuration
-
-OpenTavern uses the standard **OpenAI-compatible** chat completions API (`/v1/chat/completions`).
-
-### Popular Supported Providers
-- **DeepSeek** (recommended — one-click preset, including `deepseek-v4-flash`)
-- OpenAI (GPT-4o, GPT-4o-mini, o1, etc.)
-- SiliconFlow, Together.ai, Fireworks, Groq
-- Local servers: Ollama, LM Studio, llama.cpp (with OpenAI compatibility layer)
-- Any provider that follows the OpenAI chat format
-
-**Pro Tip**: In Settings you can configure a **completely separate Summarization API**. This is extremely useful when:
-- You want to use a cheaper model for memory compression
-- Your main model refuses NSFW content
-- You want to keep long-term memory while using a different provider
+### 📄 其他优化
+- 侧边栏角色卡区域重新设计：头像改为竖版肖像样式、显示角色描述
+- 底部操作栏增加主题切换按钮
+- 对话列表移动端始终显示导出/删除按钮
+- GitHub 链接指向本分支仓库
+- 语言切换器移除（固定为简体中文）
+- API Endpoint 占位符简化
+- 总结警告文案更简洁清晰
+- i18n 精简，移除繁体中文和英文翻译
 
 ---
 
-## 🛠️ Technical Stack
+## 📸 截图
 
-- **Frontend**: Pure Vanilla JavaScript + Tailwind CSS (CDN) + extensive custom CSS
-- **Graphics**: Custom WebGL shader for animated background + vignette overlay
-- **Storage**: **OPFS (Origin Private File System)** — primary backend (recommended for long-term use) + localStorage fallback
-- **i18n**: Built-in translation system with instant language switching
-- **Streaming**: Fetch + ReadableStream for real-time token streaming
-- **No external dependencies** — everything is self-contained in one HTML file
+| 主聊天界面 | 角色卡 & 侧边栏 |
+|-----------|----------------|
+| ![主聊天](screenshots/main-chat.png) | ![角色卡](screenshots/character-card.png) |
 
----
+| 世界书编辑器 | 设置面板 |
+|------------|---------|
+| ![世界书](screenshots/world-book.png) | ![设置](screenshots/settings.png) |
 
-## ❓ FAQ
+| 移动端视图 | 总结管理器 |
+|-----------|-----------|
+| ![移动端](screenshots/mobile.png) | ![总结管理器](screenshots/summary-manager.png) |
 
-**Q: Do I really need nothing installed?**  
-A: Correct. Just open the HTML file in a modern browser.
-
-**Q: How much data can I store now?**  
-A: With **OPFS**, capacity is significantly higher than before — often hundreds of MB to several GB depending on your browser and device. The app shows real-time usage with a progress bar.
-
-**Q: Why OPFS instead of IndexedDB?**  
-A: OPFS offers better performance, larger practical limits, and is designed specifically for private, high-capacity file storage in the browser. It is now the recommended long-term backend.
-
-**Q: Can I use it completely offline?**  
-A: Yes — after the first load and API configuration, all chats, characters, and World Books work offline.
-
-**Q: Is NSFW content supported?**  
-A: Yes. Use a permissive model and consider the separate summarization API to avoid refusals on long contexts.
-
-**Q: What happens if I update the HTML file?**  
-A: Your data remains safe in browser storage (OPFS). Just replace the file.
-
-**Q: Why is there a separate summarization API?**  
-A: Long conversations can become expensive or hit content filters. A dedicated summarization model (often cheaper or uncensored) keeps memory efficient without affecting your main chat model.
-
-**Q: How do I report bugs or request features?**  
-A: Open an issue on the GitHub repository.
+> **注意**：将截图放入 `screenshots/` 文件夹后，上方图片将在 GitHub 上正确显示。
 
 ---
 
-## 🔄 Version History Highlights
+## 🚀 快速开始
 
-- **Latest**: Switched primary storage to **OPFS** for superior capacity and performance. Added New Chat Character Picker modal. Refined summary manager, mobile layouts, and World Book editor. Default summarization model updated to `deepseek-v4-flash`.
-- Previous: IndexedDB storage, Summary Manager with history & custom range, separate summarization API, World Info token budget, full prompt viewer, major mobile UI fixes.
+1. 下载最新的 `index.html`
+2. 用现代浏览器打开（推荐 Chrome / Edge / Firefox / Safari）
+3. 点击 **⚙️ 设置** 按钮
+4. 配置 **API Endpoint** 和 **API Key**（支持一键预设 DeepSeek、Grok、OpenRouter）
+5. （可选）导入 SillyTavern 角色卡
+6. 开始聊天！
 
----
-
-## 🤝 Contributing
-
-Contributions are very welcome!
-
-High-value areas:
-- Additional language translations
-- More World Info features (timed effects, character filters, etc.)
-- UI/UX improvements and accessibility
-- Performance optimizations for very long chats
-- Better error handling and user guidance
-- Documentation improvements
-
-Please open issues or submit pull requests on GitHub.
+**推荐首次设置**：
+- 使用 **DeepSeek**（快速、便宜、中英文表现优秀）
+- 设置 **上下文长度** 为 20~30
+- 启用 **自动总结**，阈值设为 ~12~18
 
 ---
 
-## 📜 License
+## 👥 群组聊天 & @ 提及指南
 
-MIT License — Free for personal and commercial use.
+### 如何开始群组聊天
+1. 点击 **新对话**
+2. 在角色选择器中，**长按或多选** 多个角色
+3. 开始聊天
+
+### 使用 @ 提及（推荐）
+- 点击输入框左侧的 **@** 按钮
+- 从弹出面板中选择角色
+- 或手动在输入框中输入 `@角色名`
+
+被选择的角色将回复本轮对话，该角色的完整角色卡信息会被注入到提示词中。
+
+### 不使用 @ 时的行为
+如果发送消息时没有 @ 任何角色，**上一个发言的角色**将自动回复。
 
 ---
 
-## 💬 Feedback & Support
+## 📋 主要功能详情
 
-- GitHub Issues: Report bugs, suggest features, ask questions
-- The project is actively maintained
+### 1. 角色卡
+- 导入任意 SillyTavern `chara_card_v3` JSON
+- 内置完整编辑器（名称、描述、性格、场景、开场白、示例对话、系统提示词、历史后指令、作者备注、标签）
+- 一键导出回 SillyTavern 格式
+- 新对话时自动注入开场白
+- **新增角色选择器**：新建对话时以网格卡片视图选择角色
+- **开场白选择器**：多开场白角色可选择使用哪个开场白
+- **角色卡管理器**：网格浏览所有角色卡
+
+### 2. 世界书 / World Info（Lorebook）
+完整的 SillyTavern 实现，配备现代化 UI：
+- 可搜索的条目列表
+- 丰富编辑器：备注、主关键字（支持正则 `/pattern/i`）、次关键字、选择逻辑（AND ANY / AND ALL / NOT ANY / NOT ALL）
+- 策略：常量（始终激活）或关键字触发
+- 概率、插入顺序、组评分、定时效果（Sticky / Cooldown / Delay）
+- **Token 预算控制** — 限制每次生成注入的总 Token 数，防止上下文溢出
+- 完整移动端优化，面板堆叠导航
+- **移动端全面重构**：三层面板导航 + 返回按钮 + 平滑切换动画
+
+### 3. 智能总结系统
+- **自动总结**：消息数达到阈值时自动压缩旧消息（可配置）
+- **总结管理器**（独立弹窗）：
+  - 两种模式：**最近 N 轮** 或 **自定义范围**（起始~结束消息序号）
+  - 生成前实时预览
+  - 总结历史列表，支持编辑/删除
+  - 每段总结最大字数限制
+- **独立总结 API**：配置完全不同的 Endpoint/Model/Key 用于总结
+- 总结作为系统消息注入，可手动管理
+
+### 4. 聊天体验
+- 实时流式响应
+- 停止生成按钮
+- 消息操作：复制、重新生成（含刷新按钮）、编辑、删除
+- 可视化的 Token/上下文用量条（紧凑药丸形）
+- 完整提示词查看器
+- 中文引号「」「」高亮
+- 自适应输入框
+
+### 5. 数据管理与存储
+- 导出单个对话或**全部对话**（JSON）
+- 导入之前导出的对话
+- **OPFS（Origin Private File System）** — 默认存储后端，容量大、性能好
+- 实时存储用量显示（已用 MB / 配额，含进度条）
+
+### 6. 设置与自定义
+- API：Endpoint、Key、Model（支持自动获取模型列表）
+- 生成参数：Temperature、Top P、Max Tokens、Context Length
+- 用户名（替换 `{{user}}`）
+- 自定义全局系统提示词（覆盖角色提示词）
+- 世界书 Token 预算 + 启用开关
+- 总结阈值、最大字数、独立 API 设置
+- **提供商标识预设**：DeepSeek / Grok / OpenRouter / 自定义，配置可保存
+- **Jailbreak 预设**：创建和管理多条破甲提示词
+- **主题切换**：深色/浅色主题一键切换
+
+### 7. 群组聊天与 @ 提及
+- 一次选择**多个角色**创建对话
+- @ 按钮选择或手动输入 `@角色名`
+- 未 @ 时自动由上个发言角色回复
+- 仅 @ 角色的完整角色卡信息会被发送，节省上下文
+- 移动端友好
+
+### 8. 浅色主题（新增）
+- "暖纸"设计风格：奶油色背景 + 深琥珀色强调色
+- 所有组件完整的浅色模式样式
+- 按钮统一添加可见边框
+- 对话框白色毛玻璃效果
+- 范围滑块、复选框等细节全面适配
+
+### 9. 移动端体验
+- 汉堡菜单侧边栏
+- 世界书面板堆叠导航
+- 触控友好设计
+- @ 面板在手机上表现出色
+- 始终可见的操作按钮
 
 ---
 
-**OpenTavern** — Powerful character chat, made simple.  
-Now powered by OPFS for the best possible local experience.
+## ⚙️ API 配置
+
+OpenTavern 使用标准 **OpenAI 兼容** 的聊天补全 API（`/v1/chat/completions`）。
+
+### 常用提供商
+- **DeepSeek**（推荐 — 一键预设，含 `deepseek-v4-flash`）
+- **Grok**（xAI）
+- **OpenRouter**（多模型聚合）
+- OpenAI（GPT-4o、GPT-4o-mini、o1 等）
+- SiliconFlow、Together.ai、Fireworks、Groq
+- 本地服务器：Ollama、LM Studio、llama.cpp（需开启 OpenAI 兼容层）
+
+**小技巧**：在设置中可配置**完全独立的总结 API**，在以下场景非常有用：
+- 想用更便宜的模型进行记忆压缩
+- 主模型拒绝 NSFW 内容
+- 想在使用不同提供商的同时保持长期记忆
 
 ---
 
-*Last updated: 2026*
+## 🛠️ 技术栈
+
+- **前端**：纯 Vanilla JavaScript + Tailwind CSS（CDN）+ 大量自定义 CSS
+- **图形**：自定义 WebGL 着色器动画背景 + 渐晕叠加
+- **存储**：**OPFS（Origin Private File System）** — 唯一存储后端
+- **i18n**：内置翻译系统（当前仅简体中文）
+- **流式传输**：Fetch + ReadableStream 实时 token 流
+- **零外部依赖** — 一切自包含于单个 HTML 文件
+
+---
+
+## ❓ 常见问题
+
+**Q: 真的什么都不用安装吗？**  
+A: 是的。直接用现代浏览器打开 HTML 文件即可。
+
+**Q: 能存多少数据？**  
+A: 使用 **OPFS**，容量通常为数百 MB 到数 GB，具体取决于浏览器和设备。应用会实时显示用量和进度条。
+
+**Q: 可以完全离线使用吗？**  
+A: 可以 — 首次加载并配置好 API 后，所有聊天、角色和世界书均可离线工作。
+
+**Q: 支持 NSFW 内容吗？**  
+A: 支持。使用宽松的模型，并考虑用独立的总结 API 避免内容过滤。
+
+**Q: 更新 HTML 文件后数据会丢失吗？**  
+A: 不会。数据保存在浏览器的 OPFS 存储中，只需替换文件即可。
+
+**Q: 为什么有独立的总结 API？**  
+A: 长对话可能变得昂贵或触发内容过滤器。专用的总结模型（通常更便宜或更宽松）可以在不影响主聊天模型的情况下保持记忆效率。
+
+---
+
+## 🔄 版本更新亮点
+
+### 本分支新增
+- 🌓 **深色/浅色主题切换**（暖纸浅色主题）
+- 🎴 **角色卡管理器**（网格视图）
+- ✏️ **角色编辑器增强**（头像上传、删除、导出）
+- 👤 **用户头像上传**
+- ⚡ **快捷回复系统**
+- 🛡️ **Jailbreak 预设系统**
+- 🏢 **多 API 提供商预设**（DeepSeek / Grok / OpenRouter / 自定义）
+- 🔍 **自动获取模型列表**
+- 💬 **消息编辑功能**
+- 🔄 **刷新重新生成按钮**
+- 🎬 **开场白选择器**
+- 📊 **StatusBlock 状态面板**
+- 💭 **思考波浪动画**
+- 📱 **世界书移动端面板重构**
+- 🗑️ **自定义主题对话框**
+- 🎨 **消息气泡样式调整**
+- 存储系统精简为纯 OPFS
+- 语言切换移除，固定简体中文
+- 大量 UI 细节优化和移动端适配
+
+---
+
+## 📜 许可证
+
+MIT License — 免费用于个人和商业用途。
+
+---
+
+## 💬 反馈与支持
+
+- GitHub Issues：报告 bug、建议功能、提出问题
+- 本分支维护：[https://github.com/PawNzZi/opentavern/tree/dev](https://github.com/PawNzZi/opentavern/tree/dev)
+
+---
+
+**OpenTavern** — 强大的角色扮演聊天，如此简单。  
+现已支持浅色主题、快捷回复和角色卡管理器！
+
+---
+
+*最后更新：2026年*
