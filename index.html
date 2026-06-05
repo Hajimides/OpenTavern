@@ -460,6 +460,10 @@ body {
 .msg-assistant .msg-bubble { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 4px 20px 20px 20px; }
 .msg-bubble { padding: 14px 18px; line-height: 1.7; font-size: 1rem; white-space: pre-wrap; word-break: break-word; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 
+/* 气泡最大宽度不超过对方头像位置：AI消息右侧留出user头像空间，user消息左侧留出AI头像空间 */
+.msg-assistant .msg-wrapper { margin-right: 40px; }
+.msg-user .msg-wrapper { margin-left: 40px; }
+
 .dialogue-highlight { color: #f59e0b; }
 
 /* StatusBlock — rendered status panel inside chat messages */
@@ -619,7 +623,9 @@ body {
     #sidebarBackdrop.open { opacity: 1; visibility: visible; pointer-events: auto; }
 
     .msg-bubble { max-width: 100%; padding: 12px 14px; }
-    .msg-wrapper { max-width: 92% !important; }
+    .msg-wrapper { max-width: 80% !important; }
+    .msg-assistant .msg-wrapper { margin-right: 28px; }
+    .msg-user .msg-wrapper { margin-left: 28px; }
 
     .msg-actions { opacity: 1; }
     .msg-action-btn { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
@@ -7555,7 +7561,7 @@ function renderMessages() {
             msgDiv.className = 'msg-enter ' + (isUser ? 'msg-user' : 'msg-assistant') + ' flex items-start gap-2 ' + (isUser ? 'justify-end' : 'justify-start');
             msgDiv.innerHTML = `
                 ${!isUser ? charAvHtml : ''}
-                <div class="max-w-[72%] msg-wrapper">
+                <div class="max-w-[65%] msg-wrapper">
                     ${!isUser ? `<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">${escapeHtml(senderName)}</p>` : ''}
                     <div class="msg-bubble">${isUser ? escapeHtml(msg.content) : highlightDialogue(msg.content)}</div>
                     <div class="msg-actions">
@@ -7610,7 +7616,7 @@ function renderMessages() {
         var userAvHtml = _msgAvatarHTML(conv, true, state.settings.userName || 'User');
         html += '<div class="msg-enter ' + (isUser ? 'msg-user' : 'msg-assistant') + ' flex items-start gap-2 ' + (isUser ? 'justify-end' : 'justify-start') + '">';
         if (!isUser) html += charAvHtml;
-        html += '<div class="max-w-[72%] msg-wrapper">';
+        html += '<div class="max-w-[65%] msg-wrapper">';
         if (!isUser) html += '<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(senderName) + '</p>';
         html += '<div class="msg-bubble">' + (isUser ? escapeHtml(msg.content) : highlightDialogue(msg.content)) + '</div>';
         html += '<div class="msg-actions">';
@@ -7668,7 +7674,7 @@ function renderMessagesFullHistory(conv) {
         var userAvHtml = _msgAvatarHTML(conv, true, state.settings.userName || 'User');
         html += '<div class="msg-enter ' + (isUser ? 'msg-user' : 'msg-assistant') + ' flex items-start gap-2 ' + (isUser ? 'justify-end' : 'justify-start') + '">';
         if (!isUser) html += charAvHtml;
-        html += '<div class="max-w-[72%] msg-wrapper">';
+        html += '<div class="max-w-[65%] msg-wrapper">';
         if (!isUser) html += '<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(senderName) + '</p>';
         html += '<div class="msg-bubble">' + (isUser ? escapeHtml(msg.content) : highlightDialogue(msg.content)) + '</div>';
         html += '<div class="msg-actions">';
@@ -8503,7 +8509,7 @@ function _resendToAI() {
     div.id = 'streamingMsg';
     div.className = 'msg-enter msg-assistant flex items-start gap-2 justify-start';
     div.innerHTML = charAvHtml +
-        '<div class="max-w-[72%] msg-wrapper">' +
+        '<div class="max-w-[65%] msg-wrapper">' +
         '<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(getCurrentGeneratingSpeakerName(conv)) + '</p>' +
         '<div class="msg-bubble" id="streamingContent">' +
         '<div class="think-wave"><span></span><span></span><span></span></div>' +
@@ -8673,7 +8679,7 @@ function sendMessage() {
     streamDiv.id = 'streamingMsg';
     streamDiv.className = 'msg-enter msg-assistant flex items-start gap-2 justify-start';
     streamDiv.innerHTML = charAvHtml2 +
-        '<div class="max-w-[72%] msg-wrapper">' +
+        '<div class="max-w-[65%] msg-wrapper">' +
         '<p class="text-sm text-zinc-500 mb-1 ml-1 font-medium">' + escapeHtml(getCurrentGeneratingSpeakerName(conv)) + '</p>' +
         '<div class="msg-bubble" id="streamingContent">' +
         '<div class="think-wave"><span></span><span></span><span></span></div>' +
