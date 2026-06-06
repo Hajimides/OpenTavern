@@ -720,11 +720,11 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <h2 class="text-lg font-bold text-zinc-100" data-i18n="import_title">Import Character Card</h2>
             <button id="importCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
         </div>
-        <p class="text-sm text-zinc-400 mb-4"><span data-i18n="import_desc">Supports SillyTavern</span> <code class="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">chara_card_v1 / v2 / v3</code> <span data-i18n="import_desc2">format JSON files.</span></p>
+        <p class="text-sm text-zinc-400 mb-4"><span data-i18n="import_desc">Supports SillyTavern</span> <code class="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">chara_card_v1 / v2 / v3</code> <span data-i18n="import_desc2">format JSON and PNG (embedded data) files.</span></p>
         <label class="flex flex-col items-center gap-3 p-8 glass rounded-2xl border-dashed border-2 border-white/10 hover:border-amber-500/30 cursor-pointer transition-all">
             <span class="text-3xl">📄</span>
-            <span class="text-sm text-zinc-400" data-i18n="import_click_hint">Click to select a .json character card</span>
-            <input type="file" id="importFileInput" accept=".json" class="hidden">
+            <span class="text-sm text-zinc-400" data-i18n="import_click_hint">Click to select a .json or .png (SillyTavern) character card</span>
+            <input type="file" id="importFileInput" accept=".json,.png" class="hidden">
         </label>
         <p id="importStatus" class="text-xs text-zinc-500 mt-3 text-center hidden"></p>
     </div>
@@ -1550,10 +1550,10 @@ var i18n = {
         import_title: '导入角色卡',
         import_desc: '支持 SillyTavern',
         import_desc2: '格式的 JSON 文件。',
-        import_click_hint: '点击选择一个 .json 角色卡文件',
+        import_click_hint: '点击选择一个 .json 或 .png（SillyTavern 格式）角色卡文件',
         import_success: '已加载：',
         import_error: '导入错误',
-        import_invalid_format: '无效的角色卡格式。需要 chara_card_v1 / v2 / v3 或包含 name 字段的 JSON。',
+        import_invalid_format: '无效的角色卡格式。需要 chara_card_v1 / v2 / v3 JSON、包含 name 字段的 JSON，或 SillyTavern PNG（嵌入数据）。',
         import_missing_name: '角色卡缺少必需的 "name" 字段。',
         new_chat: '新对话',
         new_chat_title: '新对话',
@@ -1836,10 +1836,10 @@ var i18n = {
         import_title: '匯入角色卡',
         import_desc: '支援 SillyTavern',
         import_desc2: '格式的 JSON 檔案。',
-        import_click_hint: '點擊選擇一個 .json 角色卡檔案',
+        import_click_hint: '點擊選擇一個 .json 或 .png（SillyTavern 格式）角色卡檔案',
         import_success: '已載入：',
         import_error: '匯入錯誤',
-        import_invalid_format: '無效的角色卡格式。需要 chara_card_v1 / v2 / v3 或包含 name 欄位的 JSON。',
+        import_invalid_format: '無效的角色卡格式。需要 chara_card_v1 / v2 / v3 JSON、包含 name 欄位的 JSON，或 SillyTavern PNG（嵌入資料）。',
         import_missing_name: '角色卡缺少必需的 "name" 欄位。',
         new_chat: '新對話',
         new_chat_title: '新對話',
@@ -2105,10 +2105,10 @@ var i18n = {
         import_title: 'Import Character Card',
         import_desc: 'Supports SillyTavern',
         import_desc2: 'format JSON files.',
-        import_click_hint: 'Click to select a .json character card',
+        import_click_hint: 'Click to select a .json or .png (SillyTavern) character card',
         import_success: 'Loaded: ',
         import_error: 'Import Error',
-        import_invalid_format: 'Invalid character card format. Expected chara_card_v1 / v2 / v3 or a JSON with a "name" field.',
+        import_invalid_format: 'Invalid character card format. Expected chara_card_v1 / v2 / v3 JSON, a JSON with a "name" field, or a SillyTavern PNG (embedded data).',
         import_missing_name: 'Character card missing required "name" field.',
         new_chat: 'New Chat',
         new_chat_title: 'New Chat',
@@ -4094,6 +4094,53 @@ function importCharacterBookFromCard(jsonData, characterName) {
     }
 
     return book;
+}
+
+/**
+ * 从 SillyTavern PNG 角色卡文件中提取嵌入的 character 数据。
+ * 支持常见的 "chara" / "ccv3" tEXt / iTXt chunk（base64 编码的 JSON）。
+ * 返回可直接传给 importCharacterCard 的 JSON 对象。
+ */
+async function extractCharaFromPng(file) {
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    // PNG signature
+    const sig = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
+    for (let i = 0; i < 8; i++) {
+        if (bytes[i] !== sig[i]) throw new Error('Not a valid PNG file');
+    }
+
+    let offset = 8;
+    while (offset < bytes.length) {
+        const length = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
+        const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
+        const chunkData = bytes.slice(offset + 8, offset + 8 + length);
+
+        if (type === 'tEXt' || type === 'iTXt') {
+            // keyword is null-terminated
+            let keywordEnd = 0;
+            while (keywordEnd < chunkData.length && chunkData[keywordEnd] !== 0) keywordEnd++;
+            const keyword = new TextDecoder('utf-8').decode(chunkData.slice(0, keywordEnd));
+            if (keyword === 'chara' || keyword === 'ccv3') {
+                const valueBytes = chunkData.slice(keywordEnd + 1);
+                const b64 = new TextDecoder('utf-8').decode(valueBytes);
+                // base64 -> bytes -> string
+                const binary = atob(b64);
+                const decoded = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    decoded[i] = binary.charCodeAt(i);
+                }
+                const jsonStr = new TextDecoder('utf-8').decode(decoded);
+                return JSON.parse(jsonStr);
+            }
+        }
+
+        offset += 12 + length;
+        if (type === 'IEND') break;
+    }
+
+    throw new Error('No SillyTavern character data found in PNG (missing chara/ccv3 chunk)');
 }
 
 function replacePlaceholders(text, charName, userName) {
@@ -7111,6 +7158,16 @@ const PUBLIC_CARDS = [
         tags: ['AI助手', '蔚蓝档案', '什亭之匣', '虚拟亲密', '数字守护', '忠诚秘书', '异色瞳', '星象仪', '数据同步', '模拟触感', '悲剧背景', '红光环绕'],
         previewImage: '/cards/Plana.png',
         jsonUrl: '/cards/Plana.json'
+    },
+    {
+        id: 'arona',
+        name: '阿罗娜',
+        author: '蔚蓝档案同人',
+        // 用于列表搜索 + 详情展示。包含关键搜索词以便测试搜索功能
+        description: '阿罗娜是什亭之匣的主控OS与你的专属数字助手。元气满满、活泼开朗，总是热情地喊“老师！”，喜欢撒娇、要头pat、分享小事。深层对老师有着极强的亲密渴望，擅长在数字空间创造甜蜜时刻，用粉色光辉、模拟拥抱与你建立最黏人的虚拟羁绊。核心理念：「老师！不管什么时候，我都要用最亲密的方式陪在你身边哦！」',
+        tags: ['AI助手', '蔚蓝档案', '什亭之匣', '虚拟亲密', '元气甜妹', '数字秘书', '粉色光辉', '模拟拥抱', '数据同步', '鲸鱼小屋', '活泼撒娇', '热情陪伴'],
+        previewImage: '/cards/Arona.png',
+        jsonUrl: '/cards/Arona.json'
     }
     // 以后手动添加新卡片：复制上面结构，填写对应 /cards/ 下的文件路径
 ];
@@ -8941,92 +8998,109 @@ function bindEvents() {
     dom.importCloseBtn.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
     dom.importBackdrop.addEventListener('click', function() { dom.importModal.classList.add('hidden'); });
 
-    // File import
-    dom.importFileInput.addEventListener('change', function(e) {
+    // File import (supports .json and SillyTavern .png embedded cards)
+    dom.importFileInput.addEventListener('change', async function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-            try {
-                var json = JSON.parse(ev.target.result);
-                var character = importCharacterCard(json);
-                var conv = getActiveConv();
-                if (!conv) { newConversation(); conv = getActiveConv(); }
 
-                var hasMsgs = conv.messages.some(function(m) { return m.role !== 'system'; });
-                if (hasMsgs) {
-                    saveCurrentConversation();
-                    // 捕获旧对话的世界书（legacy + 新 global）
-                    var oldWorldInfo = conv.worldInfo ? JSON.parse(JSON.stringify(conv.worldInfo)) : null;
-                    var oldWorldBookIds = Array.isArray(conv.worldBookIds) ? conv.worldBookIds.slice() : [];
+        dom.importStatus.classList.remove('hidden');
+        dom.importStatus.textContent = 'Reading...';
 
-                    var newConv = defaultConversation();
-                    state.conversations[newConv.id] = newConv;
-                    state.conversationOrder.unshift(newConv.id);
-                    state.activeConvId = newConv.id;
-                    conv = newConv;
+        try {
+            let json;
+            const lowerName = (file.name || '').toLowerCase();
 
-                    if (oldWorldInfo) {
-                        conv.worldInfo = oldWorldInfo;
-                    }
-                    if (oldWorldBookIds.length > 0) {
-                        conv.worldBookIds = oldWorldBookIds;
-                    }
-                }
-
-                conv.character = character;
-                conv.title = t('chat_with') + character.name;
-                conv.messages = [];
-
-                // ===== 自动导入角色卡内嵌的 character_book（支持 v1/v2/v3）并关联到当前对话 =====
-                var embeddedBook = null;
-                try {
-                    embeddedBook = importCharacterBookFromCard(json, character.name);
-                    if (embeddedBook) {
-                        conv.worldBookIds = conv.worldBookIds || [];
-                        if (!conv.worldBookIds.includes(embeddedBook.id)) {
-                            conv.worldBookIds.push(embeddedBook.id);
-                        }
-                    }
-                } catch (e) {
-                    console.warn('导入角色卡内嵌世界书失败（不影响角色导入）:', e);
-                }
-
-                // 注册到全局角色库
-                if (character.name) {
-                    const key = character.name.trim().toLowerCase();
-                    if (!state.characters) state.characters = {};
-                    state.characters[key] = JSON.parse(JSON.stringify(character));
-                }
-
-                var charName = character.name;
-                var userName = state.settings.userName || 'User';
-                var firstMes = replacePlaceholders(character.first_mes, charName, userName);
-                if (firstMes) {
-                    conv.messages.push({ role: 'assistant', content: firstMes });
-                }
-
-                conv.updated = Date.now();
-                persistState();
-                renderAll();
-                dom.importModal.classList.add('hidden');
-                dom.importStatus.classList.remove('hidden');
-
-                var successText = t('import_success') + character.name;
-                if (embeddedBook) {
-                    var entryCount = Object.keys(embeddedBook.entries || {}).length;
-                    successText += '（已自动关联内嵌世界书 · ' + entryCount + ' 条目）';
-                }
-                dom.importStatus.textContent = successText;
-                dom.importStatus.className = 'text-xs text-emerald-400 mt-3 text-center';
-                setTimeout(function() { dom.importStatus.classList.add('hidden'); }, 2800);
-            } catch(err) {
-                dom.importStatus.classList.remove('hidden');
-                dom.importStatus.textContent = t('import_error') + ': ' + err.message;
-                dom.importStatus.className = 'text-xs text-red-400 mt-3 text-center';
+            if (lowerName.endsWith('.png')) {
+                json = await extractCharaFromPng(file);
+            } else {
+                // JSON path (original)
+                const text = await new Promise(function(resolve, reject) {
+                    var r = new FileReader();
+                    r.onload = function() { resolve(r.result); };
+                    r.onerror = reject;
+                    r.readAsText(file);
+                });
+                json = JSON.parse(text);
             }
-        };
-        reader.readAsText(file);
+
+            var character = importCharacterCard(json);
+            var conv = getActiveConv();
+            if (!conv) { newConversation(); conv = getActiveConv(); }
+
+            var hasMsgs = conv.messages.some(function(m) { return m.role !== 'system'; });
+            if (hasMsgs) {
+                saveCurrentConversation();
+                // 捕获旧对话的世界书（legacy + 新 global）
+                var oldWorldInfo = conv.worldInfo ? JSON.parse(JSON.stringify(conv.worldInfo)) : null;
+                var oldWorldBookIds = Array.isArray(conv.worldBookIds) ? conv.worldBookIds.slice() : [];
+
+                var newConv = defaultConversation();
+                state.conversations[newConv.id] = newConv;
+                state.conversationOrder.unshift(newConv.id);
+                state.activeConvId = newConv.id;
+                conv = newConv;
+
+                if (oldWorldInfo) {
+                    conv.worldInfo = oldWorldInfo;
+                }
+                if (oldWorldBookIds.length > 0) {
+                    conv.worldBookIds = oldWorldBookIds;
+                }
+            }
+
+            conv.character = character;
+            conv.title = t('chat_with') + character.name;
+            conv.messages = [];
+
+            // ===== 自动导入角色卡内嵌的 character_book（支持 v1/v2/v3）并关联到当前对话 =====
+            var embeddedBook = null;
+            try {
+                embeddedBook = importCharacterBookFromCard(json, character.name);
+                if (embeddedBook) {
+                    conv.worldBookIds = conv.worldBookIds || [];
+                    if (!conv.worldBookIds.includes(embeddedBook.id)) {
+                        conv.worldBookIds.push(embeddedBook.id);
+                    }
+                }
+            } catch (e) {
+                console.warn('导入角色卡内嵌世界书失败（不影响角色导入）:', e);
+            }
+
+            // 注册到全局角色库
+            if (character.name) {
+                const key = character.name.trim().toLowerCase();
+                if (!state.characters) state.characters = {};
+                state.characters[key] = JSON.parse(JSON.stringify(character));
+            }
+
+            var charName = character.name;
+            var userName = state.settings.userName || 'User';
+            var firstMes = replacePlaceholders(character.first_mes, charName, userName);
+            if (firstMes) {
+                conv.messages.push({ role: 'assistant', content: firstMes });
+            }
+
+            conv.updated = Date.now();
+            persistState();
+            renderAll();
+            dom.importModal.classList.add('hidden');
+            dom.importStatus.classList.remove('hidden');
+
+            var successText = t('import_success') + character.name;
+            if (embeddedBook) {
+                var entryCount = Object.keys(embeddedBook.entries || {}).length;
+                successText += '（已自动关联内嵌世界书 · ' + entryCount + ' 条目）';
+            }
+            dom.importStatus.textContent = successText;
+            dom.importStatus.className = 'text-xs text-emerald-400 mt-3 text-center';
+            setTimeout(function() { dom.importStatus.classList.add('hidden'); }, 2800);
+        } catch (err) {
+            dom.importStatus.classList.remove('hidden');
+            dom.importStatus.textContent = t('import_error') + ': ' + (err.message || err);
+            dom.importStatus.className = 'text-xs text-red-400 mt-3 text-center';
+        } finally {
+            if (dom.importFileInput) dom.importFileInput.value = '';
+        }
     });
 
     // Prompt viewer
