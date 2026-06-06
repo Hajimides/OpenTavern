@@ -7196,8 +7196,8 @@ function openCardLibrary() {
         });
     }
 
-    // 初始渲染所有卡片（搜索时通过隐藏实现过滤）
-    populateCardLibraryList();
+    // 初始用 filter('') 渲染全部（后续输入会只渲染匹配的，实现隐藏不匹配）
+    filterCardLibraryList('');
 
     // 背景点击关闭
     if (dom.cardLibraryBackdrop) {
@@ -7222,10 +7222,10 @@ function showCardLibraryListView() {
     if (dom.cardLibraryEmpty) dom.cardLibraryEmpty.classList.add('hidden');
     currentLibraryCard = null;
 
-    // 确保列表中已填充所有卡片（以便后续 filter 能隐藏不匹配的）
+    // 确保列表可见时有内容（filter 会处理匹配渲染）
     const listView = dom.cardLibraryListView;
     if (listView && listView.children.length === 0) {
-        populateCardLibraryList();
+        filterCardLibraryList('');
     }
 }
 
@@ -7233,6 +7233,51 @@ function showCardLibraryDetailView() {
     if (dom.cardLibraryListView) dom.cardLibraryListView.classList.add('hidden');
     if (dom.cardLibrarySearchContainer) dom.cardLibrarySearchContainer.classList.add('hidden');
     if (dom.cardLibraryDetailView) dom.cardLibraryDetailView.classList.remove('hidden');
+}
+
+function createCardLibraryItem(card) {
+    const item = document.createElement('div');
+    item.className = 'glass rounded-2xl p-3 flex gap-3 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-all border border-white/5 hover:border-white/10';
+
+    // 左侧 1:1 预览图容器（自动裁剪为圆角正方形）
+    const imgWrap = document.createElement('div');
+    imgWrap.className = 'w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-zinc-900 border border-white/10';
+    const img = document.createElement('img');
+    img.src = card.previewImage || '';
+    img.className = 'w-full h-full object-cover';
+    img.alt = card.name || 'preview';
+    img.loading = 'lazy';
+    img.onerror = function() {
+        // 图片加载失败时显示首字母占位
+        imgWrap.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xl font-bold text-white bg-gradient-to-br from-amber-500 to-rose-500">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
+    };
+    imgWrap.appendChild(img);
+
+    // 右侧内容
+    const content = document.createElement('div');
+    content.className = 'flex-1 min-w-0 flex flex-col justify-center';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'text-sm sm:text-base font-medium text-zinc-100 truncate';
+    nameEl.textContent = card.name || 'Unnamed';
+
+    const tagsEl = document.createElement('div');
+    tagsEl.className = 'text-[10px] sm:text-xs text-zinc-400 mt-0.5 truncate';
+    const tagStr = (card.tags || []).slice(0, 4).join(' · ');
+    tagsEl.textContent = tagStr || '';
+
+    content.appendChild(nameEl);
+    content.appendChild(tagsEl);
+
+    item.appendChild(imgWrap);
+    item.appendChild(content);
+
+    // 点击进入详情
+    item.addEventListener('click', () => {
+        showCardLibraryDetail(card);
+    });
+
+    return item;
 }
 
 function populateCardLibraryList() {
@@ -7244,49 +7289,7 @@ function populateCardLibraryList() {
     if (empty) empty.classList.add('hidden');
 
     PUBLIC_CARDS.forEach(card => {
-        const item = document.createElement('div');
-        item.className = 'glass rounded-2xl p-3 flex gap-3 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-all border border-white/5 hover:border-white/10';
-        // Store card data for live filtering / hiding
-        item._cardData = card;
-
-        // 左侧 1:1 预览图容器（自动裁剪为圆角正方形）
-        const imgWrap = document.createElement('div');
-        imgWrap.className = 'w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-zinc-900 border border-white/10';
-        const img = document.createElement('img');
-        img.src = card.previewImage || '';
-        img.className = 'w-full h-full object-cover';
-        img.alt = card.name || 'preview';
-        img.loading = 'lazy';
-        img.onerror = function() {
-            // 图片加载失败时显示首字母占位
-            imgWrap.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xl font-bold text-white bg-gradient-to-br from-amber-500 to-rose-500">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
-        };
-        imgWrap.appendChild(img);
-
-        // 右侧内容
-        const content = document.createElement('div');
-        content.className = 'flex-1 min-w-0 flex flex-col justify-center';
-
-        const nameEl = document.createElement('div');
-        nameEl.className = 'text-sm sm:text-base font-medium text-zinc-100 truncate';
-        nameEl.textContent = card.name || 'Unnamed';
-
-        const tagsEl = document.createElement('div');
-        tagsEl.className = 'text-[10px] sm:text-xs text-zinc-400 mt-0.5 truncate';
-        const tagStr = (card.tags || []).slice(0, 4).join(' · ');
-        tagsEl.textContent = tagStr || '';
-
-        content.appendChild(nameEl);
-        content.appendChild(tagsEl);
-
-        item.appendChild(imgWrap);
-        item.appendChild(content);
-
-        // 点击进入详情
-        item.addEventListener('click', () => {
-            showCardLibraryDetail(card);
-        });
-
+        const item = createCardLibraryItem(card);
         container.appendChild(item);
     });
 }
@@ -7296,39 +7299,29 @@ function filterCardLibraryList(query) {
     const empty = dom.cardLibraryEmpty;
     if (!container) return;
 
-    // 防御性：如果列表为空，先填充所有卡片
-    if (container.children.length === 0) {
-        populateCardLibraryList();
-    }
-
     const q = (query || '').toLowerCase().trim();
 
-    let visibleCount = 0;
-
-    Array.from(container.children).forEach(item => {
-        const card = item._cardData;
-        if (!card) return;
-
-        let matches = true;
-        if (q) {
-            const nameMatch = (card.name || '').toLowerCase().includes(q);
-            const authorMatch = (card.author || '').toLowerCase().includes(q);
-            const descMatch = (card.description || '').toLowerCase().includes(q);
-            const tagsMatch = (card.tags || []).some(t => (t || '').toLowerCase().includes(q));
-            matches = nameMatch || authorMatch || descMatch || tagsMatch;
-        }
-
-        item.style.display = matches ? '' : 'none';
-        if (matches) visibleCount++;
+    const filtered = PUBLIC_CARDS.filter(card => {
+        if (!q) return true;
+        const nameMatch = (card.name || '').toLowerCase().includes(q);
+        const authorMatch = (card.author || '').toLowerCase().includes(q);
+        const descMatch = (card.description || '').toLowerCase().includes(q);
+        const tagsMatch = (card.tags || []).some(t => (t || '').toLowerCase().includes(q));
+        return nameMatch || authorMatch || descMatch || tagsMatch;
     });
 
-    if (empty) {
-        if (visibleCount === 0 && q) {
-            empty.classList.remove('hidden');
-        } else {
-            empty.classList.add('hidden');
-        }
+    container.innerHTML = '';
+    if (empty) empty.classList.add('hidden');
+
+    if (filtered.length === 0) {
+        if (empty) empty.classList.remove('hidden');
+        return;
     }
+
+    filtered.forEach(card => {
+        const item = createCardLibraryItem(card);
+        container.appendChild(item);
+    });
 }
 
 function showCardLibraryDetail(card) {
@@ -7380,8 +7373,6 @@ function showCardLibraryDetail(card) {
             if (dom.cardLibrarySearch) {
                 dom.cardLibrarySearch.value = cardLibrarySearchQuery;
             }
-            // 先确保所有卡片都已渲染
-            populateCardLibraryList();
             filterCardLibraryList(cardLibrarySearchQuery);
         };
     }
