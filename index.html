@@ -7360,9 +7360,11 @@ async function importPublicCard(cardMeta) {
 
 // 侧边栏按钮事件（在 DOM 就绪后绑定）
 function wireCardLibraryButton() {
+    // kept for compatibility; main attach is now direct in bindEvents
     if (dom.cardLibraryBtn) {
+        // avoid double if already attached directly
         dom.cardLibraryBtn.addEventListener('click', () => {
-            openCardLibrary();
+            if (typeof openCardLibrary === 'function') openCardLibrary();
         });
     }
 }
@@ -7489,6 +7491,7 @@ function cacheDom() {
         // @ 提及面板
         'groupMentionModal','groupMentionBackdrop','groupMentionCloseBtn','groupMentionList',
         // Public Card Library
+        'cardLibraryBtn',
         'cardLibraryModal','cardLibraryBackdrop','cardLibraryCloseBtn',
         'cardLibrarySearchContainer','cardLibrarySearch',
         'cardLibraryListView','cardLibraryDetailView',
@@ -8591,8 +8594,13 @@ function bindEvents() {
     dom.archiveBtn.addEventListener('click', archiveCurrentConversation);
 
     // Public Card Library button (below World Book)
-    if (typeof wireCardLibraryButton === 'function') {
-        wireCardLibraryButton();
+    // Direct attach for reliability (the wire function also exists as fallback)
+    if (dom.cardLibraryBtn) {
+        dom.cardLibraryBtn.addEventListener('click', function() {
+            if (typeof openCardLibrary === 'function') {
+                openCardLibrary();
+            }
+        });
     }
 
     // 初始时如果有 cardLibrarySearch，绑定一次（防御性）
