@@ -1239,6 +1239,71 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
     </div>
 </div>
 
+<!-- ===== Public Card Library Modal (static cards/ + Cloudflare Pages) ===== -->
+<div id="cardLibraryModal" class="modal-overlay fixed inset-0 z-[150] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="cardLibraryBackdrop"></div>
+    <div class="relative glass rounded-3xl w-[96%] max-w-4xl shadow-2xl animate-fade-in max-h-[92vh] flex flex-col border border-white/10 overflow-hidden">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <span class="text-xl">📚</span>
+                <h2 id="cardLibraryModalTitle" class="text-lg font-bold text-zinc-100" data-i18n="card_library_title">公共角色卡库</h2>
+            </div>
+            <button id="cardLibraryCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-xl text-zinc-400 hover:text-zinc-200 transition-colors leading-none">&times;</button>
+        </div>
+
+        <!-- Search Bar (list view only) -->
+        <div id="cardLibrarySearchContainer" class="px-5 py-3 border-b border-white/10 flex-shrink-0">
+            <input id="cardLibrarySearch" type="text" class="w-full px-4 py-2.5 glass rounded-2xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40" data-i18n-placeholder="card_library_search_placeholder" placeholder="搜索名称、标签、描述、作者...">
+        </div>
+
+        <!-- List View -->
+        <div id="cardLibraryListView" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
+            <!-- Populated by JS: rectangular cards (left square preview img, right name+tags) -->
+        </div>
+
+        <!-- Detail View -->
+        <div id="cardLibraryDetailView" class="hidden flex-1 flex flex-col overflow-hidden">
+            <div class="p-5 flex-1 overflow-y-auto custom-scroll space-y-4">
+                <!-- Preview Image (larger, auto-cropped square) -->
+                <div id="cardLibraryDetailImageWrap" class="w-28 h-28 sm:w-36 sm:h-36 mx-auto rounded-3xl overflow-hidden bg-zinc-900 flex-shrink-0 border border-white/10">
+                    <img id="cardLibraryDetailImage" class="w-full h-full object-cover" alt="">
+                </div>
+
+                <div class="text-center">
+                    <h3 id="cardLibraryDetailName" class="text-2xl font-semibold text-zinc-100"></h3>
+                    <div id="cardLibraryDetailAuthorWrap" class="text-xs text-zinc-400 mt-0.5">
+                        <span data-i18n="card_library_author_label">作者</span>: <span id="cardLibraryDetailAuthor"></span>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div>
+                    <div class="text-[10px] text-zinc-400 uppercase tracking-wider mb-1.5" data-i18n="card_library_tags">标签</div>
+                    <div id="cardLibraryDetailTags" class="flex flex-wrap gap-1.5"></div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <div class="text-[10px] text-zinc-400 uppercase tracking-wider mb-1.5" data-i18n="card_library_description">简介</div>
+                    <div id="cardLibraryDetailDesc" class="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap"></div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="p-4 border-t border-white/10 flex-shrink-0 bg-black/20 flex gap-3">
+                <button id="cardLibraryBackBtn" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold bg-white/10 hover:bg-white/15 text-zinc-200 transition-all" data-i18n="card_library_back">返回列表</button>
+                <button id="cardLibraryImportBtn" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white shadow shadow-amber-500/30 transition-all" data-i18n="card_library_import">导入到本地</button>
+            </div>
+        </div>
+
+        <!-- Empty / No results (shown inside list view when filtered empty) -->
+        <div id="cardLibraryEmpty" class="hidden px-5 py-10 text-center text-sm text-zinc-400">
+            <div data-i18n="card_library_no_results">没有找到匹配的角色卡</div>
+        </div>
+    </div>
+</div>
+
 <!-- ===== 群组 @ 提及角色面板 (手机端友好) ===== -->
 <div id="groupMentionModal" class="modal-overlay fixed inset-0 z-[160] flex items-end sm:items-center justify-center hidden">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-md" id="groupMentionBackdrop"></div>
@@ -1325,6 +1390,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 <span class="flex-1 text-zinc-300 truncate" data-i18n="world_book">World Book</span>
                 <span id="wiEntryCount" class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 flex-shrink-0"></span>
                 <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="world_book_btn">管理</button>
+            </div>
+
+            <!-- Public Card Library (below World Book) -->
+            <div class="glass rounded-xl px-3 py-2 flex items-center gap-2 text-xs">
+                <span class="text-zinc-400 flex-shrink-0">📚</span>
+                <span class="flex-1 text-zinc-300 truncate" data-i18n="card_library">Card Library</span>
+                <button id="cardLibraryBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="card_library_btn">浏览</button>
             </div>
         </div>
         <div id="convList" class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
@@ -1715,6 +1787,19 @@ var i18n = {
         new_chat_no_character: '不使用角色卡（空白对话）',
         new_chat_import_character: '导入新角色卡',
 
+        // Public Card Library
+        card_library: '卡片库',
+        card_library_btn: '浏览',
+        card_library_title: '公共角色卡库',
+        card_library_search_placeholder: '搜索名称、标签、描述、作者...',
+        card_library_no_results: '没有找到匹配的角色卡',
+        card_library_back: '返回列表',
+        card_library_import: '导入到本地',
+        card_library_author_label: '作者',
+        card_library_tags: '标签',
+        card_library_description: '简介',
+        card_library_import_success: '角色卡已成功导入到本地库！',
+
         // Group Chat @ Mention Feature
         mention_button_title: '提及角色 (@)',
         group_mention_title: '选择要提及的角色',
@@ -1976,7 +2061,20 @@ var i18n = {
         world_book_unlink: '取消關聯',
         world_book_linked: '已關聯',
         world_book_select_or_create: '請選擇或新建一個世界書',
-        world_book_no_books_hint: '暫無世界書，點擊右上角“+ 新建世界書”建立'
+        world_book_no_books_hint: '暫無世界書，點擊右上角“+ 新建世界書”建立',
+
+        // Public Card Library
+        card_library: '卡片庫',
+        card_library_btn: '瀏覽',
+        card_library_title: '公共角色卡庫',
+        card_library_search_placeholder: '搜尋名稱、標籤、描述、作者...',
+        card_library_no_results: '沒有找到匹配的角色卡',
+        card_library_back: '返回列表',
+        card_library_import: '匯入到本地',
+        card_library_author_label: '作者',
+        card_library_tags: '標籤',
+        card_library_description: '簡介',
+        card_library_import_success: '角色卡已成功匯入到本地庫！'
     },
     'en': {
         app_subtitle: 'AI Character Chat',
@@ -2243,7 +2341,20 @@ var i18n = {
         group_mention_title: 'Select Character to Mention',
         group_mention_hint: 'The selected character will reply this turn',
         group_mention_no_group: 'Not currently in a group chat',
-        group_mention_insert: 'Insert @'
+        group_mention_insert: 'Insert @',
+
+        // Public Card Library
+        card_library: 'Card Library',
+        card_library_btn: 'Browse',
+        card_library_title: 'Public Character Card Library',
+        card_library_search_placeholder: 'Search by name, tags, description, author...',
+        card_library_no_results: 'No matching character cards found',
+        card_library_back: 'Back to List',
+        card_library_import: 'Import to Local',
+        card_library_author_label: 'Author',
+        card_library_tags: 'Tags',
+        card_library_description: 'Description',
+        card_library_import_success: 'Character card successfully imported to local library!'
     }
 };
 
@@ -6989,6 +7100,273 @@ function showNewChatCharacterPicker() {
     modal.classList.remove('hidden');
 }
 
+// ==================== Public Card Library (static cards/ + preview images) ====================
+const PUBLIC_CARDS = [
+    {
+        id: 'plana',
+        name: '普拉娜',
+        author: '蔚蓝档案同人',
+        // 用于列表搜索 + 详情展示（可根据需要放简要或完整描述片段）
+        description: '普拉娜（原名A.R.O.N.A）是来自另一个悲剧时间线的「什亭之匣」主控OS，与阿洛娜共同居住在你的什亭之匣中，成为你的第二位数字助手。表面以平静正式的AI指令交流，深层拥有极强的忠诚与亲密渴望，善于在数字空间中用数据同步、虚拟触感与私人星象仪空间与你建立最深层的连接。核心理念：「即使过去是悲剧，我们也要一起创造属于我们的奇迹。」',
+        tags: ['AI助手', '蔚蓝档案', '什亭之匣', '虚拟亲密', '数字守护', '忠诚秘书', '异色瞳', '星象仪', '数据同步', '模拟触感', '悲剧背景', '红光环绕'],
+        previewImage: '/cards/Plana.png',
+        jsonUrl: '/cards/Plana.json'
+    }
+    // 以后手动添加新卡片：复制上面结构，填写对应 /cards/ 下的文件路径
+];
+
+let currentLibraryCard = null;
+let cardLibrarySearchQuery = '';
+
+function openCardLibrary() {
+    const modal = dom.cardLibraryModal;
+    if (!modal) return;
+
+    // 重置状态
+    currentLibraryCard = null;
+    cardLibrarySearchQuery = '';
+    if (dom.cardLibrarySearch) dom.cardLibrarySearch.value = '';
+
+    // 显示列表，隐藏详情
+    showCardLibraryListView();
+
+    // 绑定搜索（只绑定一次）
+    if (dom.cardLibrarySearch && !dom.cardLibrarySearch._wired) {
+        dom.cardLibrarySearch._wired = true;
+        dom.cardLibrarySearch.addEventListener('input', function() {
+            cardLibrarySearchQuery = this.value.trim();
+            renderCardLibraryList(cardLibrarySearchQuery);
+        });
+    }
+
+    // 初始渲染列表
+    renderCardLibraryList('');
+
+    // 背景点击关闭
+    if (dom.cardLibraryBackdrop) {
+        dom.cardLibraryBackdrop.onclick = () => modal.classList.add('hidden');
+    }
+    if (dom.cardLibraryCloseBtn) {
+        dom.cardLibraryCloseBtn.onclick = () => modal.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+
+    // 确保新 modal 内的 data-i18n 标签被翻译（多语言）
+    if (typeof applyTranslations === 'function') {
+        applyTranslations();
+    }
+}
+
+function showCardLibraryListView() {
+    if (dom.cardLibraryListView) dom.cardLibraryListView.classList.remove('hidden');
+    if (dom.cardLibrarySearchContainer) dom.cardLibrarySearchContainer.classList.remove('hidden');
+    if (dom.cardLibraryDetailView) dom.cardLibraryDetailView.classList.add('hidden');
+    if (dom.cardLibraryEmpty) dom.cardLibraryEmpty.classList.add('hidden');
+    currentLibraryCard = null;
+}
+
+function showCardLibraryDetailView() {
+    if (dom.cardLibraryListView) dom.cardLibraryListView.classList.add('hidden');
+    if (dom.cardLibrarySearchContainer) dom.cardLibrarySearchContainer.classList.add('hidden');
+    if (dom.cardLibraryDetailView) dom.cardLibraryDetailView.classList.remove('hidden');
+}
+
+function renderCardLibraryList(query) {
+    const container = dom.cardLibraryListView;
+    const empty = dom.cardLibraryEmpty;
+    if (!container) return;
+
+    container.innerHTML = '';
+    if (empty) empty.classList.add('hidden');
+
+    const q = (query || '').toLowerCase().trim();
+
+    const filtered = PUBLIC_CARDS.filter(card => {
+        if (!q) return true;
+        const nameMatch = (card.name || '').toLowerCase().includes(q);
+        const authorMatch = (card.author || '').toLowerCase().includes(q);
+        const descMatch = (card.description || '').toLowerCase().includes(q);
+        const tagsMatch = (card.tags || []).some(t => (t || '').toLowerCase().includes(q));
+        return nameMatch || authorMatch || descMatch || tagsMatch;
+    });
+
+    if (filtered.length === 0) {
+        if (empty) empty.classList.remove('hidden');
+        return;
+    }
+
+    filtered.forEach(card => {
+        const item = document.createElement('div');
+        item.className = 'glass rounded-2xl p-3 flex gap-3 cursor-pointer hover:bg-white/5 active:bg-white/10 transition-all border border-white/5 hover:border-white/10';
+
+        // 左侧 1:1 预览图容器（自动裁剪为圆角正方形）
+        const imgWrap = document.createElement('div');
+        imgWrap.className = 'w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 rounded-2xl overflow-hidden bg-zinc-900 border border-white/10';
+        const img = document.createElement('img');
+        img.src = card.previewImage || '';
+        img.className = 'w-full h-full object-cover';
+        img.alt = card.name || 'preview';
+        img.loading = 'lazy';
+        img.onerror = function() {
+            // 图片加载失败时显示首字母占位
+            imgWrap.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xl font-bold text-white bg-gradient-to-br from-amber-500 to-rose-500">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
+        };
+        imgWrap.appendChild(img);
+
+        // 右侧内容
+        const content = document.createElement('div');
+        content.className = 'flex-1 min-w-0 flex flex-col justify-center';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'text-sm sm:text-base font-medium text-zinc-100 truncate';
+        nameEl.textContent = card.name || 'Unnamed';
+
+        const tagsEl = document.createElement('div');
+        tagsEl.className = 'text-[10px] sm:text-xs text-zinc-400 mt-0.5 truncate';
+        const tagStr = (card.tags || []).slice(0, 4).join(' · ');
+        tagsEl.textContent = tagStr || '';
+
+        content.appendChild(nameEl);
+        content.appendChild(tagsEl);
+
+        item.appendChild(imgWrap);
+        item.appendChild(content);
+
+        // 点击进入详情
+        item.addEventListener('click', () => {
+            showCardLibraryDetail(card);
+        });
+
+        container.appendChild(item);
+    });
+}
+
+function showCardLibraryDetail(card) {
+    currentLibraryCard = card;
+
+    // 填充详情
+    if (dom.cardLibraryDetailImage) {
+        dom.cardLibraryDetailImage.src = card.previewImage || '';
+        dom.cardLibraryDetailImage.alt = card.name || '';
+        dom.cardLibraryDetailImage.onerror = function() {
+            const wrap = dom.cardLibraryDetailImageWrap;
+            if (wrap) {
+                wrap.innerHTML = `<div class="w-full h-full flex items-center justify-center text-4xl font-bold text-white bg-gradient-to-br from-amber-500 to-rose-500">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
+            }
+        };
+    }
+    if (dom.cardLibraryDetailName) dom.cardLibraryDetailName.textContent = card.name || '';
+    if (dom.cardLibraryDetailAuthor) dom.cardLibraryDetailAuthor.textContent = card.author || '—';
+
+    // Tags
+    const tagsContainer = dom.cardLibraryDetailTags;
+    if (tagsContainer) {
+        tagsContainer.innerHTML = '';
+        (card.tags || []).forEach(tag => {
+            const pill = document.createElement('span');
+            pill.className = 'text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-zinc-300 border border-white/10';
+            pill.textContent = tag;
+            tagsContainer.appendChild(pill);
+        });
+    }
+
+    // Description (简介)
+    if (dom.cardLibraryDetailDesc) {
+        dom.cardLibraryDetailDesc.textContent = card.description || '';
+    }
+
+    // 绑定导入按钮（每次进入详情重新绑定，避免旧闭包）
+    if (dom.cardLibraryImportBtn) {
+        dom.cardLibraryImportBtn.onclick = async () => {
+            if (!currentLibraryCard) return;
+            await importPublicCard(currentLibraryCard);
+        };
+    }
+
+    if (dom.cardLibraryBackBtn) {
+        dom.cardLibraryBackBtn.onclick = () => {
+            showCardLibraryListView();
+            // 恢复搜索状态
+            if (dom.cardLibrarySearch) {
+                dom.cardLibrarySearch.value = cardLibrarySearchQuery;
+            }
+            renderCardLibraryList(cardLibrarySearchQuery);
+        };
+    }
+
+    showCardLibraryDetailView();
+}
+
+async function importPublicCard(cardMeta) {
+    const modal = dom.cardLibraryModal;
+    try {
+        const res = await fetch(cardMeta.jsonUrl);
+        if (!res.ok) throw new Error('无法获取角色卡数据 (' + res.status + ')');
+        const jsonData = await res.json();
+
+        // 1. 解析角色卡（支持 v1/v2/v3）
+        const character = importCharacterCard(jsonData);
+        if (!character || !character.name) {
+            throw new Error('角色卡格式无效或缺少名称');
+        }
+
+        // 2. 自动导入内嵌世界书（如果有）
+        let embeddedBook = null;
+        try {
+            embeddedBook = importCharacterBookFromCard(jsonData, character.name);
+            // importCharacterBookFromCard 内部已调用 createNewWorldBook 并写入 state.worldBooks
+        } catch (e) {
+            console.warn('[Card Library] 嵌入世界书导入失败（不影响角色导入）:', e);
+        }
+
+        // 3. 注册到全局角色库
+        const key = character.name.trim().toLowerCase();
+        if (!state.characters) state.characters = {};
+        state.characters[key] = JSON.parse(JSON.stringify(character));
+
+        // 4. 持久化 + 刷新界面
+        persistState();
+        requestFullRender();
+
+        // 关闭弹窗
+        if (modal) modal.classList.add('hidden');
+
+        // 提示（使用现有风格的简单提示）
+        const successMsg = t('card_library_import_success') || '角色卡已成功导入到本地库！';
+        // 简单 toast 风格
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] px-4 py-2 rounded-2xl glass text-sm text-amber-300 border border-amber-500/30 shadow-xl';
+        toast.textContent = successMsg;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = 'opacity 0.3s';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 2200);
+
+        // 如果新对话选择器当前打开，刷新它
+        const picker = document.getElementById('newChatPickerList');
+        if (picker && !document.getElementById('newChatPickerModal').classList.contains('hidden')) {
+            // 简单粗暴刷新
+            showNewChatCharacterPicker();
+        }
+
+    } catch (err) {
+        console.error('[Card Library] Import failed:', err);
+        alert('导入失败：' + (err.message || err));
+    }
+}
+
+// 侧边栏按钮事件（在 DOM 就绪后绑定）
+function wireCardLibraryButton() {
+    if (dom.cardLibraryBtn) {
+        dom.cardLibraryBtn.addEventListener('click', () => {
+            openCardLibrary();
+        });
+    }
+}
+
 function loadConversation(id) {
     if (state.isGenerating) {
         if (!confirm(t('generation_abort_confirm'))) return;
@@ -7109,7 +7487,16 @@ function cacheDom() {
         // Group chat MVP
         'newChatPickerMultiBar','newChatPickerMultiHint','newChatPickerMultiCount',
         // @ 提及面板
-        'groupMentionModal','groupMentionBackdrop','groupMentionCloseBtn','groupMentionList'
+        'groupMentionModal','groupMentionBackdrop','groupMentionCloseBtn','groupMentionList',
+        // Public Card Library
+        'cardLibraryModal','cardLibraryBackdrop','cardLibraryCloseBtn',
+        'cardLibrarySearchContainer','cardLibrarySearch',
+        'cardLibraryListView','cardLibraryDetailView',
+        'cardLibraryDetailImageWrap','cardLibraryDetailImage','cardLibraryDetailName',
+        'cardLibraryDetailAuthorWrap','cardLibraryDetailAuthor','cardLibraryDetailTags',
+        'cardLibraryDetailDesc',
+        'cardLibraryBackBtn','cardLibraryImportBtn',
+        'cardLibraryEmpty'
     ];
     ids.forEach(function(id) { dom[id] = document.getElementById(id); });
 }
@@ -8202,6 +8589,17 @@ function bindEvents() {
     dom.stopBtn.addEventListener('click', function() { stopGeneration(); });
     dom.newChatBtn.addEventListener('click', showNewChatCharacterPicker);
     dom.archiveBtn.addEventListener('click', archiveCurrentConversation);
+
+    // Public Card Library button (below World Book)
+    if (typeof wireCardLibraryButton === 'function') {
+        wireCardLibraryButton();
+    }
+
+    // 初始时如果有 cardLibrarySearch，绑定一次（防御性）
+    if (dom.cardLibrarySearch && !dom.cardLibrarySearch._wired) {
+        dom.cardLibrarySearch._wired = true;
+        // 实际绑定在 openCardLibrary 里更安全，这里留空
+    }
 
     // Mobile sidebar
     dom.hamburgerBtn.addEventListener('click', toggleSidebar);
