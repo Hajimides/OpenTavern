@@ -235,6 +235,7 @@ body {
         display: flex !important;
     }
     .mobile-hide-sm { display: none !important; }
+    #backToLibraryBtn { display: none !important; }
 
     /* Mobile adaptation for summarize button (icon only) */
     #summarizeBtn {
@@ -482,6 +483,12 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
 }
 .announce-lang-btn.active {
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Hide character card and world book in sidebar when in library view (card library page) */
+#sidebar.library-mode .glass.rounded-xl.p-3,
+#sidebar.library-mode .glass.rounded-xl.px-3.py-2 {
+    display: none !important;
 }
 </style>
 </head>
@@ -1239,71 +1246,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
     </div>
 </div>
 
-<!-- ===== Public Card Library Modal (static cards/ + Cloudflare Pages) ===== -->
-<div id="cardLibraryModal" class="modal-overlay fixed inset-0 z-[150] flex items-center justify-center hidden">
-    <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="cardLibraryBackdrop"></div>
-    <div class="relative glass rounded-3xl w-[96%] max-w-4xl shadow-2xl animate-fade-in max-h-[92vh] flex flex-col border border-white/10 overflow-hidden">
-        <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
-            <div class="flex items-center gap-3">
-                <span class="text-xl">📚</span>
-                <h2 id="cardLibraryModalTitle" class="text-lg font-bold text-zinc-100" data-i18n="card_library_title">公共角色卡库</h2>
-            </div>
-            <button id="cardLibraryCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-xl text-zinc-400 hover:text-zinc-200 transition-colors leading-none">&times;</button>
-        </div>
-
-        <!-- Search Bar (list view only) -->
-        <div id="cardLibrarySearchContainer" class="px-5 py-3 border-b border-white/10 flex-shrink-0 flex items-center gap-3">
-            <input id="cardLibrarySearch" type="text" class="flex-1 px-4 py-2.5 glass rounded-2xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40" data-i18n-placeholder="card_library_search_placeholder" placeholder="搜索名称、标签、描述、作者...">
-            <span id="cardLibraryResultCount" class="text-xs text-zinc-400 whitespace-nowrap"></span>
-        </div>
-
-        <!-- List View -->
-        <div id="cardLibraryListView" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scroll">
-            <!-- Populated by JS: rectangular cards (left square preview img, right name+tags) -->
-        </div>
-
-        <!-- Detail View -->
-        <div id="cardLibraryDetailView" class="hidden flex-1 flex flex-col overflow-hidden">
-            <div class="p-5 flex-1 overflow-y-auto custom-scroll space-y-4">
-                <!-- Preview Image (larger, auto-cropped square) -->
-                <div id="cardLibraryDetailImageWrap" class="w-28 h-28 sm:w-36 sm:h-36 mx-auto rounded-3xl overflow-hidden bg-zinc-900 flex-shrink-0 border border-white/10">
-                    <img id="cardLibraryDetailImage" class="w-full h-full object-cover" alt="">
-                </div>
-
-                <div class="text-center">
-                    <h3 id="cardLibraryDetailName" class="text-2xl font-semibold text-zinc-100"></h3>
-                    <div id="cardLibraryDetailAuthorWrap" class="text-xs text-zinc-400 mt-0.5">
-                        <span data-i18n="card_library_author_label">作者</span>: <span id="cardLibraryDetailAuthor"></span>
-                    </div>
-                </div>
-
-                <!-- Tags -->
-                <div>
-                    <div class="text-[10px] text-zinc-400 uppercase tracking-wider mb-1.5" data-i18n="card_library_tags">标签</div>
-                    <div id="cardLibraryDetailTags" class="flex flex-wrap gap-1.5"></div>
-                </div>
-
-                <!-- Description -->
-                <div>
-                    <div class="text-[10px] text-zinc-400 uppercase tracking-wider mb-1.5" data-i18n="card_library_description">简介</div>
-                    <div id="cardLibraryDetailDesc" class="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap"></div>
-                </div>
-            </div>
-
-            <!-- Action Bar -->
-            <div class="p-4 border-t border-white/10 flex-shrink-0 bg-black/20 flex gap-3">
-                <button id="cardLibraryBackBtn" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold bg-white/10 hover:bg-white/15 text-zinc-200 transition-all" data-i18n="card_library_back">返回列表</button>
-                <button id="cardLibraryImportBtn" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white shadow shadow-amber-500/30 transition-all" data-i18n="card_library_import">导入到本地</button>
-            </div>
-        </div>
-
-        <!-- Empty / No results (shown inside list view when filtered empty) -->
-        <div id="cardLibraryEmpty" class="hidden px-5 py-10 text-center text-sm text-zinc-400">
-            <div data-i18n="card_library_no_results">没有找到匹配的角色卡</div>
-        </div>
-    </div>
-</div>
+<!-- (Old public card library modal removed; search and public cards now in main homepage library with tabs + filter) -->
 
 <!-- ===== 群组 @ 提及角色面板 (手机端友好) ===== -->
 <div id="groupMentionModal" class="modal-overlay fixed inset-0 z-[160] flex items-end sm:items-center justify-center hidden">
@@ -1393,12 +1336,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="world_book_btn">管理</button>
             </div>
 
-            <!-- Public Card Library (below World Book) -->
-            <div class="glass rounded-xl px-3 py-2 flex items-center gap-2 text-xs">
-                <span class="text-zinc-400 flex-shrink-0">📚</span>
-                <span class="flex-1 text-zinc-300 truncate" data-i18n="card_library">Card Library</span>
-                <button id="cardLibraryBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="card_library_btn">浏览</button>
-            </div>
+            <!-- (Public library button removed; search and public cards now integrated in main homepage library with tabs) -->
         </div>
         <div id="convList" class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
             <p id="noConvHint" class="text-xs text-zinc-500 text-center py-8 px-2" data-i18n="no_conversations">No saved conversations yet.<br>Start a new chat to begin.</p>
@@ -1424,11 +1362,69 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
     <!-- Sidebar Backdrop (mobile only) -->
     <div id="sidebarBackdrop"></div>
 
-    <!-- Main Chat Area -->
+    <!-- Main Content Area -->
     <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Chat Top Bar -->
-        <div id="chatTopBar" class="flex-shrink-0 px-5 py-3 flex items-center justify-between border-b border-white/5 bg-zinc-950/15 backdrop-blur-2xl">
+        <!-- Library View (homepage / default) -->
+        <div id="libraryView" class="flex-1 flex flex-col overflow-hidden">
+            <div class="flex-shrink-0 px-5 py-3 border-b border-white/5 bg-zinc-950/15 backdrop-blur-2xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <button id="libraryHamburgerBtn" class="hamburger-btn" aria-label="Menu">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                        </button>
+                        <h2 class="text-lg font-bold" data-i18n="library_title">卡片库</h2>
+                    </div>
+                    <!-- Language switcher and GitHub in library view as requested -->
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="flex items-center glass rounded-xl p-0.5 border-white/5">
+                            <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active text-zinc-900" data-lang="zh-CN">简</button>
+                            <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-zinc-400" data-lang="zh-TW">繁</button>
+                            <button class="lang-btn px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 text-zinc-400" data-lang="en">EN</button>
+                        </div>
+                        <!-- GitHub Link -->
+                        <a href="https://github.com/Hajimides/OpenTavern" target="_blank" rel="noopener noreferrer"
+                           class="w-8 h-8 rounded-xl glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 hover:bg-white/10 transition-colors"
+                           title="GitHub Repository">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <!-- Tabs for switching My vs Public (not simultaneous) -->
+                <div class="mt-3 flex gap-1 border-b border-white/10">
+                    <button id="tabMy" class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-amber-500 text-amber-400" data-tab="my" data-i18n="tab_my_cards">我的卡片</button>
+                    <button id="tabPublic" class="tab-btn px-4 py-2 text-sm font-medium text-zinc-400 hover:text-zinc-200" data-tab="public" data-i18n="tab_public">公共卡片库</button>
+                </div>
+
+                <!-- Search + simple orientation filter (moved from old left library) -->
+                <div class="mt-2 flex items-center gap-2">
+                    <input id="librarySearch" type="text" class="flex-1 px-3 py-1.5 text-sm glass rounded-xl placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40" placeholder="搜索名称、标签、描述..." data-i18n-placeholder="library_search_placeholder">
+                    <div class="flex gap-1 text-xs">
+                        <button class="px-2 py-1 rounded bg-amber-500/20 text-amber-300 filter-btn active" data-filter="all" data-i18n="filter_all">全部</button>
+                        <button class="px-2 py-1 rounded bg-white/10 filter-btn" data-filter="male" data-i18n="filter_male">男性向</button>
+                        <button class="px-2 py-1 rounded bg-white/10 filter-btn" data-filter="female" data-i18n="filter_female">女性向</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4">
+                <!-- My Cards Grid (3:4 preview + name/tags below) -->
+                <div id="myCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    <!-- JS populated grid cards -->
+                </div>
+                <!-- Public Cards Grid (hidden by default, same grid style) -->
+                <div id="publicCardsGrid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    <!-- JS populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat View (hidden by default, shown when card selected) -->
+        <div id="chatView" class="hidden flex-1 flex flex-col overflow-hidden">
+            <!-- Chat Top Bar -->
+            <div id="chatTopBar" class="flex-shrink-0 px-5 py-3 flex items-center justify-between border-b border-white/5 bg-zinc-950/15 backdrop-blur-2xl">
             <div class="flex items-center gap-3 min-w-0">
+                <button id="backToLibraryBtn" class="px-2 py-1 text-xs rounded-lg bg-white/5 hover:bg-white/10 transition-all" data-i18n="back_to_library">← 卡片库</button>
                 <button id="hamburgerBtn" class="hamburger-btn" aria-label="Menu">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
@@ -1513,8 +1509,9 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
                 </button>
             </div>
         </div>
+        </div> <!-- end chatView -->
     </div>
-</div>
+</div> <!-- end main content -->
 
 <script>
 (function() {
@@ -1556,7 +1553,7 @@ var i18n = {
         import_error: '导入错误',
         import_invalid_format: '无效的角色卡格式。需要 chara_card_v1 / v2 / v3 JSON、包含 name 字段的 JSON，或 SillyTavern PNG（嵌入数据）。',
         import_missing_name: '角色卡缺少必需的 "name" 字段。',
-        new_chat: '新对话',
+        new_chat: '新对话/新群聊',
         new_chat_title: '新对话',
         import_character: '导入角色',
         char_btn_import: '导入',
@@ -1801,6 +1798,18 @@ var i18n = {
         card_library_description: '简介',
         card_library_import_success: '角色卡已成功导入到本地库！',
 
+        // New homepage library
+        library_title: '卡片库',
+        tab_my_cards: '我的卡片',
+        tab_public: '公共卡片库',
+        back_to_library: '← 卡片库',
+        library_create: '+ 新建角色',
+        library_import: '导入',
+        library_search_placeholder: '搜索名称、标签、描述...',
+        filter_all: '全部',
+        filter_male: '男性向',
+        filter_female: '女性向',
+
         // Group Chat @ Mention Feature
         mention_button_title: '提及角色 (@)',
         group_mention_title: '选择要提及的角色',
@@ -1842,7 +1851,7 @@ var i18n = {
         import_error: '匯入錯誤',
         import_invalid_format: '無效的角色卡格式。需要 chara_card_v1 / v2 / v3 JSON、包含 name 欄位的 JSON，或 SillyTavern PNG（嵌入資料）。',
         import_missing_name: '角色卡缺少必需的 "name" 欄位。',
-        new_chat: '新對話',
+        new_chat: '新對話/新群組聊天',
         new_chat_title: '新對話',
         import_character: '匯入角色',
         char_btn_import: '匯入',
@@ -2075,7 +2084,19 @@ var i18n = {
         card_library_author_label: '作者',
         card_library_tags: '標籤',
         card_library_description: '簡介',
-        card_library_import_success: '角色卡已成功匯入到本地庫！'
+        card_library_import_success: '角色卡已成功匯入到本地庫！',
+
+        // New homepage library
+        library_title: '卡片庫',
+        tab_my_cards: '我的卡片',
+        tab_public: '公共卡片庫',
+        back_to_library: '← 卡片庫',
+        library_create: '+ 新建角色',
+        library_import: '匯入',
+        library_search_placeholder: '搜尋名稱、標籤、描述...',
+        filter_all: '全部',
+        filter_male: '男性向',
+        filter_female: '女性向',
     },
     'en': {
         app_subtitle: 'AI Character Chat',
@@ -2111,7 +2132,7 @@ var i18n = {
         import_error: 'Import Error',
         import_invalid_format: 'Invalid character card format. Expected chara_card_v1 / v2 / v3 JSON, a JSON with a "name" field, or a SillyTavern PNG (embedded data).',
         import_missing_name: 'Character card missing required "name" field.',
-        new_chat: 'New Chat',
+        new_chat: 'New Chat / New Group Chat',
         new_chat_title: 'New Chat',
         import_character: 'Import Character',
         char_btn_import: 'Import',
@@ -2355,7 +2376,19 @@ var i18n = {
         card_library_author_label: 'Author',
         card_library_tags: 'Tags',
         card_library_description: 'Description',
-        card_library_import_success: 'Character card successfully imported to local library!'
+        card_library_import_success: 'Character card successfully imported to local library!',
+
+        // New homepage library
+        library_title: 'Card Library',
+        tab_my_cards: 'My Cards',
+        tab_public: 'Public Library',
+        back_to_library: '← Library',
+        library_create: '+ New Character',
+        library_import: 'Import',
+        library_search_placeholder: 'Search name, tags, description...',
+        filter_all: 'All',
+        filter_male: 'Male-oriented',
+        filter_female: 'Female-oriented',
     }
 };
 
@@ -3998,6 +4031,7 @@ function setLanguage(lang) {
     // 语言变更影响范围很大，使用全量渲染
     appStore.notify('settings');
     requestFullRender();
+    if (typeof updateSidebarCloseButton === 'function') updateSidebarCloseButton();
 }
 
 // ==================== Character Import ====================
@@ -6917,6 +6951,7 @@ function newConversation(charOrChars) {
     else if (Array.isArray(charOrChars) && charOrChars.length === 1) {
         const character = charOrChars[0];
         conv.character = JSON.parse(JSON.stringify(character));
+        currentCharacterName = character.name;
         const charName = conv.character.name;
         const userName = state.settings.userName || 'User';
         const firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
@@ -7176,6 +7211,15 @@ const PUBLIC_CARDS = [
 let currentLibraryCard = null;
 let cardLibrarySearchQuery = '';
 
+// New refactored library as homepage
+let currentView = 'library'; // 'library' | 'chat'
+let activeLibraryTab = 'my'; // 'my' | 'public'
+let currentCharacterName = null; // for chat filtering and active card
+
+// For main library search + filter (moved from old left sidebar library)
+let librarySearchQuery = '';
+let libraryFilter = 'all'; // 'all' | 'male' | 'female'
+
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"']/g, function (m) {
@@ -7201,49 +7245,10 @@ function updateCardLibraryCount(shown, total) {
 }
 
 function openCardLibrary() {
-    const modal = dom.cardLibraryModal;
-    if (!modal) return;
-
-    // 重置状态
-    currentLibraryCard = null;
-    cardLibrarySearchQuery = '';
-    if (dom.cardLibrarySearch) dom.cardLibrarySearch.value = '';
-
-    // 显示列表，隐藏详情
-    showCardLibraryListView();
-
-    // 绑定搜索（每次打开都重新绑定，确保可靠）
-    if (dom.cardLibrarySearch) {
-        // 移除旧监听器（如果有）
-        const oldHandler = dom.cardLibrarySearch._searchHandler;
-        if (oldHandler) {
-            dom.cardLibrarySearch.removeEventListener('input', oldHandler);
-        }
-        const handler = function() {
-            cardLibrarySearchQuery = this.value.trim();
-            filterCardLibraryList(cardLibrarySearchQuery);
-        };
-        dom.cardLibrarySearch.addEventListener('input', handler);
-        dom.cardLibrarySearch._searchHandler = handler;
-    }
-
-    // 背景点击关闭
-    if (dom.cardLibraryBackdrop) {
-        dom.cardLibraryBackdrop.onclick = () => modal.classList.add('hidden');
-    }
-    if (dom.cardLibraryCloseBtn) {
-        dom.cardLibraryCloseBtn.onclick = () => modal.classList.add('hidden');
-    }
-
-    modal.classList.remove('hidden');
-
-    // 初始渲染（在显示后执行，确保 DOM 更新可见）
-    filterCardLibraryList('');
-
-    // 确保新 modal 内的 data-i18n 标签被翻译（多语言）
-    if (typeof applyTranslations === 'function') {
-        applyTranslations();
-    }
+    // (stub: old left public library removed)
+    if (typeof switchView === 'function') switchView('library');
+    if (typeof setActiveTab === 'function') setActiveTab('public');
+    return;
 }
 
 function showCardLibraryListView() {
@@ -7463,6 +7468,10 @@ async function importPublicCard(cardMeta) {
             setTimeout(() => toast.remove(), 300);
         }, 2200);
 
+        if (currentView === 'library' && typeof renderLibraryGrids === 'function') {
+            renderLibraryGrids();
+        }
+
         // 如果新对话选择器当前打开，刷新它
         const picker = document.getElementById('newChatPickerList');
         if (picker && !document.getElementById('newChatPickerModal').classList.contains('hidden')) {
@@ -7477,14 +7486,416 @@ async function importPublicCard(cardMeta) {
 }
 
 // 侧边栏按钮事件（在 DOM 就绪后绑定）
-function wireCardLibraryButton() {
-    // kept for compatibility; main attach is now direct in bindEvents
-    if (dom.cardLibraryBtn) {
-        // avoid double if already attached directly
-        dom.cardLibraryBtn.addEventListener('click', () => {
-            if (typeof openCardLibrary === 'function') openCardLibrary();
+// (old wireCardLibraryButton removed as public library on left is removed)
+
+// ==================== Refactored Homepage Card Library ====================
+// Default view is the card library with tab switching (My / Public)
+// Cards are 3:4 grid. My cards click -> direct to recent chat. Public click -> detail then import.
+
+function switchView(view) {
+    currentView = view;
+    const libraryV = document.getElementById('libraryView');
+    const chatV = document.getElementById('chatView');
+    if (!libraryV || !chatV) return;
+
+    const worldBookBlock = document.querySelector('#sidebar .glass.rounded-xl.px-3.py-2');
+    const convListEl = document.getElementById('convList');
+
+    if (view === 'library') {
+        libraryV.classList.remove('hidden');
+        chatV.classList.add('hidden');
+        // Full setup for library (grids + tabs)
+        if (typeof renderLibrary === 'function') {
+            renderLibrary();
+        } else {
+            if (typeof renderLibraryGrids === 'function') renderLibraryGrids();
+            if (typeof setActiveTab === 'function') setActiveTab(activeLibraryTab || 'my');
+        }
+        // In library: show all historical conversations on the left
+        if (typeof renderConversationList === 'function') renderConversationList();
+        if (convListEl) convListEl.style.display = '';
+        // Hide character card and world book in library view (per clarification: not in card library page)
+        const charTitle = document.querySelector('#sidebar span[data-i18n="char_card_title"]');
+        if (charTitle) {
+            const charBlock = charTitle.closest('.glass');
+            if (charBlock) charBlock.style.display = 'none';
+        }
+        const worldTitle = document.querySelector('#sidebar span[data-i18n="world_book"]');
+        if (worldTitle) {
+            const worldBlock = worldTitle.closest('.glass');
+            if (worldBlock) worldBlock.style.display = 'none';
+        }
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) sidebar.classList.add('library-mode');
+    } else {
+        libraryV.classList.add('hidden');
+        chatV.classList.remove('hidden');
+
+        // In chat view: show character card and world book on left (per clarification)
+        if (convListEl) convListEl.style.display = '';
+        const charTitle = document.querySelector('#sidebar span[data-i18n="char_card_title"]');
+        if (charTitle) {
+            const charBlock = charTitle.closest('.glass');
+            if (charBlock) charBlock.style.display = '';
+        }
+        const worldTitle = document.querySelector('#sidebar span[data-i18n="world_book"]');
+        if (worldTitle) {
+            const worldBlock = worldTitle.closest('.glass');
+            if (worldBlock) worldBlock.style.display = '';
+        }
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) sidebar.classList.remove('library-mode');
+
+        // GitHub button and language switcher are in the chatTopBar and visible in main interface
+
+        // Force re-render conv list with filter for current character
+        if (typeof renderConversationList === 'function') renderConversationList();
+    }
+
+    // Update the sidebar close (×) button to act as return-to-library when in chat (mobile)
+    if (typeof updateSidebarCloseButton === 'function') updateSidebarCloseButton();
+}
+
+function setActiveTab(tab) {
+    activeLibraryTab = tab;
+    const myGrid = document.getElementById('myCardsGrid');
+    const pubGrid = document.getElementById('publicCardsGrid');
+    const tabMy = document.getElementById('tabMy');
+    const tabPub = document.getElementById('tabPublic');
+
+    if (tab === 'my') {
+        if (myGrid) myGrid.classList.remove('hidden');
+        if (pubGrid) pubGrid.classList.add('hidden');
+        if (tabMy) tabMy.classList.add('active', 'border-b-2', 'border-amber-500', 'text-amber-400');
+        if (tabPub) tabPub.classList.remove('active', 'border-b-2', 'border-amber-500', 'text-amber-400');
+    } else {
+        if (myGrid) myGrid.classList.add('hidden');
+        if (pubGrid) pubGrid.classList.remove('hidden');
+        if (tabMy) tabMy.classList.remove('active', 'border-b-2', 'border-amber-500', 'text-amber-400');
+        if (tabPub) tabPub.classList.add('active', 'border-b-2', 'border-amber-500', 'text-amber-400');
+    }
+}
+
+function getCardOrientation(tags) {
+    const t = (tags || []).join(' ').toLowerCase();
+    const hasFemale = /女|female|futa|娘|女仆|姬/.test(t);
+    const hasMale = /男|male|攻|男主|男友/.test(t);
+    if (hasFemale && !hasMale) return 'male';
+    if (hasMale && !hasFemale) return 'female';
+    return 'both';
+}
+
+function passesLibraryFilter(card) {
+    const q = (librarySearchQuery || '').toLowerCase().trim();
+    if (q) {
+        const nameMatch = (card.name || '').toLowerCase().includes(q);
+        const tagsMatch = (card.tags || []).some(t => (t || '').toLowerCase().includes(q));
+        const descMatch = (card.description || card.personality || '').toLowerCase().includes(q);
+        const authorMatch = (card.author || '').toLowerCase().includes(q);
+        if (!(nameMatch || tagsMatch || descMatch || authorMatch)) return false;
+    }
+    if (libraryFilter !== 'all') {
+        const o = getCardOrientation(card.tags || []);
+        if (libraryFilter === 'male' && o !== 'male' && o !== 'both') return false;
+        if (libraryFilter === 'female' && o !== 'female' && o !== 'both') return false;
+    }
+    return true;
+}
+
+function renderMyCards() {
+    const grid = document.getElementById('myCardsGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    // Special action cards placed at the front (as requested)
+    // "Create New" tile
+    const createCard = document.createElement('div');
+    createCard.className = 'glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/5 transition-all border border-dashed border-amber-500/50 flex flex-col items-center justify-center text-center p-4 aspect-[3/4]';
+    createCard.innerHTML = `
+        <div class="text-4xl mb-2 text-amber-400">＋</div>
+        <div class="text-sm font-medium">新建角色</div>
+        <div class="text-[10px] text-zinc-400 mt-1">手动创建</div>
+    `;
+    createCard.addEventListener('click', () => {
+        if (typeof openCharacterEditor === 'function') openCharacterEditor();
+    });
+    grid.appendChild(createCard);
+
+    // "Import" tile
+    const importCard = document.createElement('div');
+    importCard.className = 'glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/5 transition-all border border-dashed border-amber-500/50 flex flex-col items-center justify-center text-center p-4 aspect-[3/4]';
+    importCard.innerHTML = `
+        <div class="text-4xl mb-2">📥</div>
+        <div class="text-sm font-medium">导入角色卡</div>
+        <div class="text-[10px] text-zinc-400 mt-1">从文件</div>
+    `;
+    importCard.addEventListener('click', () => {
+        if (dom.importModal) {
+            dom.importModal.classList.remove('hidden');
+            if (dom.importStatus) dom.importStatus.classList.add('hidden');
+            if (dom.importFileInput) dom.importFileInput.value = '';
+        }
+    });
+    grid.appendChild(importCard);
+
+    let chars = Object.values(state.characters || {}).filter(c => passesLibraryFilter({
+        name: c.name,
+        tags: c.tags,
+        description: c.description || c.personality,
+        author: c.author || c.creator || c.creator_notes || ''
+    }));
+
+    chars.forEach(char => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/5 transition-all border border-white/5 hover:border-white/10 flex flex-col';
+
+        // Preview area 3:4 (top)
+        const preview = document.createElement('div');
+        preview.className = 'aspect-[3/4] w-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-5xl font-bold text-white rounded-t-2xl';
+        preview.textContent = (char.name || '?').charAt(0).toUpperCase();
+
+        // Name and tags directly below the preview
+        const info = document.createElement('div');
+        info.className = 'p-2';
+        const name = document.createElement('div');
+        name.className = 'text-sm font-medium text-zinc-100 truncate';
+        name.textContent = char.name || 'Unnamed';
+
+        const tags = document.createElement('div');
+        tags.className = 'text-[10px] text-zinc-400 mt-0.5 truncate';
+        tags.textContent = (char.tags || []).slice(0, 3).join(' · ');
+
+        info.appendChild(name);
+        info.appendChild(tags);
+
+        cardEl.appendChild(preview);
+        cardEl.appendChild(info);
+
+        cardEl.addEventListener('click', () => {
+            // For my cards: skip detail, load recent conv or create new
+            loadOrCreateChatForCharacter(char);
+        });
+
+        grid.appendChild(cardEl);
+    });
+}
+
+function renderPublicCards() {
+    const grid = document.getElementById('publicCardsGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    const filteredPublic = PUBLIC_CARDS.filter(card => passesLibraryFilter(card));
+    filteredPublic.forEach(card => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/5 transition-all border border-white/5 hover:border-white/10 flex flex-col';
+
+        // Preview 3:4
+        const preview = document.createElement('div');
+        preview.className = 'aspect-[3/4] w-full overflow-hidden rounded-t-2xl bg-zinc-900';
+        const img = document.createElement('img');
+        img.src = card.previewImage || '';
+        img.className = 'w-full h-full object-cover';
+        img.alt = card.name;
+        img.onerror = () => {
+            preview.innerHTML = `<div class="w-full h-full flex items-center justify-center text-5xl font-bold text-white bg-gradient-to-br from-amber-500 to-rose-500">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
+        };
+        preview.appendChild(img);
+
+        // Info directly below preview
+        const info = document.createElement('div');
+        info.className = 'p-2';
+        const name = document.createElement('div');
+        name.className = 'text-sm font-medium text-zinc-100 truncate';
+        name.textContent = card.name || 'Unnamed';
+
+        const tags = document.createElement('div');
+        tags.className = 'text-[10px] text-zinc-400 mt-0.5 truncate';
+        tags.textContent = (card.tags || []).slice(0, 3).join(' · ');
+
+        info.appendChild(name);
+        info.appendChild(tags);
+
+        cardEl.appendChild(preview);
+        cardEl.appendChild(info);
+
+        cardEl.addEventListener('click', () => {
+            // Public: open detail (name, tags, desc, author), then import option
+            showPublicCardDetail(card);
+        });
+
+        grid.appendChild(cardEl);
+    });
+}
+
+function renderLibraryGrids() {
+    renderMyCards();
+    renderPublicCards();
+}
+
+function showPublicCardDetail(card) {
+    // Reuse or create a simple detail. For now, use a new modal or alert for simplicity, but to match, we'll create a simple overlay detail.
+    // To keep simple and reuse existing style, we'll use a dedicated function that shows a glass modal-like div or reuse old detail if possible.
+    // For this, we'll create a temporary detail using existing modal pattern or simple.
+
+    // Simple implementation: use a modal similar to old one, but in-page for now we can use alert for prototype, but better proper.
+    // Let's make a simple detail by showing in a new div or use the old cardLibraryDetailView but since it's in old modal, we'll make a new one.
+
+    // For cleanliness, create a detail modal on the fly or use JS to show info and buttons.
+    // To avoid complexity, we'll use a dedicated simple modal HTML that we can add.
+
+    // For this response, we'll implement a basic detail using a new element or reuse.
+    // To make it work, let's add a simple detail modal in HTML later, for now use console and direct import for test, but to follow, we'll make a function that opens a detail.
+
+    // Better: create a detail modal HTML if not, but to proceed, we'll use the old library detail by temporarily using the old functions, but to follow spec, we'll make a dedicated.
+
+    // For efficiency, we'll create the detail as a modal using existing glass style.
+
+    let detailModal = document.getElementById('publicCardDetailModal');
+    if (!detailModal) {
+        detailModal = document.createElement('div');
+        detailModal.id = 'publicCardDetailModal';
+        detailModal.className = 'modal-overlay fixed inset-0 z-[150] flex items-center justify-center hidden';
+        detailModal.innerHTML = `
+            <div class="absolute inset-0 bg-black/65 backdrop-blur-sm" id="publicDetailBackdrop"></div>
+            <div class="relative glass rounded-3xl w-[92%] max-w-md p-6 shadow-2xl animate-fade-in">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="publicDetailName" class="text-xl font-bold"></h3>
+                    <button id="publicDetailClose" class="text-xl leading-none text-zinc-400 hover:text-zinc-200">&times;</button>
+                </div>
+                <div id="publicDetailAuthor" class="text-xs text-zinc-400 mb-2"></div>
+                <div class="mb-3">
+                    <div class="text-[10px] text-zinc-400 uppercase mb-1">标签</div>
+                    <div id="publicDetailTags" class="flex flex-wrap gap-1 text-xs"></div>
+                </div>
+                <div class="mb-4">
+                    <div class="text-[10px] text-zinc-400 uppercase mb-1">简介</div>
+                    <div id="publicDetailDesc" class="text-sm text-zinc-200 leading-relaxed max-h-40 overflow-auto"></div>
+                </div>
+                <div class="flex gap-3">
+                    <button id="publicDetailImport" class="flex-1 px-4 py-2.5 rounded-2xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white shadow shadow-amber-500/30 transition-all">导入并开始聊天</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(detailModal);
+    }
+
+    // Fill
+    document.getElementById('publicDetailName').textContent = card.name || '';
+    document.getElementById('publicDetailAuthor').innerHTML = `<span data-i18n="card_library_author_label">作者</span>: ${card.author || '—'}`;
+    const tagsDiv = document.getElementById('publicDetailTags');
+    tagsDiv.innerHTML = '';
+    (card.tags || []).forEach(t => {
+        const s = document.createElement('span');
+        s.className = 'px-2 py-0.5 bg-white/10 rounded text-xs';
+        s.textContent = t;
+        tagsDiv.appendChild(s);
+    });
+    document.getElementById('publicDetailDesc').textContent = card.description || '';
+
+    // Show
+    detailModal.classList.remove('hidden');
+
+    // Bind
+    const close = () => detailModal.classList.add('hidden');
+    document.getElementById('publicDetailClose').onclick = close;
+    document.getElementById('publicDetailBackdrop').onclick = close;
+    document.getElementById('publicDetailImport').onclick = async () => {
+        close();
+        await importPublicCard(card); // reuse existing import
+        // After import, the character is in state.characters, switch to chat with it
+        const importedChar = state.characters[(card.name || '').toLowerCase().trim()];
+        if (importedChar) {
+            loadOrCreateChatForCharacter(importedChar);
+        }
+    };
+}
+
+function loadOrCreateChatForCharacter(char) {
+    if (!char || !char.name) return;
+
+    currentCharacterName = char.name;
+
+    // Find most recent conv for this character
+    let recentConv = null;
+    let recentTime = 0;
+    Object.values(state.conversations || {}).forEach(conv => {
+        if (conv.character && conv.character.name === char.name) {
+            const t = conv.updated || conv.created || 0;
+            if (t > recentTime) {
+                recentTime = t;
+                recentConv = conv;
+            }
+        }
+    });
+
+    if (recentConv) {
+        loadConversation(recentConv.id);
+    } else {
+        // Create new
+        newConversation(char);
+    }
+
+    switchView('chat');
+}
+
+function renderLibrary() {
+    const lib = document.getElementById('libraryView');
+    const chat = document.getElementById('chatView');
+    if (lib) lib.classList.remove('hidden');
+    if (chat) chat.classList.add('hidden');
+
+    // Render grids
+    renderLibraryGrids();
+
+    // Tab listeners (bind once)
+    const tabMy = document.getElementById('tabMy');
+    const tabPub = document.getElementById('tabPublic');
+    if (tabMy && !tabMy._wired) {
+        tabMy._wired = true;
+        tabMy.addEventListener('click', () => {
+            setActiveTab('my');
         });
     }
+    if (tabPub && !tabPub._wired) {
+        tabPub._wired = true;
+        tabPub.addEventListener('click', () => {
+            setActiveTab('public');
+        });
+    }
+
+    // Initial tab
+    setActiveTab(activeLibraryTab);
+
+    // Note: Create and Import actions are now provided as special cards in the "My Cards" grid (see renderMyCards).
+    // This reduces header bloat when selecting cards. No top buttons while browsing the library.
+
+    // Apply initial filter active style for search/filter bar
+    document.querySelectorAll('#libraryView [data-filter]').forEach(b => {
+        b.classList.remove('bg-amber-500/20', 'text-amber-300');
+        if (b.dataset.filter === libraryFilter) {
+            b.classList.add('bg-amber-500/20', 'text-amber-300');
+        }
+    });
+
+    // Sync search input value
+    const libSearchSync = document.getElementById('librarySearch');
+    if (libSearchSync) libSearchSync.value = librarySearchQuery || '';
+
+    // Hide character card and world book in card library page (left sidebar not needed in library view)
+    const charTitle = document.querySelector('#sidebar span[data-i18n="char_card_title"]');
+    if (charTitle) {
+        const charBlock = charTitle.closest('.glass');
+        if (charBlock) charBlock.style.display = 'none';
+    }
+    const worldTitle = document.querySelector('#sidebar span[data-i18n="world_book"]');
+    if (worldTitle) {
+        const worldBlock = worldTitle.closest('.glass');
+        if (worldBlock) worldBlock.style.display = 'none';
+    }
+    // Additional selector for world book block
+    const worldBlock2 = document.querySelector('#sidebar .glass.rounded-xl.px-3.py-2');
+    if (worldBlock2) worldBlock2.style.display = 'none';
 }
 
 function loadConversation(id) {
@@ -7494,6 +7905,10 @@ function loadConversation(id) {
     }
     saveCurrentConversation();
     state.activeConvId = id;           // triggers granular renders via subscription
+
+    // For chat-only conv list per character
+    var c = state.conversations[id];
+    if (c && c.character && c.character.name) currentCharacterName = c.character.name;
 
     // 切换对话时重置增量渲染状态和“显示全部消息”状态
     var newConv = getActiveConv();
@@ -7520,6 +7935,10 @@ function loadConversation(id) {
     // 解决用户打开旧对话后修改阈值（尤其是调低）却不触发的问题
     if (state.settings.summaryEnabled) {
         setTimeout(function() { autoSummarize(); }, 650);
+    }
+
+    if (currentView === 'library') {
+        switchView('chat');
     }
 
     if (isMobile()) closeSidebar();
@@ -7576,7 +7995,7 @@ function cacheDom() {
         'summaryRecentTurns','rangeStart','rangeEnd','previewRangeBtn','rangePreview',
         'summaryGenerateBtn','summaryManagerStatus',
         'summaryEnabled', 'summaryThreshold', 'summaryThresholdVal', 'summaryThresholdWarning', 'summaryMaxWords',
-        'hamburgerBtn','sidebarCloseBtn','sidebarBackdrop',
+        'hamburgerBtn','sidebarCloseBtn','sidebarBackdrop','libraryHamburgerBtn',
         'worldBookModal','worldBookBackdrop','worldBookBtn','wiEntryCount',
         'wiImportBtn','wiExportBtn','wiDeleteAllBtn','wiAddEntryBtn','wiCloseBtn','wiNewBookBtn',
         'wiBookName','wiSearch','wiEntryList','wiEntryStats',
@@ -7608,17 +8027,7 @@ function cacheDom() {
         'newChatPickerMultiBar','newChatPickerMultiHint','newChatPickerMultiCount',
         // @ 提及面板
         'groupMentionModal','groupMentionBackdrop','groupMentionCloseBtn','groupMentionList',
-        // Public Card Library
-        'cardLibraryBtn',
-        'cardLibraryModal','cardLibraryBackdrop','cardLibraryCloseBtn',
-        'cardLibrarySearchContainer','cardLibrarySearch',
-        'cardLibraryListView','cardLibraryDetailView',
-        'cardLibraryDetailImageWrap','cardLibraryDetailImage','cardLibraryDetailName',
-        'cardLibraryDetailAuthorWrap','cardLibraryDetailAuthor','cardLibraryDetailTags',
-        'cardLibraryDetailDesc',
-        'cardLibraryBackBtn','cardLibraryImportBtn',
-        'cardLibraryEmpty',
-        'cardLibraryResultCount'
+        // (old public library modal entries removed)
     ];
     ids.forEach(function(id) { dom[id] = document.getElementById(id); });
 }
@@ -7705,6 +8114,24 @@ function importConversations(file) {
 function renderConversationList() {
     if (!dom.convList) return;
     var order = state.conversationOrder.slice();
+
+    // Filter logic:
+    // - In card library view: show ALL historical conversations
+    // - After clicking a character card to enter chat: only show conversations related to currentCharacterName (including group chats)
+    if (currentView === 'chat' && currentCharacterName) {
+        order = order.filter(function(id) {
+            var c = state.conversations[id];
+            if (!c) return false;
+            if (c.character && c.character.name === currentCharacterName) return true;
+            if (c.group && Array.isArray(c.group.members)) {
+                return c.group.members.some(function(m) {
+                    return m.character && m.character.name === currentCharacterName;
+                });
+            }
+            return false;
+        });
+    }
+
     if (order.length === 0) {
         dom.convList.innerHTML = '<p class="text-xs text-zinc-500 text-center py-8 px-2">' + t('no_conversations').replace(/\n/g,'<br>') + '</p>';
         return;
@@ -7747,6 +8174,36 @@ function renderConversationList() {
             if (id) exportConversation(id);
         });
     });
+}
+
+// Patch for sidebar conv list:
+// - In library view: show ALL historical conversations
+// - In chat view (after clicking a character card): only show conversations related to currentCharacterName (including group chats)
+if (typeof renderConversationList === 'function') {
+    const _origRenderConvList = renderConversationList;
+    renderConversationList = function() {
+        if (!dom.convList) return;
+        var order = (state.conversationOrder || []).slice();
+
+        if (currentView === 'chat' && currentCharacterName) {
+            order = order.filter(function(id) {
+                var c = state.conversations[id];
+                if (!c) return false;
+                if (c.character && c.character.name === currentCharacterName) return true;
+                if (c.group && Array.isArray(c.group.members)) {
+                    return c.group.members.some(function(m) {
+                        return m.character && m.character.name === currentCharacterName;
+                    });
+                }
+                return false;
+            });
+        }
+        // temporarily override for this render
+        var backup = state.conversationOrder;
+        state.conversationOrder = order;
+        _origRenderConvList.apply(this, arguments);
+        state.conversationOrder = backup;
+    };
 }
 
 /**
@@ -8282,6 +8739,38 @@ function toggleSidebar() {
     }
 }
 
+// Repurpose sidebar's "×" (close) button on mobile:
+// - In library: just close the drawer (shows full history)
+// - In chat: clicking it acts as "return to card library" (and closes)
+function handleSidebarClose() {
+    if (currentView === 'chat') {
+        currentCharacterName = null;
+        if (typeof renderConversationList === 'function') renderConversationList();
+        if (typeof switchView === 'function') switchView('library');
+    }
+    closeSidebar();
+}
+
+function updateSidebarCloseButton() {
+    if (!dom.sidebarCloseBtn) return;
+    const inChat = (currentView === 'chat');
+    if (inChat) {
+        dom.sidebarCloseBtn.innerHTML = '←';
+        try {
+            var backLabel = (typeof t === 'function' ? t('back_to_library') : '') || '返回卡片库';
+            dom.sidebarCloseBtn.setAttribute('aria-label', backLabel);
+            dom.sidebarCloseBtn.title = backLabel;
+        } catch (e) {
+            dom.sidebarCloseBtn.setAttribute('aria-label', '返回卡片库');
+            dom.sidebarCloseBtn.title = '返回卡片库';
+        }
+    } else {
+        dom.sidebarCloseBtn.innerHTML = '&times;';
+        dom.sidebarCloseBtn.setAttribute('aria-label', 'Close menu');
+        dom.sidebarCloseBtn.title = '';
+    }
+}
+
 // ==================== Announcement Modal (快速开始引导) ====================
 var ANNOUNCE_KEY = 'opentavern_announce_dismissed_v1';
 
@@ -8712,25 +9201,49 @@ function bindEvents() {
     dom.newChatBtn.addEventListener('click', showNewChatCharacterPicker);
     dom.archiveBtn.addEventListener('click', archiveCurrentConversation);
 
-    // Public Card Library button (below World Book)
-    // Direct attach for reliability (the wire function also exists as fallback)
-    if (dom.cardLibraryBtn) {
-        dom.cardLibraryBtn.addEventListener('click', function() {
-            if (typeof openCardLibrary === 'function') {
-                openCardLibrary();
-            }
+    // Back to library from chat (new homepage flow)
+    const backBtn = document.getElementById('backToLibraryBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            currentCharacterName = null;
+            if (typeof renderConversationList === 'function') renderConversationList();
+            if (typeof switchView === 'function') switchView('library');
         });
     }
 
-    // 初始时如果有 cardLibrarySearch，绑定一次（防御性）
-    if (dom.cardLibrarySearch && !dom.cardLibrarySearch._wired) {
-        dom.cardLibrarySearch._wired = true;
-        // 实际绑定在 openCardLibrary 里更安全，这里留空
+    // Robust tab bindings for my/public library switching
+    const tabMyEl = document.getElementById('tabMy');
+    const tabPubEl = document.getElementById('tabPublic');
+    if (tabMyEl) {
+        tabMyEl.onclick = () => { if (typeof setActiveTab === 'function') setActiveTab('my'); };
     }
+    if (tabPubEl) {
+        tabPubEl.onclick = () => { if (typeof setActiveTab === 'function') setActiveTab('public'); };
+    }
+
+    // Search and filter bindings for main library (moved from old left sidebar library + new orientation filter)
+    const libSearch = document.getElementById('librarySearch');
+    if (libSearch) {
+        libSearch.oninput = () => {
+            librarySearchQuery = libSearch.value;
+            if (typeof renderLibraryGrids === 'function') renderLibraryGrids();
+        };
+    }
+    document.querySelectorAll('#libraryView [data-filter]').forEach(btn => {
+        btn.onclick = () => {
+            libraryFilter = btn.dataset.filter;
+            document.querySelectorAll('#libraryView [data-filter]').forEach(b => b.classList.remove('bg-amber-500/20', 'text-amber-300'));
+            btn.classList.add('bg-amber-500/20', 'text-amber-300');
+            if (typeof renderLibraryGrids === 'function') renderLibraryGrids();
+        };
+    });
 
     // Mobile sidebar
     dom.hamburgerBtn.addEventListener('click', toggleSidebar);
-    dom.sidebarCloseBtn.addEventListener('click', closeSidebar);
+    if (dom.libraryHamburgerBtn) {
+        dom.libraryHamburgerBtn.addEventListener('click', toggleSidebar);
+    }
+    dom.sidebarCloseBtn.addEventListener('click', handleSidebarClose);
     dom.sidebarBackdrop.addEventListener('click', closeSidebar);
     window.addEventListener('resize', function() {
         if (!isMobile()) closeSidebar();
@@ -9114,6 +9627,8 @@ function bindEvents() {
             conv.title = t('chat_with') + character.name;
             conv.messages = [];
 
+            currentCharacterName = character.name;
+
             // ===== 自动导入角色卡内嵌的 character_book（支持 v1/v2/v3）并关联到当前对话 =====
             var embeddedBook = null;
             try {
@@ -9332,6 +9847,14 @@ async function init() {
 
     applyTranslations();
     renderAll();
+
+    // Homepage is now the card library (per user spec)
+    if (typeof initLibraryAsHomepage === 'function') {
+        initLibraryAsHomepage();
+    }
+    if (typeof switchView === 'function') {
+        switchView('library');
+    }
 
     if (!state.settings.apiKey || !state.settings.apiEndpoint) {
         dom.messageInput.placeholder = t('input_placeholder_no_api');
