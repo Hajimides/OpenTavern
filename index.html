@@ -339,6 +339,11 @@ body.light-mode [style*="background: rgba(24,24,27,0.95)"] {
     box-shadow: 0 4px 20px rgba(0,0,0,0.10) !important;
 }
 
+/* ===== Message avatar clickable ===== */
+.char-avatar { cursor: pointer; }
+.char-avatar:hover { filter: brightness(1.15); transform: scale(1.08); transition: all 0.15s ease; }
+.char-avatar:active { transform: scale(0.95); }
+
 /* ===== Avatar overlay ===== */
 body.light-mode .av-overlay { background: rgba(0,0,0,0.05); }
 
@@ -8114,7 +8119,8 @@ function _msgAvatarHTML(conv, isUser, name) {
     var initial = (name || '?').charAt(0).toUpperCase();
     var avatarKey = isUser ? (state.settings._userAvatarKey || null) : (conv && conv.character ? conv.character._avatarKey : null);
     var keyAttr = avatarKey ? (' data-avatar-key="' + escapeHtml(avatarKey) + '"') : '';
-    return '<div class="msg-avatar w-8 h-8 rounded-md bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden"' + keyAttr + '>' + initial + '</div>';
+    var charClass = !isUser ? ' char-avatar' : '';
+    return '<div class="msg-avatar' + charClass + ' w-8 h-8 rounded-md bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 overflow-hidden"' + keyAttr + ' title="点击编辑角色卡">' + initial + '</div>';
 }
 
 // Post-render sweep: find all avatar placeholders with data-avatar-key and load their images.
@@ -9551,6 +9557,12 @@ function bindEvents() {
         if (statusHeader) {
             var block = statusHeader.closest('.status-block');
             block.classList.toggle('expanded');
+            return;
+        }
+
+        // Character avatar click → open character editor
+        if (e.target.closest('.char-avatar')) {
+            openCharacterEditor();
             return;
         }
 
