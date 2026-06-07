@@ -592,7 +592,7 @@ body {
 .qr-list-item .qr-list-btn.qr-del:hover { color: #ef4444; }
 
 /* Character manager — card grid overlay design */
-.char-mgr-card { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 3/4; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; user-select: none; }
+.char-mgr-card { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 3/4; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; user-select: none; align-self: start; max-height: 100%; }
 .char-mgr-card:hover { border-color: rgba(255,255,255,0.18); }
 .char-mgr-card:active { transform: scale(0.97); }
 .char-mgr-card .char-mgr-avatar { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 2.5rem; color: #fff; position: absolute; inset: 0; }
@@ -832,6 +832,9 @@ body {
 
     /* Mobile: character editor single column */
     #charEditorModal .grid.grid-cols-2 { grid-template-columns: 1fr; }
+
+    /* Mobile: new chat picker — cap card grid to ~3 rows */
+    #newChatPickerList { max-height: 300px; }
 
     /* Mobile: lang switcher compact */
 
@@ -1959,7 +1962,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <button id="newChatPickerCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-xl leading-none">&times;</button>
         </div>
 
-        <div id="newChatPickerList" class="grid grid-cols-4 gap-2 flex-1 min-h-0 overflow-y-auto pr-1 content-start">
+        <div id="newChatPickerList" class="grid grid-cols-4 gap-2 overflow-y-auto pr-1 content-start max-h-[28rem] min-h-[12rem]">
             <!-- Populated dynamically by JS -->
         </div>
 
@@ -4194,8 +4197,8 @@ function extractSpecialWIEntries(activatedEntries) {
     var CHAR_SUPP_TAGS = ['char_info', 'char_supplement', '角色补充', 'char_detail', '角色详情'];
 
     activatedEntries.forEach(function(e) {
-        var comment = (e.comment || '').toLowerCase();
-        var group = (e.group || '').toLowerCase();
+        var comment = String(e.comment || '').toLowerCase();
+        var group = String(e.group || '').toLowerCase();
         var content = (e.content || '').trim();
         if (!content) return;
 
@@ -5528,7 +5531,7 @@ function addWIKeyFromInput(isPrimary) {
     var val = input.value.trim();
     if (!val || !wiState.selectedUid) return;
     var entry = getActiveWI().entries[wiState.selectedUid];
-    var arr = isPrimary ? (entry.key = entry.key || []) : (entry.keysecondary = entry.keysecondary || []);
+    var arr = isPrimary ? (entry.key = [].concat(entry.key || [])) : (entry.keysecondary = [].concat(entry.keysecondary || []));
     // split on comma or just push
     val.split(',').map(function(s){return s.trim();}).filter(Boolean).forEach(function(k) {
         if (arr.indexOf(k) === -1) arr.push(k);
@@ -5611,8 +5614,8 @@ function fillEditorFromEntry(entry) {
     dom.wiNoSelection.classList.add('hidden');
     dom.wiEditorForm.classList.remove('hidden');
 
-    wiState.primaryKeys = (entry.key || []).slice();
-    wiState.secondaryKeys = (entry.keysecondary || []).slice();
+    wiState.primaryKeys = [].concat(entry.key || []).slice();
+    wiState.secondaryKeys = [].concat(entry.keysecondary || []).slice();
 
     dom.wiComment.value = entry.comment || '';
     dom.wiOrder.value = entry.order != null ? entry.order : 100;
@@ -5845,9 +5848,9 @@ function renderWIEntryList(filter) {
     if (filter) {
         var f = filter.toLowerCase();
         entries = entries.filter(function(e) {
-            var keys = (e.key || []).join(' ').toLowerCase();
-            var sec = (e.keysecondary || []).join(' ').toLowerCase();
-            var cmt = (e.comment || '').toLowerCase();
+            var keys = [].concat(e.key || []).join(' ').toLowerCase();
+            var sec = [].concat(e.keysecondary || []).join(' ').toLowerCase();
+            var cmt = String(e.comment || '').toLowerCase();
             return keys.indexOf(f) !== -1 || sec.indexOf(f) !== -1 || cmt.indexOf(f) !== -1;
         });
     }
@@ -5934,7 +5937,7 @@ function renderWIEntryList(filter) {
                     '<input type="checkbox" class="wi-list-toggle accent-amber-500 mt-0.5" data-uid="' + uidStr + '" ' + (entry.disable ? '' : 'checked') + '>' +
                     '<div class="min-w-0">' +
                         '<div class="text-xs font-medium text-zinc-200 truncate">' + escapeHtml(entry.comment || '(no memo)') + '</div>' +
-                        '<div class="text-[10px] text-emerald-400/70 truncate">' + escapeHtml((entry.key || []).slice(0,3).join(', ') || (entry.constant ? '恒常' : '—')) + '</div>' +
+                        '<div class="text-[10px] text-emerald-400/70 truncate">' + escapeHtml([].concat(entry.key || []).slice(0,3).join(', ') || (entry.constant ? '恒常' : '—')) + '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="flex items-center gap-1 text-[10px] text-right flex-shrink-0">' +
@@ -6494,7 +6497,7 @@ function getActivatedWorldInfo(conv) {
         all.forEach(function(cand) {
             if (cand.disable || activated.indexOf(cand) > -1 || rec.indexOf(cand) > -1) return;
             if (cand.excludeRecursion) return;
-            var keysJoined = (cand.key || []).join(' ').toLowerCase();
+            var keysJoined = [].concat(cand.key || []).join(' ').toLowerCase();
             if (act.content && act.content.toLowerCase().indexOf(keysJoined) !== -1) {
                 if (passesCharacterFilter(cand, charName, charTags) && passesProbability(cand)) {
                     cand.isRecursive = true;   // mark for budget priority
@@ -9054,7 +9057,8 @@ function dismissAnnouncement(permanent) {
 }
 
 function escapeHtml(text) {
-    if (!text) return '';
+    if (text == null) return '';
+    if (typeof text !== 'string') text = String(text);
     return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
