@@ -159,6 +159,23 @@ body {
     box-shadow: none;
 }
 
+/* Touch-first highlight + conditional delete button visibility (global) */
+.touch-selected {
+  outline: 2px solid rgb(245 158 11 / 0.55);
+  outline-offset: -1px;
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgb(245 158 11 / 0.4) !important;
+}
+.touch-selected .char-delete-btn,
+.touch-selected button[title*="删除角色卡"],
+.touch-selected button[title*="移除角色卡"] {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 18px !important;
+}
+
 /* Mobile responsive */
 @media (max-width: 767px) {
     #sidebar {
@@ -185,37 +202,19 @@ body {
     .msg-actions { opacity: 1; }
     .msg-action-btn { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
 
-    /* Mobile delete buttons on cards: larger tap target, always visible */
+    /* Mobile delete buttons on cards: larger tap target. 
+       Visibility is now controlled ONLY by .touch-selected (after first tap) or desktop group-hover.
+       Hidden by default on mobile until highlighted. */
     .char-delete-btn,
     #myCardsGrid .group button[title="移除角色卡"] {
         width: 32px !important;
         height: 32px !important;
         font-size: 18px !important;
-        opacity: 0.75 !important;
-        background: rgba(0,0,0,0.65) !important;
     }
     .char-delete-btn:active,
     #myCardsGrid .group button[title="移除角色卡"]:active {
         background: rgba(239,68,68,0.85) !important;
         transform: scale(0.95);
-    }
-
-    /* Touch-first-select pattern for character cards (both library and picker):
-       First tap: highlight + reveal delete button (no navigation)
-       Second tap: actually open the chat */
-    .touch-selected {
-      outline: 2px solid rgb(245 158 11 / 0.55);
-      outline-offset: -1px;
-      background-color: rgba(245, 158, 11, 0.1) !important;
-      border-color: rgb(245 158 11 / 0.4) !important;
-    }
-    .touch-selected .char-delete-btn,
-    .touch-selected button[title*="删除角色卡"],
-    .touch-selected button[title*="移除角色卡"] {
-      opacity: 1 !important;
-      background: rgba(0, 0, 0, 0.72) !important;
-      width: 32px !important;
-      height: 32px !important;
     }
 
     #messagesContainer { padding: 12px 12px; }
@@ -7170,7 +7169,7 @@ function showNewChatCharacterPicker() {
                         ${isSelected ? '✓' : ''}
                     </div>
                 ` : `
-                    <button class="char-delete-btn absolute top-1 right-1 w-7 h-7 md:w-5 md:h-5 rounded-full bg-black/50 hover:bg-red-500/80 active:bg-red-500/90 text-white text-base md:text-xs flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all z-10" title="删除角色卡">×</button>
+                    <button class="char-delete-btn absolute top-1 right-1 w-7 h-7 md:w-5 md:h-5 rounded-full bg-black/50 hover:bg-red-500/80 active:bg-red-500/90 text-white text-base md:text-xs flex items-center justify-center opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all z-10" title="删除角色卡">×</button>
                 `}
             `;
 
@@ -7977,9 +7976,11 @@ function renderMyCards() {
 
         // Remove button (top-right corner, appears on hover like in picker)
         const delBtn = document.createElement('button');
-        // Mobile-friendly: always visible (semi-opaque), larger tap target; desktop uses hover.
-        // When parent has .touch-selected, CSS forces full visibility.
-        delBtn.className = 'absolute top-1.5 right-1.5 w-7 h-7 md:w-6 md:h-6 rounded-full bg-black/60 hover:bg-red-500/80 active:bg-red-500/90 text-white text-base md:text-sm flex items-center justify-center transition-all opacity-70 md:opacity-0 md:group-hover:opacity-100 z-10';
+        // Hidden by default. 
+        // - On desktop: shows on group-hover (parent card has 'group')
+        // - On touch: only appears when parent gets .touch-selected (after first tap/highlight)
+        // CSS .touch-selected rule forces visibility + size.
+        delBtn.className = 'absolute top-1.5 right-1.5 w-7 h-7 md:w-6 md:h-6 rounded-full bg-black/60 hover:bg-red-500/80 active:bg-red-500/90 text-white text-base md:text-sm flex items-center justify-center transition-all opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 z-10';
         delBtn.innerHTML = '×';
         delBtn.title = '移除角色卡';
         delBtn.addEventListener('click', (e) => {
