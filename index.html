@@ -1184,7 +1184,7 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <div>
                 <div class="text-2xl mb-1">✨</div>
                 <h2 class="text-xl font-bold text-zinc-100" data-i18n="announce_title">欢迎使用 OpenTavern</h2>
-                <p class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_subtitle">快速开始指南 · 3 步上手</p>
+                <p class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_subtitle">快速开始 · 公共卡片库一键导入</p>
             </div>
             <button id="announceCloseBtn" class="w-9 h-9 rounded-full glass flex items-center justify-center text-xl text-zinc-400 hover:text-zinc-200 transition-colors leading-none" aria-label="关闭">&times;</button>
         </div>
@@ -1204,28 +1204,28 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:16px;
             <div class="flex gap-3 p-3 glass rounded-2xl">
                 <div class="w-6 h-6 flex-shrink-0 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">1</div>
                 <div class="flex-1">
-                    <div class="font-medium text-zinc-200" data-i18n="announce_step1_title">导入角色卡</div>
-                    <div class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_step1_desc">点击左侧「导入」按钮，上传 SillyTavern 格式的 .json 角色卡（推荐）</div>
+                    <div class="font-medium text-zinc-200" data-i18n="announce_step1_title">前往公共卡片库</div>
+                    <div class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_step1_desc">卡片库默认打开，点击「公共卡片库」标签浏览公开角色卡</div>
                 </div>
             </div>
             <div class="flex gap-3 p-3 glass rounded-2xl">
                 <div class="w-6 h-6 flex-shrink-0 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">2</div>
                 <div class="flex-1">
-                    <div class="font-medium text-zinc-200" data-i18n="announce_step2_title">或手动创建角色</div>
-                    <div class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_step2_desc">点击「新建」按钮，快速创建一个简单角色并开始对话</div>
+                    <div class="font-medium text-zinc-200" data-i18n="announce_step2_title">选取角色卡</div>
+                    <div class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_step2_desc">浏览列表，点击喜欢的角色卡打开详情预览</div>
                 </div>
             </div>
             <div class="flex gap-3 p-3 glass rounded-2xl">
                 <div class="w-6 h-6 flex-shrink-0 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold">3</div>
                 <div class="flex-1">
-                    <div class="font-medium text-zinc-200" data-i18n="announce_step3_title">配置 API（关键）</div>
-                    <div class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_step3_desc">点击右上角 ⚙️ 设置，填入 API Endpoint 和 Key（支持 OpenAI 及兼容接口）</div>
+                    <div class="font-medium text-zinc-200" data-i18n="announce_step3_title">导入并开始聊天</div>
+                    <div class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_step3_desc">在详情页点击「导入并开始聊天」一键导入角色并进入对话</div>
                 </div>
             </div>
         </div>
 
         <div class="text-[11px] text-zinc-400 mb-4 px-1" data-i18n="announce_hint">
-            对话支持自动总结、世界书（World Info）、多对话管理等功能。祝你玩得开心！
+            公共卡片库提供多种现成高质量角色。导入后记得在 ⚙️ 设置中配置 API 才能聊天！
         </div>
 
         <!-- Do not show checkbox -->
@@ -1804,14 +1804,14 @@ var i18n = {
         settings_save_api_key_warn: '⚠️ 请仅在您完全信任的私人设备上启用此选项。API Key 将以明文形式存储在浏览器 localStorage 中，存在被他人访问或脚本窃取的风险。在公共电脑、网吧或共享设备上请勿勾选！',
         // Announcement modal
         announce_title: '欢迎使用 OpenTavern',
-        announce_subtitle: '快速开始指南 · 3 步上手',
-        announce_step1_title: '导入角色卡',
-        announce_step1_desc: '点击左侧「导入」按钮，上传 SillyTavern 格式的 .json 角色卡（推荐）',
-        announce_step2_title: '或手动创建角色',
-        announce_step2_desc: '点击「新建」按钮，快速创建一个简单角色并开始对话',
-        announce_step3_title: '配置 API（关键）',
-        announce_step3_desc: '点击右上角 ⚙️ 设置，填入 API Endpoint 和 Key（支持 OpenAI 及兼容接口）',
-        announce_hint: '对话支持自动总结、世界书（World Info）、多对话管理等功能。祝你玩得开心！',
+        announce_subtitle: '快速开始 · 公共卡片库一键导入',
+        announce_step1_title: '前往公共卡片库',
+        announce_step1_desc: '卡片库默认打开，点击「公共卡片库」标签浏览公开角色卡',
+        announce_step2_title: '选取角色卡',
+        announce_step2_desc: '浏览列表，点击喜欢的角色卡打开详情预览',
+        announce_step3_title: '导入并开始聊天',
+        announce_step3_desc: '在详情页点击「导入并开始聊天」一键导入角色并进入对话',
+        announce_hint: '公共卡片库提供多种现成高质量角色。导入后记得在 ⚙️ 设置中配置 API 才能聊天！',
         announce_dont_show: '下次不再显示此公告',
         announce_got_it: '开始使用',
         announce_credits_main: '主要开发：哈基米德Hajimides',
@@ -2132,14 +2132,14 @@ var i18n = {
         settings_save_api_key_warn: '⚠️ 請僅在您完全信任的私人裝置上啟用此選項。API Key 將以明文形式儲存在瀏覽器 localStorage 中，存在被他人存取或腳本竊取的風險。在公共電腦、網吧或共享裝置上請勿勾選！',
         // Announcement modal
         announce_title: '歡迎使用 OpenTavern',
-        announce_subtitle: '快速開始指南 · 3 步上手',
-        announce_step1_title: '匯入角色卡',
-        announce_step1_desc: '點擊左側「匯入」按鈕，上傳 SillyTavern 格式的 .json 角色卡（推薦）',
-        announce_step2_title: '或手動建立角色',
-        announce_step2_desc: '點擊「新建」按鈕，快速建立一個簡單角色並開始對話',
-        announce_step3_title: '設定 API（關鍵）',
-        announce_step3_desc: '點擊右上角 ⚙️ 設定，填入 API Endpoint 和 Key（支援 OpenAI 及相容介面）',
-        announce_hint: '對話支援自動總結、世界書（World Info）、多對話管理等功能。祝你玩得開心！',
+        announce_subtitle: '快速開始 · 公共卡片庫一鍵匯入',
+        announce_step1_title: '前往公共卡片庫',
+        announce_step1_desc: '卡片庫預設開啟，點擊「公共卡片庫」標籤瀏覽公開角色卡',
+        announce_step2_title: '選取角色卡',
+        announce_step2_desc: '瀏覽列表，點擊喜歡的角色卡開啟詳情預覽',
+        announce_step3_title: '匯入並開始聊天',
+        announce_step3_desc: '在詳情頁點擊「匯入並開始聊天」一鍵匯入角色並進入對話',
+        announce_hint: '公共卡片庫提供多種現成高品質角色。匯入後記得在 ⚙️ 設定中配置 API 才能聊天！',
         announce_dont_show: '下次不再顯示此公告',
         announce_got_it: '開始使用',
         announce_credits_main: '主要開發：哈基米德Hajimides',
@@ -2412,14 +2412,14 @@ var i18n = {
         settings_save_api_key_warn: '⚠️ Only enable on devices you fully trust. The API Key will be stored in plaintext in browser localStorage and can be read by anyone with physical access or via XSS attacks. Do NOT enable on public computers, internet cafes, or shared devices!',
         // Announcement modal
         announce_title: 'Welcome to OpenTavern',
-        announce_subtitle: 'Quick Start Guide · Get going in 3 steps',
-        announce_step1_title: 'Import a Character Card',
-        announce_step1_desc: 'Click the "Import" button on the left to upload a SillyTavern .json character card (recommended)',
-        announce_step2_title: 'Or create one manually',
-        announce_step2_desc: 'Click "Create" to quickly build a simple character and start chatting right away',
-        announce_step3_title: 'Configure your API (Important)',
-        announce_step3_desc: 'Click the ⚙️ icon in the top right to enter your API Endpoint and Key (OpenAI and compatible providers supported)',
-        announce_hint: 'Features include auto-summarization, World Book (World Info), multi-conversation management, and more. Have fun!',
+        announce_subtitle: 'Quick Start · Import from Public Card Library',
+        announce_step1_title: 'Go to Public Card Library',
+        announce_step1_desc: 'The card library opens by default. Click the "Public Card Library" tab to browse shared characters',
+        announce_step2_title: 'Pick a Character Card',
+        announce_step2_desc: 'Browse the list and click any card you like to open its detail preview',
+        announce_step3_title: 'Import & Start Chatting',
+        announce_step3_desc: 'On the detail page, click "Import and Start Chat" to instantly import and begin',
+        announce_hint: 'The public library offers many ready-to-use high-quality characters. After importing, remember to configure your API in the ⚙️ Settings to chat!',
         announce_dont_show: 'Do not show this again',
         announce_got_it: 'Get Started',
         announce_credits_main: 'Main Developer: 哈基米德Hajimides',
