@@ -161,8 +161,16 @@ body {
 
 /* Touch-first highlight + conditional delete button visibility (global) */
 .touch-selected {
-  box-shadow: 0 0 0 2px rgb(245 158 11 / 0.55);
-  background-color: rgba(245, 158, 11, 0.1) !important;
+  box-shadow: 0 0 0 3px rgb(245 158 11 / 0.65);
+  transform: scale(1.015);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  background-color: rgba(245, 158, 11, 0.08) !important;
+}
+
+/* Make the highlight pop on library cards even with the gradient preview child */
+#myCardsGrid .touch-selected > div:first-child {
+  box-shadow: 0 0 0 4px rgb(245 158 11 / 0.4) inset;
+  filter: saturate(1.15) brightness(1.05);
 }
 /* Suppress browser default tap highlight (white/gray flash) on cards */
 .glass.rounded-2xl.cursor-pointer,
@@ -7190,24 +7198,52 @@ function showNewChatCharacterPicker() {
                 `}
             `;
 
+            // Instant visual feedback on touch down for the picker (same fix as library)
+            const armTouchSelection = (ev) => {
+                const isTouch = () => 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(hover: none)').matches;
+                if (!isTouch()) return;
+                if (ev.target.closest('.char-delete-btn') || ev.target.closest('button[title="删除角色卡"]')) return;
+
+                if (!card.classList.contains('touch-selected')) {
+                    listContainer.querySelectorAll('.touch-selected').forEach(el => {
+                        if (el !== card) el.classList.remove('touch-selected');
+                    });
+                    card.classList.add('touch-selected');
+
+                    if (card._touchDeselectTimer) clearTimeout(card._touchDeselectTimer);
+                    card._touchDeselectTimer = setTimeout(() => {
+                        card.classList.remove('touch-selected');
+                    }, 4200);
+
+                    card._consumeNextClick = true;
+                }
+            };
+            card.addEventListener('pointerdown', armTouchSelection, { passive: true });
+            card.addEventListener('touchstart', armTouchSelection, { passive: true });
+
             card.addEventListener('click', (e) => {
                 if (!multiSelectMode) {
                     // 单选模式：保持原有行为
                     if (e.target.closest('.char-delete-btn') || e.target.closest('button[title="删除角色卡"]')) return;
 
                     // Touch-friendly "select first" pattern (same as library grid):
-                    // First tap: highlight + reveal delete button (no navigation).
+                    // First tap: highlight + reveal delete button (armed instantly on down).
                     // Second tap on the same card: actually open the new chat.
                     const isTouch = () => 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(hover: none)').matches;
                     if (isTouch()) {
+                        if (card._consumeNextClick) {
+                            // Consume the click that corresponds to the tap that armed on pointerdown.
+                            card._consumeNextClick = false;
+                            return;
+                        }
+
                         if (!card.classList.contains('touch-selected')) {
-                            // Deselect siblings in the picker list
+                            // Fallback arming via click
                             listContainer.querySelectorAll('.touch-selected').forEach(el => {
                                 if (el !== card) el.classList.remove('touch-selected');
                             });
                             card.classList.add('touch-selected');
 
-                            // Auto-clear after timeout
                             if (card._touchDeselectTimer) clearTimeout(card._touchDeselectTimer);
                             card._touchDeselectTimer = setTimeout(() => {
                                 card.classList.remove('touch-selected');
@@ -8036,17 +8072,51 @@ function renderMyCards() {
         cardEl.appendChild(preview);
         cardEl.appendChild(info);
 
+        // Instant visual feedback on touch down: highlight + show delete button immediately when finger touches (fixes the "three click" feel on mobile)
+        const armTouchSelection = (ev) => {
+            const isTouch = () => 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(hover: none)').matches;
+            if (!isTouch()) return;
+            if (ev.target.closest('.char-delete-btn') || ev.target.closest('button[title="移除角色卡"]')) return;
+
+            if (!cardEl.classList.contains('touch-selected')) {
+                const grid = document.getElementById('myCardsGrid');
+                if (grid) {
+                    grid.querySelectorAll('.touch-selected').forEach(el => {
+                        if (el !== cardEl) el.classList.remove('touch-selected');
+                    });
+                }
+                cardEl.classList.add('touch-selected');
+
+                if (cardEl._touchDeselectTimer) clearTimeout(cardEl._touchDeselectTimer);
+                cardEl._touchDeselectTimer = setTimeout(() => {
+                    cardEl.classList.remove('touch-selected');
+                }, 4200);
+
+                // Mark so the delayed 'click' event for this same tap only arms (doesn't open)
+                cardEl._consumeNextClick = true;
+            }
+        };
+        cardEl.addEventListener('pointerdown', armTouchSelection, { passive: true });
+        cardEl.addEventListener('touchstart', armTouchSelection, { passive: true });
+
         cardEl.addEventListener('click', (e) => {
             // For my cards: skip detail, load recent conv or create new
             if (e.target.closest('.char-delete-btn') || e.target.closest('button[title="移除角色卡"]')) return;
 
             // Touch-friendly "select first" pattern:
-            // First tap on touch device: highlight the card + show delete button.
-            // Does NOT open chat yet. Second tap opens the chat.
+            // First tap on touch device: highlight the card + show delete button (armed on down for instant feedback).
+            // Second tap on the same card opens the chat.
             const isTouch = () => 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(hover: none)').matches;
             if (isTouch()) {
+                if (cardEl._consumeNextClick) {
+                    // This click belongs to the tap that just armed the highlight on pointerdown/touchstart.
+                    // Do not open yet; the visual is already there.
+                    cardEl._consumeNextClick = false;
+                    return;
+                }
+
                 if (!cardEl.classList.contains('touch-selected')) {
-                    // Deselect any other cards in this grid
+                    // Fallback arming if down events didn't fire (rare)
                     const grid = document.getElementById('myCardsGrid');
                     if (grid) {
                         grid.querySelectorAll('.touch-selected').forEach(el => {
@@ -8055,7 +8125,6 @@ function renderMyCards() {
                     }
                     cardEl.classList.add('touch-selected');
 
-                    // Auto-clear selection after a few seconds if user doesn't tap again
                     if (cardEl._touchDeselectTimer) clearTimeout(cardEl._touchDeselectTimer);
                     cardEl._touchDeselectTimer = setTimeout(() => {
                         cardEl.classList.remove('touch-selected');
