@@ -200,6 +200,24 @@ body {
         transform: scale(0.95);
     }
 
+    /* Touch-first-select pattern for character cards (both library and picker):
+       First tap: highlight + reveal delete button (no navigation)
+       Second tap: actually open the chat */
+    .touch-selected {
+      outline: 2px solid rgb(245 158 11 / 0.55);
+      outline-offset: -1px;
+      background-color: rgba(245, 158, 11, 0.1) !important;
+      border-color: rgb(245 158 11 / 0.4) !important;
+    }
+    .touch-selected .char-delete-btn,
+    .touch-selected button[title*="删除角色卡"],
+    .touch-selected button[title*="移除角色卡"] {
+      opacity: 1 !important;
+      background: rgba(0, 0, 0, 0.72) !important;
+      width: 32px !important;
+      height: 32px !important;
+    }
+
     #messagesContainer { padding: 12px 12px; }
 
     #chatTopBar { padding: 8px 12px; }
@@ -7159,8 +7177,32 @@ function showNewChatCharacterPicker() {
             card.addEventListener('click', (e) => {
                 if (!multiSelectMode) {
                     // 单选模式：保持原有行为
-                    // Safety for mobile: ignore if delete button was the target
                     if (e.target.closest('.char-delete-btn') || e.target.closest('button[title="删除角色卡"]')) return;
+
+                    // Touch-friendly "select first" pattern (same as library grid):
+                    // First tap: highlight + reveal delete button (no navigation).
+                    // Second tap on the same card: actually open the new chat.
+                    const isTouch = () => 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(hover: none)').matches;
+                    if (isTouch()) {
+                        if (!card.classList.contains('touch-selected')) {
+                            // Deselect siblings in the picker list
+                            listContainer.querySelectorAll('.touch-selected').forEach(el => {
+                                if (el !== card) el.classList.remove('touch-selected');
+                            });
+                            card.classList.add('touch-selected');
+
+                            // Auto-clear after timeout
+                            if (card._touchDeselectTimer) clearTimeout(card._touchDeselectTimer);
+                            card._touchDeselectTimer = setTimeout(() => {
+                                card.classList.remove('touch-selected');
+                            }, 4200);
+                            return; // First tap only selects
+                        } else {
+                            // Second tap → open
+                            card.classList.remove('touch-selected');
+                        }
+                    }
+
                     newChatPickerCameFromQuick = false;
                     modal.classList.add('hidden');
                     newConversation(character);
@@ -7182,6 +7224,10 @@ function showNewChatCharacterPicker() {
             if (delBtn) {
                 delBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
+                    // Clear touch-selection state if present
+                    if (card.classList.contains('touch-selected')) {
+                        card.classList.remove('touch-selected');
+                    }
                     const displayName = character.name || '该角色卡';
                     if (!confirm(`确定从角色库中删除「${displayName}」？\n已有对话中的角色卡数据不会受影响。`)) {
                         return;
@@ -7931,12 +7977,17 @@ function renderMyCards() {
 
         // Remove button (top-right corner, appears on hover like in picker)
         const delBtn = document.createElement('button');
-        // Mobile-friendly: always visible (semi-opaque), larger tap target; desktop uses hover
+        // Mobile-friendly: always visible (semi-opaque), larger tap target; desktop uses hover.
+        // When parent has .touch-selected, CSS forces full visibility.
         delBtn.className = 'absolute top-1.5 right-1.5 w-7 h-7 md:w-6 md:h-6 rounded-full bg-black/60 hover:bg-red-500/80 active:bg-red-500/90 text-white text-base md:text-sm flex items-center justify-center transition-all opacity-70 md:opacity-0 md:group-hover:opacity-100 z-10';
         delBtn.innerHTML = '×';
         delBtn.title = '移除角色卡';
         delBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            // If this card was touch-selected, clear the state
+            if (cardEl.classList.contains('touch-selected')) {
+                cardEl.classList.remove('touch-selected');
+            }
             const displayName = char.name || '该角色卡';
             if (!confirm(`确定从角色库中删除「${displayName}」？\n已有对话中的角色卡数据不会受影响。`)) {
                 return;
@@ -7967,8 +8018,35 @@ function renderMyCards() {
 
         cardEl.addEventListener('click', (e) => {
             // For my cards: skip detail, load recent conv or create new
-            // Safety: if delete button was tapped, do nothing (stopProp should already handle it)
             if (e.target.closest('.char-delete-btn') || e.target.closest('button[title="移除角色卡"]')) return;
+
+            // Touch-friendly "select first" pattern:
+            // First tap on touch device: highlight the card + show delete button.
+            // Does NOT open chat yet. Second tap opens the chat.
+            const isTouch = () => 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(hover: none)').matches;
+            if (isTouch()) {
+                if (!cardEl.classList.contains('touch-selected')) {
+                    // Deselect any other cards in this grid
+                    const grid = document.getElementById('myCardsGrid');
+                    if (grid) {
+                        grid.querySelectorAll('.touch-selected').forEach(el => {
+                            if (el !== cardEl) el.classList.remove('touch-selected');
+                        });
+                    }
+                    cardEl.classList.add('touch-selected');
+
+                    // Auto-clear selection after a few seconds if user doesn't tap again
+                    if (cardEl._touchDeselectTimer) clearTimeout(cardEl._touchDeselectTimer);
+                    cardEl._touchDeselectTimer = setTimeout(() => {
+                        cardEl.classList.remove('touch-selected');
+                    }, 4200);
+                    return; // First tap only selects/highlights
+                } else {
+                    // Second tap on the already selected card → proceed to open
+                    cardEl.classList.remove('touch-selected');
+                }
+            }
+
             loadOrCreateChatForCharacter(char);
         });
 
