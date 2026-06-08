@@ -161,8 +161,16 @@ body {
 
 /* Touch-first highlight + conditional delete button visibility (global) */
 .touch-selected {
-  outline: 2px solid rgb(245 158 11 / 0.55);
-  outline-offset: -1px;
+  box-shadow: 0 0 0 2px rgb(245 158 11 / 0.55);
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+/* Suppress browser default tap highlight (white/gray flash) on cards */
+.glass.rounded-2xl.cursor-pointer,
+#myCardsGrid > div {
+  -webkit-tap-highlight-color: transparent;
+}
+/* Make first tap active state show the desired amber highlight immediately (no white step) */
+.glass.rounded-2xl.cursor-pointer:active {
   background-color: rgba(245, 158, 11, 0.1) !important;
   border-color: rgb(245 158 11 / 0.4) !important;
 }
@@ -171,9 +179,9 @@ body {
 .touch-selected button[title*="移除角色卡"] {
   opacity: 1 !important;
   background: rgba(0, 0, 0, 0.72) !important;
-  width: 32px !important;
-  height: 32px !important;
-  font-size: 18px !important;
+  width: 22px !important;
+  height: 22px !important;
+  font-size: 13px !important;
 }
 
 /* Mobile responsive */
@@ -7169,7 +7177,7 @@ function showNewChatCharacterPicker() {
                         ${isSelected ? '✓' : ''}
                     </div>
                 ` : `
-                    <button class="char-delete-btn absolute top-1 right-1 w-7 h-7 md:w-5 md:h-5 rounded-full bg-black/50 hover:bg-red-500/80 active:bg-red-500/90 text-white text-base md:text-xs flex items-center justify-center opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all z-10" title="删除角色卡">×</button>
+                    <button class="char-delete-btn absolute top-1 right-1 w-6 h-6 md:w-5 md:h-5 rounded-full bg-black/50 hover:bg-red-500/80 active:bg-red-500/90 text-white text-sm md:text-xs flex items-center justify-center opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all z-10" title="删除角色卡">×</button>
                 `}
             `;
 
@@ -7980,7 +7988,7 @@ function renderMyCards() {
         // - On desktop: shows on group-hover (parent card has 'group')
         // - On touch: only appears when parent gets .touch-selected (after first tap/highlight)
         // CSS .touch-selected rule forces visibility + size.
-        delBtn.className = 'absolute top-1.5 right-1.5 w-7 h-7 md:w-6 md:h-6 rounded-full bg-black/60 hover:bg-red-500/80 active:bg-red-500/90 text-white text-base md:text-sm flex items-center justify-center transition-all opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 z-10';
+        delBtn.className = 'absolute top-1.5 right-1.5 w-6 h-6 md:w-5 md:h-5 rounded-full bg-black/60 hover:bg-red-500/80 active:bg-red-500/90 text-white text-sm md:text-xs flex items-center justify-center transition-all opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 z-10';
         delBtn.innerHTML = '×';
         delBtn.title = '移除角色卡';
         delBtn.addEventListener('click', (e) => {
