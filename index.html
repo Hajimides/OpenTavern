@@ -165,29 +165,36 @@ body {
 .show-delete .char-delete-btn,
 .show-delete button[title*="删除角色卡"],
 .show-delete button[title*="移除角色卡"] {
-  /* Only force visible and clickable. All sizing, padding, font from the button element's className (absolute top/right etc).
-     This prevents any glyph "shift" or "move" when the class is toggled. */
   opacity: 1 !important;
   pointer-events: auto !important;
 }
 /* Allow default browser tap highlight (the light flash on touch) as the only tap visual.
-   No custom card-level highlight (no .touch-selected bg/shadow for cards).
-   On mobile, .tap-primed marks the card after first tap; second tap enters chat.
-   .show-delete is no longer set on first tap — delete button stays accessible via desktop hover. */
+   Cards use single-tap-to-open on both desktop and mobile.
+   Delete buttons: visible on desktop hover (group-hover), hidden on mobile (pointer-events:none). */
 .glass.rounded-2xl.cursor-pointer {
   -webkit-tap-highlight-color: initial;
 }
-/* .touch-selected rules removed per request - no custom card highlight.
-   Only .tap-primed is used to track first tap on mobile (no visual change, just state).
-   Default browser tap highlight (light flash) is the only visual feedback on tap.
-   Delete button on mobile: use desktop to delete, or long-press workflow. */
+/* Tap highlight on cards is the default browser behavior.
+   Delete buttons are hidden on mobile via pointer-events:none so they never intercept taps.
+   Desktop: group-hover reveals the × and enables pointer-events, allowing deletion. */
 
-/* Base for delete × (shown on .show-delete for touch first-tap, or hover on desktop). No bg.
-   pointer-events:none when invisible so taps pass through to the card on mobile. */
-.char-delete-btn {
+/* Base for delete × buttons. pointer-events:none when invisible so taps pass through to the card.
+   Covers both char-delete-btn class and library card delete buttons.
+   Specificity kept low (0-1-1) so .group:hover override below can win. */
+.char-delete-btn,
+button[title="移除角色卡"],
+button[title="删除角色卡"] {
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   font-weight: 700;
   pointer-events: none;
+}
+
+/* On desktop hover, allow delete buttons to receive clicks.
+   Specificity 0-2-0 beats the 0-1-1 base rule above. */
+.group:hover .char-delete-btn,
+.group:hover button[title="移除角色卡"],
+.group:hover button[title="删除角色卡"] {
+  pointer-events: auto;
 }
 
 /* Mobile responsive */
@@ -216,9 +223,9 @@ body {
     .msg-actions { opacity: 1; }
     .msg-action-btn { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
 
-    /* Mobile delete buttons: pure × glyph only, hidden on mobile by default.
-       No custom card highlight. Default tap flash provides feedback on first tap.
-       .tap-primed tracks first-tap state; second tap enters chat. */
+    /* Mobile delete buttons: pure × glyph only, hidden on mobile by default (pointer-events:none).
+       Single tap on a card opens chat directly. Default browser tap flash provides feedback.
+       Desktop: delete buttons visible on group-hover with pointer-events:auto. */
     .char-delete-btn,
     #myCardsGrid .group button[title="移除角色卡"] {
         font-size: 20px !important;
@@ -7182,38 +7189,19 @@ function showNewChatCharacterPicker() {
                         ${isSelected ? '✓' : ''}
                     </div>
                 ` : `
-                    <!-- Pure × only (no bg/rounded) to avoid visual seams on gradient. Shown on desktop hover (group-hover).
-                         On mobile: delete stays hidden; first tap primes, second tap enters chat. -->
+                    <!-- Pure × only (no bg/rounded). Desktop: visible on group-hover.
+                         Mobile: pointer-events:none → never intercepts taps; single tap on card opens chat. -->
                     <button class="char-delete-btn absolute top-1 right-1 text-white/80 hover:text-red-400 active:text-red-500 text-xl font-bold leading-none p-1 z-10 opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all pointer-events-none group-hover:pointer-events-auto" title="删除角色卡">×</button>
                 `}
             `;
 
             card.addEventListener('click', (e) => {
                 if (!multiSelectMode) {
-                    // 单选模式：保持原有行为
+                    // Skip if clicking on the visible delete button (handled by its own listener).
+                    // On mobile, the delete button has pointer-events:none so this guard never matches.
                     if (e.target.closest('.char-delete-btn') || e.target.closest('button[title="删除角色卡"]')) return;
 
-                    const isTouch = () => 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(hover: none)').matches;
-                    if (isTouch()) {
-                        if (card.classList.contains('tap-primed')) {
-                            // Second tap: remove prime state and open the chat
-                            card.classList.remove('tap-primed');
-                        } else {
-                            // First tap on touch: only browser default tap highlight, prime for second tap.
-                            // Do NOT show delete button — it stays accessible via desktop hover only.
-                            listContainer.querySelectorAll('.tap-primed').forEach(el => {
-                                if (el !== card) el.classList.remove('tap-primed');
-                            });
-                            card.classList.add('tap-primed');
-
-                            if (card._tapPrimeTimer) clearTimeout(card._tapPrimeTimer);
-                            card._tapPrimeTimer = setTimeout(() => {
-                                card.classList.remove('tap-primed');
-                            }, 3000);
-                            return;
-                        }
-                    }
-
+                    // Single tap directly opens chat
                     newChatPickerCameFromQuick = false;
                     modal.classList.add('hidden');
                     newConversation(character);
@@ -7231,14 +7219,12 @@ function showNewChatCharacterPicker() {
             });
 
             // 删除按钮（仅非多选模式下存在）
+            // Only fires on desktop hover (when pointer-events:auto via .group:hover CSS).
+            // On mobile, CSS pointer-events:none prevents this handler from running.
             const delBtn = card.querySelector('.char-delete-btn');
             if (delBtn) {
                 delBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    // Clear tap-primed state if present
-                    if (card.classList.contains('tap-primed')) {
-                        card.classList.remove('tap-primed');
-                    }
                     const displayName = character.name || '该角色卡';
                     if (!confirm(`确定从角色库中删除「${displayName}」？\n已有对话中的角色卡数据不会受影响。`)) {
                         return;
@@ -7988,28 +7974,25 @@ function renderMyCards() {
 
         // Remove button (top-right corner)
         const delBtn = document.createElement('button');
-        // Hidden by default.
-        // - On desktop: shows on group-hover (parent card has 'group')
-        // - On touch: delete stays hidden; first tap primes (.tap-primed), second tap enters chat.
-        //   Delete cards via desktop hover or by opening the character editor.
+        // Hidden by default. On desktop: visible and clickable on group-hover.
+        // On mobile (touch): pointer-events:none keeps it invisible, single tap on card opens chat.
         // Pure × only, no background circle. Overlay directly on gradient to avoid seams/gaps.
-        // Visibility controlled by group-hover (desktop) — .show-delete class available for explicit use.
         delBtn.className = 'absolute top-1 right-1 text-white/80 hover:text-red-400 active:text-red-500 text-xl font-bold leading-none p-1 z-10 transition-all opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto';
         delBtn.innerHTML = '×';
         delBtn.title = '移除角色卡';
+        // --- Delete button (desktop hover access) ---
+        // Click handled inside the card click handler below (no separate listener needed).
+        // CSS pointer-events:none ensures the invisible button doesn't intercept taps on mobile.
         delBtn.addEventListener('click', (e) => {
+            // Only fires on desktop hover (when pointer-events:auto via .group:hover CSS).
+            // On mobile, pointer-events:none prevents this handler from ever running.
             e.stopPropagation();
-            // Clear the tap-primed state if present
-            if (cardEl.classList.contains('tap-primed')) {
-                cardEl.classList.remove('tap-primed');
-            }
             const displayName = char.name || '该角色卡';
             if (!confirm(`确定从角色库中删除「${displayName}」？\n已有对话中的角色卡数据不会受影响。`)) {
                 return;
             }
             const key = (char.name || '').trim().toLowerCase();
             deleteCharacterFromLibrary(key);
-            // Refresh only the my cards grid
             if (typeof renderMyCards === 'function') renderMyCards();
         });
         preview.appendChild(delBtn);
@@ -8032,33 +8015,11 @@ function renderMyCards() {
         cardEl.appendChild(info);
 
         cardEl.addEventListener('click', (e) => {
-            // For my cards: skip detail, load recent conv or create new
-            if (e.target.closest('.char-delete-btn') || e.target.closest('button[title="移除角色卡"]')) return;
+            // Skip if clicking on the visible delete button (handled by its own listener).
+            // On mobile, the delete button has pointer-events:none so this guard never matches.
+            if (e.target.closest('button[title="移除角色卡"]')) return;
 
-            const isTouch = () => 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0 || window.matchMedia('(hover: none)').matches;
-            if (isTouch()) {
-                if (cardEl.classList.contains('tap-primed')) {
-                    // Second tap: remove prime state and open the chat
-                    cardEl.classList.remove('tap-primed');
-                } else {
-                    // First tap on touch: only browser default tap highlight, prime for second tap.
-                    // Do NOT show delete button — it stays accessible via desktop hover only.
-                    const grid = document.getElementById('myCardsGrid');
-                    if (grid) {
-                        grid.querySelectorAll('.tap-primed').forEach(el => {
-                            if (el !== cardEl) el.classList.remove('tap-primed');
-                        });
-                    }
-                    cardEl.classList.add('tap-primed');
-
-                    if (cardEl._tapPrimeTimer) clearTimeout(cardEl._tapPrimeTimer);
-                    cardEl._tapPrimeTimer = setTimeout(() => {
-                        cardEl.classList.remove('tap-primed');
-                    }, 3000);
-                    return;
-                }
-            }
-
+            // Single tap directly opens chat
             loadOrCreateChatForCharacter(char);
         });
 
