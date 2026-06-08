@@ -182,14 +182,15 @@ body {
   background: transparent !important;
   width: auto !important;
   height: auto !important;
-  font-size: 18px !important;
-  padding: 2px !important;
+  font-size: 20px !important;  /* larger × for better visibility and tap */
+  padding: 6px !important;  /* matches p-1.5 for more inset and hit area */
   text-shadow: 0 1px 2px rgba(0,0,0,0.6); /* better visibility of the × on bright gradients */
 }
 
 /* Base visibility for delete × on hover (desktop) or when forced visible — no bg, just the glyph */
 .char-delete-btn {
   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  font-weight: 700; /* bold × for clarity */
 }
 
 /* Mobile responsive */
@@ -223,7 +224,7 @@ body {
        Larger font for the glyph itself for tap target without circle bg. */
     .char-delete-btn,
     #myCardsGrid .group button[title="移除角色卡"] {
-        font-size: 18px !important;
+        font-size: 20px !important;  /* larger × for easier tap and visibility */
         text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     .char-delete-btn:active,
@@ -7185,7 +7186,7 @@ function showNewChatCharacterPicker() {
                     </div>
                 ` : `
                     <!-- Pure × only (no bg/rounded) to avoid visual seams on gradient. Shown on touch-selected or hover. -->
-                    <button class="char-delete-btn absolute -top-0.5 -right-0.5 text-white/70 hover:text-red-400 active:text-red-500 text-lg leading-none p-1 z-10 opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all" title="删除角色卡">×</button>
+                    <button class="char-delete-btn absolute top-2 right-2 text-white/80 hover:text-red-400 active:text-red-500 text-xl font-bold leading-none p-1.5 z-10 opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all" title="删除角色卡">×</button>
                 `}
             `;
 
@@ -7998,7 +7999,7 @@ function renderMyCards() {
         // CSS .touch-selected rule forces visibility + size.
         // Pure × only, no background circle. Overlay directly on gradient to avoid seams/gaps.
         // Visibility controlled by .touch-selected (touch) or group-hover (desktop).
-        delBtn.className = 'absolute -top-0.5 -right-0.5 text-white/70 hover:text-red-400 active:text-red-500 text-lg leading-none p-1 z-10 transition-all opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100';
+        delBtn.className = 'absolute top-2 right-2 text-white/80 hover:text-red-400 active:text-red-500 text-xl font-bold leading-none p-1.5 z-10 transition-all opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100';
         delBtn.innerHTML = '×';
         delBtn.title = '移除角色卡';
         delBtn.addEventListener('click', (e) => {
