@@ -177,11 +177,19 @@ body {
 .touch-selected .char-delete-btn,
 .touch-selected button[title*="删除角色卡"],
 .touch-selected button[title*="移除角色卡"] {
+  /* No background at all — only the × glyph. Pure overlay to prevent seams/gaps. */
   opacity: 1 !important;
-  background: rgba(0, 0, 0, 0.72) !important;
-  width: 22px !important;
-  height: 22px !important;
-  font-size: 13px !important;
+  background: transparent !important;
+  width: auto !important;
+  height: auto !important;
+  font-size: 18px !important;
+  padding: 2px !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6); /* better visibility of the × on bright gradients */
+}
+
+/* Base visibility for delete × on hover (desktop) or when forced visible — no bg, just the glyph */
+.char-delete-btn {
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 /* Mobile responsive */
@@ -210,19 +218,18 @@ body {
     .msg-actions { opacity: 1; }
     .msg-action-btn { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; }
 
-    /* Mobile delete buttons on cards: larger tap target. 
-       Visibility is now controlled ONLY by .touch-selected (after first tap) or desktop group-hover.
-       Hidden by default on mobile until highlighted. */
+    /* Mobile delete buttons: no forced bg (user request: only the ×). 
+       Size/visibility controlled by .touch-selected class (after highlight tap) or hover.
+       Larger font for the glyph itself for tap target without circle bg. */
     .char-delete-btn,
     #myCardsGrid .group button[title="移除角色卡"] {
-        width: 32px !important;
-        height: 32px !important;
         font-size: 18px !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     .char-delete-btn:active,
     #myCardsGrid .group button[title="移除角色卡"]:active {
-        background: rgba(239,68,68,0.85) !important;
-        transform: scale(0.95);
+        color: #f87171 !important; /* red on press for the × */
+        transform: scale(1.1);
     }
 
     #messagesContainer { padding: 12px 12px; }
@@ -7177,7 +7184,8 @@ function showNewChatCharacterPicker() {
                         ${isSelected ? '✓' : ''}
                     </div>
                 ` : `
-                    <button class="char-delete-btn absolute top-1 right-1 w-6 h-6 md:w-5 md:h-5 rounded-full bg-black/50 hover:bg-red-500/80 active:bg-red-500/90 text-white text-sm md:text-xs flex items-center justify-center opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all z-10" title="删除角色卡">×</button>
+                    <!-- Pure × only (no bg/rounded) to avoid visual seams on gradient. Shown on touch-selected or hover. -->
+                    <button class="char-delete-btn absolute -top-0.5 -right-0.5 text-white/70 hover:text-red-400 active:text-red-500 text-lg leading-none p-1 z-10 opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 transition-all" title="删除角色卡">×</button>
                 `}
             `;
 
@@ -7988,7 +7996,9 @@ function renderMyCards() {
         // - On desktop: shows on group-hover (parent card has 'group')
         // - On touch: only appears when parent gets .touch-selected (after first tap/highlight)
         // CSS .touch-selected rule forces visibility + size.
-        delBtn.className = 'absolute top-1.5 right-1.5 w-6 h-6 md:w-5 md:h-5 rounded-full bg-black/60 hover:bg-red-500/80 active:bg-red-500/90 text-white text-sm md:text-xs flex items-center justify-center transition-all opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100 z-10';
+        // Pure × only, no background circle. Overlay directly on gradient to avoid seams/gaps.
+        // Visibility controlled by .touch-selected (touch) or group-hover (desktop).
+        delBtn.className = 'absolute -top-0.5 -right-0.5 text-white/70 hover:text-red-400 active:text-red-500 text-lg leading-none p-1 z-10 transition-all opacity-0 md:opacity-0 group-hover:opacity-100 md:group-hover:opacity-100';
         delBtn.innerHTML = '×';
         delBtn.title = '移除角色卡';
         delBtn.addEventListener('click', (e) => {
