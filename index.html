@@ -4210,16 +4210,17 @@ function importCharacterCard(jsonData) {
     }
 
     // 归一化成 OpenTavern 内部使用的角色对象
+    // 强制将文本字段转为字符串，防止来自某些导出卡的非字符串值导致 .replace 报错
     const character = {
-        name: data.name || 'Unnamed',
-        description: data.description || '',
-        personality: data.personality || '',
-        scenario: data.scenario || '',
-        first_mes: data.first_mes || '',
-        mes_example: data.mes_example || '',
-        system_prompt: data.system_prompt || '',
-        post_history_instructions: data.post_history_instructions || '',
-        creator_notes: data.creator_notes || '',
+        name: String(data.name || 'Unnamed'),
+        description: String(data.description || ''),
+        personality: String(data.personality || ''),
+        scenario: String(data.scenario || ''),
+        first_mes: String(data.first_mes || ''),
+        mes_example: String(data.mes_example || ''),
+        system_prompt: String(data.system_prompt || ''),
+        post_history_instructions: String(data.post_history_instructions || ''),
+        creator_notes: String(data.creator_notes || ''),
         tags: Array.isArray(data.tags) ? data.tags : [],
         alternate_greetings: Array.isArray(data.alternate_greetings) ? data.alternate_greetings : [],
         extensions: data.extensions || {},
@@ -4319,9 +4320,10 @@ async function extractCharaFromPng(file) {
 }
 
 function replacePlaceholders(text, charName, userName) {
+    text = String(text || '');
     if (!text) return '';
     return text
-        .replace(/\{\{char\}\}/gi, charName)
+        .replace(/\{\{char\}\}/gi, charName || '')
         .replace(/\{\{user\}\}/gi, userName || 'User');
 }
 
@@ -9482,6 +9484,7 @@ function updateAnnouncementLangButtons() {
 
 function escapeHtml(text) {
     if (!text) return '';
+    text = String(text);
     return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
