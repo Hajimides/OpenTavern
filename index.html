@@ -7214,6 +7214,7 @@ function newConversation(charOrChars) {
 
         if (character) {
             conv.character = JSON.parse(JSON.stringify(character));
+            currentCharacterName = character.name;
             const charName = conv.character.name;
             const userName = state.settings.userName || 'User';
             const firstMes = replacePlaceholders(conv.character.first_mes, charName, userName);
@@ -7290,6 +7291,13 @@ function newConversation(charOrChars) {
     persistState();
     requestRender('activeConvId');
     renderTokenBar();
+
+    // 当从卡片库（library view）通过侧边栏“新对话/新群聊”→角色选择器创建新对话/群聊时，
+    // newConversation 负责创建状态，但需要显式切换到聊天界面。
+    // loadConversation 和 loadOrCreateChatForCharacter 已经有类似逻辑。
+    if (currentView === 'library') {
+        switchView('chat');
+    }
 
     if (isMobile()) closeSidebar();
 }
