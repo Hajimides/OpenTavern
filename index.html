@@ -4643,12 +4643,16 @@ function buildMessagesForAPI() {
 
     var apiMessages = [];
 
-    // 注入 JailBreak 提示（总是作为第一条 system 消息，优先级最高）
+    // 将 JailBreak 提示合并到 system prompt 的最前面
+    // 模型会先读到 JailBreak 指令，再看到角色卡的 Personality/Scenario，更难被覆盖
+    let finalSystemContent = systemContent || '';
     if (typeof JAILBREAK_PROMPT === 'string' && JAILBREAK_PROMPT.length > 50) {
-        apiMessages.push({ role: 'system', content: JAILBREAK_PROMPT });
+        finalSystemContent = JAILBREAK_PROMPT + '\n\n' + finalSystemContent;
     }
 
-    if (systemContent) apiMessages.push({ role: 'system', content: systemContent });
+    if (finalSystemContent) {
+        apiMessages.push({ role: 'system', content: finalSystemContent });
+    }
 
     // Inject summaries as a second system message if any exist
     if (conv.summaries && conv.summaries.length > 0) {
@@ -10548,17 +10552,21 @@ function bindEvents() {
             // 提示词查看器排除 JailBreak 部分，避免用户直接复制隐藏提示
             var messages = buildMessagesForAPI();
             var text = '';
-            var startIdx = 0;
-            // 如果第一条 system 消息内容与 JAILBREAK_PROMPT 完全相同，则跳过显示（隐藏注入）
-            if (messages.length > 0 && 
-                messages[0].role === 'system' && 
-                typeof JAILBREAK_PROMPT === 'string' && 
-                messages[0].content === JAILBREAK_PROMPT) {
-                startIdx = 1;
-            }
-            for (var i = startIdx; i < messages.length; i++) {
-                text += '=== ' + messages[i].role.toUpperCase() + ' ===\n';
-                text += messages[i].content + '\n\n';
+            for (var i = 0; i < messages.length; i++) {
+                var role = messages[i].role.toUpperCase();
+                var content = messages[i].content || '';
+
+                // 如果是 system 消息且包含 JailBreak 前缀，则在显示时去掉 JailBreak 部分
+                if (role === 'SYSTEM' && 
+                    typeof JAILBREAK_PROMPT === 'string' && 
+                    content.startsWith(JAILBREAK_PROMPT)) {
+                    content = content.slice(JAILBREAK_PROMPT.length).trim();
+                }
+
+                if (content) {
+                    text += '=== ' + role + ' ===\n';
+                    text += content + '\n\n';
+                }
             }
             dom.promptViewerContent.textContent = text || t('no_messages_to_send');
             dom.promptViewerModal.classList.remove('hidden');
