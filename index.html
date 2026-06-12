@@ -9615,9 +9615,10 @@ function regenerateMessage(actualIdx) {
     var lastMsg = conv.messages[conv.messages.length - 1];
     if (!lastMsg || lastMsg.role !== 'user') return;
 
-    // 群组重试时也决定下一个发言者
+    // 群组重试时也决定发言者：优先尊重用户消息里是否带 @ 指定，否则按 list_order 推进
     if (isGroupChat(conv)) {
-        conv._nextGroupSpeaker = getNextGroupSpeaker(conv);
+        const mentioned = parseGroupMention(lastMsg.content || '', conv);
+        conv._nextGroupSpeaker = mentioned || getNextGroupSpeaker(conv);
     }
 
     streamChat(
@@ -9812,17 +9813,11 @@ function sendMessage() {
         const mentioned = parseGroupMention(text, conv);
         if (mentioned) {
             // 用户明确 @ 了某人 → 强制让该角色回复（只认第一个@）
+            // @ 只影响本轮；本轮结束后 onComplete 会用 getNextGroupSpeaker 推进到列表下一个
             conv._nextGroupSpeaker = mentioned;
         } else {
-            // 没有 @ 任何人时，默认让上一个回复的角色继续回复
-            const lastAssistant = [...conv.messages].reverse().find(m => m.role === 'assistant' && m.speaker);
-            if (lastAssistant && lastAssistant.speaker) {
-                const members = getGroupMembers(conv);
-                const lastChar = members.find(m => m.character.name === lastAssistant.speaker);
-                conv._nextGroupSpeaker = lastChar ? lastChar.character : getNextGroupSpeaker(conv);
-            } else {
-                conv._nextGroupSpeaker = getNextGroupSpeaker(conv);
-            }
+            // 没有 @ 时，按 list_order 策略由 getNextGroupSpeaker 决定本轮该谁（上一个发言者之后的那位）
+            conv._nextGroupSpeaker = getNextGroupSpeaker(conv);
         }
     }
 
