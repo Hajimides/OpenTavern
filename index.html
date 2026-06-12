@@ -10554,13 +10554,24 @@ function bindEvents() {
     // Prompt viewer
     function showFullPrompt() {
         try {
-            // 临时取消隐藏，方便验证 JailBreak 是否正确注入到 API 提示词最前面
-            // 用户可以通过“查看完整提示词”确认第一条 SYSTEM 是否以 JailBreak 开头
+            // 提示词查看器隐藏 JailBreak 部分（防止用户直接复制自带的 jailbreak）
             var messages = buildMessagesForAPI();
             var text = '';
             for (var i = 0; i < messages.length; i++) {
-                text += '=== ' + messages[i].role.toUpperCase() + ' ===\n';
-                text += (messages[i].content || '') + '\n\n';
+                var role = messages[i].role.toUpperCase();
+                var content = messages[i].content || '';
+
+                // 如果是第一条 system 且以 JailBreak 开头，则在显示时去掉 JailBreak 前缀
+                if (i === 0 && role === 'SYSTEM' &&
+                    typeof JAILBREAK_PROMPT === 'string' &&
+                    content.startsWith(JAILBREAK_PROMPT)) {
+                    content = content.slice(JAILBREAK_PROMPT.length).trim();
+                }
+
+                if (content) {
+                    text += '=== ' + role + ' ===\n';
+                    text += content + '\n\n';
+                }
             }
             dom.promptViewerContent.textContent = text || t('no_messages_to_send');
             dom.promptViewerModal.classList.remove('hidden');
