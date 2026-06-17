@@ -804,11 +804,11 @@ body.low-power .modal-overlay {
 
                 <p class="text-[10px] text-zinc-500" id="storageHint" data-i18n="storage_hint_opfs">正在使用 OPFS（Origin Private File System），容量大、性能好，推荐长期使用。</p>
 
-                <!-- OPFS 清理按钮 -->
+                <!-- 【Storage Fix】彻底清除按钮（OPFS + IDB） -->
                 <button id="clearOPFSBtn"
                         class="mt-2 w-full px-3 py-1.5 text-xs rounded-lg bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-400 border border-red-500/20 transition-all font-medium flex items-center justify-center gap-1"
                         data-i18n="clear_opfs_data">
-                    <!-- 文字由 JS 通过 t('clear_opfs_data') 动态设置，支持 i18n -->
+                    <!-- 文字由 JS 通过 t('clear_opfs_data') 动态设置 -->
                 </button>
 
                 <!-- 【Storage Fix】清除 WebLLM 缓存按钮 -->
@@ -2427,7 +2427,7 @@ var i18n = {
         storage_hint_idb: '正在使用 IndexedDB，可支持多个角色卡与大型世界书。',
         storage_hint_ls: '推荐使用 IndexedDB（容量大得多）。当前默认开启，localStorage 仅用于迁移。',
         storage_hint_opfs: '正在使用 OPFS（Origin Private File System），容量大、性能好，推荐长期使用。',
-        clear_opfs_data: '🗑️ 清除 OPFS 所有数据（不可恢复）',
+        clear_opfs_data: '🗑️ 清除所有用户数据（OPFS + IDB，角色卡/对话也会删）',
         storage_usage_calculating: '计算中...',
         storage_high_warning: '存储空间紧张，建议尽快备份！',
 
@@ -2801,7 +2801,7 @@ var i18n = {
         storage_hint_idb: '正在使用 IndexedDB，可支援多個角色卡與大型世界書。',
         storage_hint_ls: '目前使用 localStorage 兼容層。支援 IndexedDB 後可獲得更大容量與更好效能（會自動遷移）。',
         storage_hint_opfs: '正在使用 OPFS（Origin Private File System），容量大、性能佳，推薦長期使用。',
-        clear_opfs_data: '🗑️ 清除 OPFS 所有資料（不可恢復）',
+        clear_opfs_data: '🗑️ 清除所有用戶資料（OPFS + IDB，角色卡/對話也會刪）',
         storage_usage_calculating: '計算中...',
         storage_high_warning: '儲存空間緊張，建議盡快備份！',
 
@@ -3127,7 +3127,7 @@ var i18n = {
         storage_hint_idb: 'Using IndexedDB, supports multiple character cards and large world books.',
         storage_hint_ls: 'IndexedDB recommended (much higher capacity). Enabled by default; localStorage used only for migration.',
         storage_hint_opfs: 'Using OPFS (Origin Private File System) — large capacity and good performance. Recommended for long-term use.',
-        clear_opfs_data: '🗑️ Clear all OPFS data (irreversible)',
+        clear_opfs_data: '🗑️ Clear ALL user data (OPFS + IDB, cards/chats included)',
         storage_usage_calculating: 'Calculating...',
         storage_high_warning: 'Storage space is tight. Please back up soon!',
 
@@ -4064,17 +4064,82 @@ var StorageService = {
     async getStorageInfo() {
         const backend = this.getBackend();
         try {
-            if (this._useOPFS && typeof OPFSStorage !== 'undefined' && OPFSStorage.getStorageInfo) {
+            if (this._useOPFS && !this._opfsFailed && typeof OPFSStorage !== 'undefined' && OPFSStorage.getStorageInfo) {
                 const info = await OPFSStorage.getStorageInfo();
+                // 如果 OPFS 文件不存在（刚清除），强制 used=0
                 return { backend: 'opfs', used: info.used || 0, quota: info.quota, originUsed: info.originUsed };
             }
-            // 其他后端回退到 origin estimate（仍比什么都不好）
+
+            // 对于 IDB / LS 回退：优先计算我们实际数据的 JSON 大小（更准确反映角色卡等占用的空间）
+            try {
+                // 尝试加载当前数据并计算其序列化后的大小（这是“我们的”数据占用）
+                const currentData = await this.loadAll();
+                if (currentData) {
+                    const jsonSize = new Blob([JSON.stringify(currentData)]).size;
+                    if (jsonSize > 0) {
+                        return { backend, used: jsonSize, quota: null, originUsed: null, _note: 'our-data-size' };
+                    }
+                }
+                // 数据为空（刚清除后）
+                return { backend, used: 0, quota: null };
+            } catch (_) {}
+
             if (navigator.storage && navigator.storage.estimate) {
                 const estimate = await navigator.storage.estimate();
                 return { backend, used: estimate.usage || 0, quota: estimate.quota };
             }
         } catch (e) {}
         return { backend, used: 0, quota: null };
+    },
+
+    // 【Storage Fix】彻底清除所有用户数据（OPFS 主文件 + IndexedDB stores + localStorage）
+    // 解决“清除OPFS后角色卡还在、已用空间不下降”的问题
+    async clearAllData() {
+        let cleared = { opfs: false, idb: false, ls: false };
+
+        // 1. 清除 OPFS 主数据文件
+        try {
+            if (typeof OPFSStorage !== 'undefined' && typeof OPFSStorage.clear === 'function') {
+                await OPFSStorage.clear();
+                cleared.opfs = true;
+            }
+        } catch (e) {
+            console.warn('[Storage] OPFS clear error (may be ok):', e);
+        }
+
+        // 2. 清除 IndexedDB 中的所有用户数据
+        try {
+            const db = await this.getIDB().catch(() => null);
+            if (db) {
+                const storeNames = ['settings', 'conversations', 'worldBooks', 'metadata'];
+                for (const store of storeNames) {
+                    try {
+                        if (db.clear) await db.clear(store);
+                    } catch (_) {}
+                }
+                cleared.idb = true;
+            }
+            // 尝试彻底删除数据库（某些浏览器更干净）
+            try {
+                indexedDB.deleteDatabase(this._dbName || 'OpenTavernDB');
+            } catch (_) {}
+        } catch (e) {
+            console.warn('[Storage] IDB clear error:', e);
+        }
+
+        // 3. 清除 localStorage 相关键
+        try {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem('opentavern-last-backup');
+            // 清理可能的其他键
+            Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('opentavern')) localStorage.removeItem(k);
+            });
+            cleared.ls = true;
+        } catch (e) {}
+
+        console.log('[Storage] clearAllData result:', cleared);
+        return cleared;
     }
 };
 
@@ -4163,18 +4228,30 @@ function updateStorageInfo() {
             }
         }
 
-        if (usageEl && info && info.used != null && info.quota != null && info.quota > 0) {
+        if (usageEl && info && info.used != null) {
             const usedMB = (info.used / 1024 / 1024).toFixed(1);
-            const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
-            let txt = `${usedMB} MB / ~${quotaGB} GB`;
+
+            let txt;
+            if (info.quota && info.quota > 0) {
+                const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
+                txt = `${usedMB} MB / ~${quotaGB} GB`;
+            } else {
+                // 我们自己计算的 our-data-size（清除后会很小）
+                txt = `${usedMB} MB (实际数据)`;
+            }
+
             if (StorageService._opfsFailed) {
                 txt += ' (IDB)';
             } else if (backend === 'opfs' || info.backend === 'opfs') {
                 txt += ' (OPFS)';
+            } else if (info._note === 'our-data-size') {
+                txt += ' (IDB)';
             }
             usageEl.textContent = txt;
 
-            const percent = Math.min((info.used / info.quota) * 100, 100);
+            const percent = (info.quota && info.quota > 0)
+                ? Math.min((info.used / info.quota) * 100, 100)
+                : Math.min(info.used / (5 * 1024 * 1024), 100); // 假设 5MB 小配额做进度参考
             if (bar) bar.style.width = percent + '%';
 
             if (percent > 85) {
@@ -4193,8 +4270,10 @@ function updateStorageInfo() {
         } else if (usageEl) {
             if (StorageService._opfsFailed) {
                 usageEl.textContent = 'IndexedDB（OPFS 降级）';
+            } else if (backend === 'opfs') {
+                usageEl.textContent = 'OPFS 就绪';
             } else {
-                usageEl.textContent = (backend === 'opfs') ? 'OPFS 就绪' : '计算中...';
+                usageEl.textContent = '计算中... (清除后会变小)';
             }
             if (bar) bar.style.width = '0%';
         }
@@ -11892,15 +11971,22 @@ function bindEvents() {
             StorageService.getStorageInfo().then(function(info) {
                 const bar = document.getElementById('storageUsageBar');
 
-                if (info && info.used != null && info.quota != null && info.quota > 0) {
+                if (info && info.used != null) {
                     const usedMB = (info.used / 1024 / 1024).toFixed(1);
-                    const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
-                    let display = `${usedMB} MB / ~${quotaGB} GB`;
+                    let display;
+                    if (info.quota && info.quota > 0) {
+                        const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
+                        display = `${usedMB} MB / ~${quotaGB} GB`;
+                    } else {
+                        display = `${usedMB} MB (实际数据)`;
+                    }
                     if (backend === 'opfs' || info.backend === 'opfs') display += ' (OPFS)';
-                    else if (backend === 'indexeddb') display += ' (IDB)';
+                    else if (StorageService._opfsFailed || backend === 'indexeddb' || info._note === 'our-data-size') display += ' (IDB)';
                     usageEl.textContent = display;
 
-                    const percent = Math.min((info.used / info.quota) * 100, 100);
+                    const percent = (info.quota && info.quota > 0)
+                        ? Math.min((info.used / info.quota) * 100, 100)
+                        : 5;
                     if (bar) bar.style.width = percent + '%';
 
                     if (percent > 85) {
@@ -11951,30 +12037,49 @@ function bindEvents() {
         // OPFS 清理按钮（仅在 OPFS 模式下显示）
         const clearBtn = document.getElementById('clearOPFSBtn');
         if (clearBtn) {
+            // 【Storage Fix】始终显示“清除所有数据”按钮，因为它现在会清理 OPFS + IDB + LS
+            // 无论当前后端是什么，用户都可能需要彻底抹掉角色卡/数据
+            clearBtn.style.display = 'flex';
+            clearBtn.textContent = t('clear_opfs_data') || '🗑️ 清除所有用户数据';
+            // 保持原有 OPFS 专用颜色
             if (backend === 'opfs' && !StorageService._opfsFailed) {
-                clearBtn.style.display = 'flex';
-                clearBtn.textContent = t('clear_opfs_data');
+                clearBtn.style.background = 'rgba(239,68,68,0.15)';
             } else {
-                clearBtn.style.display = 'none';
+                clearBtn.style.background = 'rgba(59,130,246,0.15)';
+                clearBtn.style.color = '#93c5fd';
             }
 
             clearBtn.onclick = async function() {
-                if (!confirm('确定要永久删除 OPFS 中的所有数据吗？\n此操作不可恢复，页面将重新加载。')) {
+                // 【Storage Fix】现在会同时清理 OPFS + IndexedDB + localStorage
+                // 确保角色卡、世界书、对话等彻底清除，已用空间能真正下降
+                if (!confirm('确定要永久删除所有用户数据吗？\n包括角色卡、对话、世界书等。\n此操作不可恢复，页面将重新加载。')) {
                     return;
                 }
 
                 try {
-                    if (typeof OPFSStorage !== 'undefined' && OPFSStorage.clear) {
-                        await OPFSStorage.clear();
+                    if (typeof StorageService !== 'undefined' && typeof StorageService.clearAllData === 'function') {
+                        await StorageService.clearAllData();
+                    } else {
+                        // 降级到旧逻辑
+                        if (typeof OPFSStorage !== 'undefined' && OPFSStorage.clear) {
+                            await OPFSStorage.clear();
+                        }
+                        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
                     }
 
-                    // 清理 localStorage 中的旧数据（可选）
-                    try { localStorage.removeItem('opentavern-data-v1'); } catch (e) {}
+                    // 立即在 UI 上反馈已清空（reload 前）
+                    try {
+                        if (typeof updateStorageInfo === 'function') updateStorageInfo();
+                        const usageEl = document.getElementById('storageUsage');
+                        const bar = document.getElementById('storageUsageBar');
+                        if (usageEl) usageEl.textContent = '0.0 MB / ~0 GB (已清除)';
+                        if (bar) bar.style.width = '0%';
+                    } catch (_) {}
 
-                    alert('OPFS 数据已清除。页面即将重新加载...');
+                    alert('所有用户数据已清除。页面即将重新加载...');
                     location.reload();
                 } catch (err) {
-                    console.error('[Storage] 清除 OPFS 失败:', err);
+                    console.error('[Storage] 清除所有数据失败:', err);
                     alert('清除失败：' + (err.message || err));
                 }
             };
