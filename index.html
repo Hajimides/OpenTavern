@@ -816,6 +816,18 @@ body.low-power .modal-overlay {
                         class="mt-1.5 w-full px-3 py-1 text-xs rounded-lg bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-300 border border-amber-500/20 transition-all font-medium flex items-center justify-center gap-1">
                     🧹 清除 WebLLM 模型缓存（释放大空间）
                 </button>
+
+                <!-- 【Recovery Tool】存储恢复工具 -->
+                <hr class="border-white/5 mt-3">
+                <div>
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">存储恢复工具</label>
+                    <p class="text-[10px] text-zinc-500 mb-1.5">升级或切换后端后数据丢失？扫描旧存储位置并恢复（会覆盖当前数据）。</p>
+                    <button id="scanStorageBtn"
+                            class="w-full px-3 py-1 text-xs rounded-lg bg-blue-500/10 hover:bg-blue-500/20 active:bg-blue-500/30 text-blue-300 border border-blue-500/20 transition-all font-medium">
+                        扫描所有存储后端
+                    </button>
+                    <div id="storageCandidates" class="mt-2 space-y-1 text-[10px]"></div>
+                </div>
             </div>
 
             <!-- World Info Budget -->
@@ -4391,6 +4403,129 @@ async function clearWebLLMCache() {
 
     try { alert(msg); } catch(_) {}
     if (typeof updateStorageInfo === 'function') updateStorageInfo();
+}
+
+// 暴露给控制台调试
+window.scanAllStorageBackends = scanAllStorageBackends;
+window.restoreFromStorageCandidate = restoreFromStorageCandidate;
+
+// ==================== 【Recovery Tool】存储恢复工具 ====================
+
+// 扫描所有后端，收集候选数据（按 lastSaved 排序）
+async function scanAllStorageBackends() {
+    const candidates = [];
+
+    // 1. OPFS
+    try {
+        if (typeof OPFSStorage !== 'undefined' && OPFSStorage.loadAll) {
+            const data = await OPFSStorage.loadAll();
+            if (data && (Object.keys(data.conversations || {}).length > 0 || data.lastSaved)) {
+                candidates.push({
+                    backend: 'OPFS',
+                    data: data,
+                    lastSaved: data.lastSaved || 0,
+                    convCount: Object.keys(data.conversations || {}).length,
+                    charCount: Object.keys(data.characters || {}).length,
+                    wbCount: Object.keys(data.worldBooks || {}).length
+                });
+            }
+        }
+    } catch (e) { /* ignore */ }
+
+    // 2. IndexedDB (直接用 loadAllFromIDB)
+    try {
+        if (typeof StorageService !== 'undefined' && typeof StorageService.loadAllFromIDB === 'function') {
+            const data = await StorageService.loadAllFromIDB();
+            if (data && (Object.keys(data.conversations || {}).length > 0 || data.lastSaved)) {
+                candidates.push({
+                    backend: 'IndexedDB',
+                    data: data,
+                    lastSaved: data.lastSaved || 0,
+                    convCount: Object.keys(data.conversations || {}).length,
+                    charCount: Object.keys(data.characters || {}).length,
+                    wbCount: Object.keys(data.worldBooks || {}).length
+                });
+            }
+        }
+    } catch (e) { /* ignore */ }
+
+    // 3. localStorage
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (data && (Object.keys(data.conversations || {}).length > 0 || data.lastSaved)) {
+                candidates.push({
+                    backend: 'localStorage',
+                    data: data,
+                    lastSaved: data.lastSaved || 0,
+                    convCount: Object.keys(data.conversations || {}).length,
+                    charCount: Object.keys(data.characters || {}).length,
+                    wbCount: Object.keys(data.worldBooks || {}).length
+                });
+            }
+        }
+    } catch (e) { /* ignore */ }
+
+    // 按 lastSaved 降序排序，最新的在前
+    candidates.sort((a, b) => (b.lastSaved || 0) - (a.lastSaved || 0));
+    return candidates;
+}
+
+// 从候选恢复（会覆盖当前 state 并保存到当前后端）
+async function restoreFromStorageCandidate(candidate) {
+    if (!candidate || !candidate.data) return;
+
+    const data = candidate.data;
+    const msg = `确定从「${candidate.backend}」恢复吗？\n\n` +
+                `最后保存: ${candidate.lastSaved ? new Date(candidate.lastSaved).toLocaleString() : '未知'}\n` +
+                `对话: ${candidate.convCount}  角色卡: ${candidate.charCount}  世界书: ${candidate.wbCount}\n\n` +
+                `当前未保存的数据将会丢失，建议先点“Export All”备份！`;
+
+    if (!confirm(msg)) return;
+
+    try {
+        // 应用数据到 state
+        if (data.settings) {
+            Object.keys(data.settings).forEach(function(key) {
+                state.settings[key] = data.settings[key];
+            });
+        }
+        if (data.conversations) state.conversations = data.conversations;
+        if (data.conversationOrder) state.conversationOrder = data.conversationOrder;
+        if (data.activeConvId && state.conversations[data.activeConvId]) {
+            state.activeConvId = data.activeConvId;
+        }
+        if (data.worldBooks) state.worldBooks = data.worldBooks;
+        if (data.characters) state.characters = data.characters;
+        if (typeof data.charactersMigrated !== 'undefined') {
+            state._charactersMigrated = !!data.charactersMigrated;
+        }
+
+        // 保存到当前主后端
+        const dataToSave = {
+            settings: getSafeSettingsForPersist(),
+            conversations: state.conversations,
+            conversationOrder: state.conversationOrder,
+            activeConvId: state.activeConvId,
+            worldBooks: state.worldBooks || {},
+            characters: state.characters || {},
+            charactersMigrated: !!state._charactersMigrated,
+            lastSaved: Date.now()
+        };
+
+        if (typeof StorageService !== 'undefined' && typeof StorageService.saveAll === 'function') {
+            await StorageService.saveAll(dataToSave);
+        } else {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+        }
+
+        alert(`已从 ${candidate.backend} 恢复成功！页面即将刷新...`);
+        location.reload();
+    } catch (err) {
+        console.error('[Recovery] restore failed:', err);
+        alert('恢复失败：' + (err.message || err));
+    }
 }
 
 // ==================== 兼容层（逐步迁移中） ====================
@@ -12181,6 +12316,52 @@ function bindEvents() {
                 if (typeof clearWebLLMCache === 'function') {
                     await clearWebLLMCache();
                 }
+            };
+        }
+
+        // 【Recovery Tool】绑定扫描和恢复
+        const scanBtn = document.getElementById('scanStorageBtn');
+        const candidatesDiv = document.getElementById('storageCandidates');
+        if (scanBtn && candidatesDiv) {
+            scanBtn.onclick = async function() {
+                const originalText = scanBtn.textContent;
+                scanBtn.textContent = '扫描中...';
+                scanBtn.disabled = true;
+                candidatesDiv.innerHTML = '';
+
+                try {
+                    const list = await scanAllStorageBackends();
+                    if (list.length === 0) {
+                        candidatesDiv.innerHTML = '<div class="text-[10px] text-zinc-500 px-1">未检测到其他存储后端的数据。</div>';
+                    } else {
+                        list.forEach(function(cand) {
+                            const row = document.createElement('div');
+                            row.className = 'glass rounded p-1.5 flex items-center justify-between text-[10px]';
+                            const timeStr = cand.lastSaved ? new Date(cand.lastSaved).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '未知时间';
+                            row.innerHTML = `
+                                <div>
+                                    <span class="font-medium text-blue-300">${cand.backend}</span>
+                                    <span class="text-zinc-500 ml-1">${timeStr}</span><br>
+                                    <span class="text-zinc-400">对话 ${cand.convCount} · 角色 ${cand.charCount} · 世界书 ${cand.wbCount}</span>
+                                </div>
+                            `;
+                            const restoreBtn = document.createElement('button');
+                            restoreBtn.className = 'ml-2 px-2 py-0.5 text-[10px] rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30';
+                            restoreBtn.textContent = '恢复';
+                            restoreBtn.onclick = function() {
+                                restoreFromStorageCandidate(cand);
+                            };
+                            row.appendChild(restoreBtn);
+                            candidatesDiv.appendChild(row);
+                        });
+                    }
+                } catch (e) {
+                    candidatesDiv.innerHTML = '<div class="text-[10px] text-red-400">扫描出错</div>';
+                    console.error('[Recovery] scan error', e);
+                }
+
+                scanBtn.textContent = '重新扫描';
+                scanBtn.disabled = false;
             };
         }
 
