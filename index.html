@@ -3654,7 +3654,7 @@ var StorageService = {
             this._useOPFS = false;
             this._opfsFailed = true;
             this._opfsFailureReason = e && e.message ? e.message : String(e);
-            console.warn('[Storage] OPFS init failed, will use localStorage snapshot fallback:', e && e.message);
+            console.warn('[Storage] OPFS init failed, using localStorage strong snapshot as primary on this device:', e && e.message);
         }
     },
 
@@ -3685,10 +3685,10 @@ var StorageService = {
             const raw = localStorage.getItem(STORAGE_KEY);
             if (raw) {
                 const data = JSON.parse(raw);
-                if (data && (Object.keys(data.conversations || {}).length > 0 || data.lastSaved)) {
+                // 放宽判断：只要有 lastSaved 或 settings 或对话，就认为是有效数据（防止纯改设置时被当“空”）
+                if (data && (Object.keys(data.conversations || {}).length > 0 || data.lastSaved || data.settings)) {
                     console.log('[Storage] Loaded from localStorage (strong snapshot fallback)');
                     this._lastUsedBackend = 'localStorage';
-                    // 如果 OPFS 可用，尝试把 LS 数据同步到 OPFS（一次性迁移）
                     if (this._useOPFS && !this._opfsFailed) {
                         try { await OPFSStorage.saveAll(data); } catch (_) {}
                     }
@@ -3701,21 +3701,35 @@ var StorageService = {
         return null;
     },
 
-    // 保存：优先 OPFS，失败或不可用时落到 LS；任何时候都尽力维护 LS 快照
+    // 保存：**先同步写 localStorage 强快照**（可靠、立即），再尝试 OPFS（大容量）。
+    // 这样即使 OPFS 在手机上 flaky / 慢 / 失败，数据也不会丢。
     async saveAll(data) {
-        this._lastSaveSnapshot = data; // 供 pagehide 强兜底使用
+        this._lastSaveSnapshot = data;
 
+        // 1. 强快照：总是先同步写入 LS（关键修复手机刷新丢数据）
+        let wroteLS = false;
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            wroteLS = true;
+            this._lastUsedBackend = 'localStorage';
+        } catch (e) {
+            if (this._isQuotaError(e)) {
+                this._handleQuotaExceeded(e, data);
+            }
+            console.error('[Storage] localStorage snapshot write failed:', e);
+        }
+
+        // 2. 尝试 OPFS 作为主存储（不阻塞 LS）
         if (this._useOPFS && !this._opfsFailed) {
             try {
                 await OPFSStorage.saveAll(data);
                 this._lastUsedBackend = 'opfs';
                 setTimeout(() => { try { if (typeof updateStorageInfo === 'function') updateStorageInfo(); } catch(_) {} }, 60);
-                // 同时尽力更新 LS 快照（让 LS 始终是最新镜像）
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
                 return;
             } catch (e) {
                 const msg = (e && e.message) || '';
-                if (e && (e.name === 'SecurityError' || /unsafe|security|file:/i.test(msg))) {
+                if (e && (e.name === 'SecurityError' ||
+                          /unsafe|security|file:|NotAllowed|createWritable|InvalidState|blocked/i.test(msg))) {
                     this._useOPFS = false;
                     this._opfsFailed = true;
                     this._opfsFailureReason = msg;
@@ -3723,21 +3737,19 @@ var StorageService = {
                 if (this._isQuotaError(e)) {
                     this._handleQuotaExceeded(e, data);
                 }
-                console.warn('[Storage] OPFS save failed, falling back to localStorage snapshot');
+                console.warn('[Storage] OPFS save failed (LS snapshot should be safe):', e && e.message);
             }
         }
 
-        // 落到 LS（强快照）
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-            this._lastUsedBackend = 'localStorage';
+        // LS 已经写过了就刷新显示
+        if (wroteLS) {
             setTimeout(() => { try { if (typeof updateStorageInfo === 'function') updateStorageInfo(); } catch(_) {} }, 60);
-        } catch (e) {
-            if (this._isQuotaError(e)) {
-                this._handleQuotaExceeded(e, data);
-            }
-            console.error('[Storage] localStorage snapshot save also failed:', e);
-            throw e;
+            return;
+        }
+
+        if (!wroteLS) {
+            // 两者都失败才抛
+            throw new Error('Both OPFS and localStorage save failed');
         }
     },
 
@@ -3783,42 +3795,48 @@ var StorageService = {
                 }
             } catch (_) {}
 
-            if (this._useOPFS && !this._opfsFailed && typeof OPFSStorage !== 'undefined' && OPFSStorage.getStorageInfo) {
-                const info = await OPFSStorage.getStorageInfo();
-                const appUsed = info.used || 0;
-                const originUsed = info.originUsed || 0;
-                return {
-                    backend: 'opfs',
-                    used: appUsed,                    // 仅应用数据（我们的 JSON）
-                    webllmUsed,
-                    totalUsed: appUsed + webllmUsed,  // 仅用于配额预检（不用于主显示）
-                    originUsed,
-                    quota: info.quota
-                };
-            }
-
-            // LS 兜底：用我们实际数据的 JSON 大小
+            // 优先通过实际 load 数据计算“应用大小”（跨 OPFS/LS 都可靠），解决手机上一直 0MB 的问题
+            let appUsed = 0;
             try {
                 const current = await this.loadAll();
                 if (current) {
-                    const jsonSize = new Blob([JSON.stringify(current)]).size;
-                    return {
-                        backend: 'localStorage',
-                        used: jsonSize || 0,
-                        webllmUsed,
-                        totalUsed: (jsonSize || 0) + webllmUsed,
-                        originUsed: 0,
-                        quota: null
-                    };
+                    appUsed = new Blob([JSON.stringify(current)]).size || 0;
                 }
             } catch (_) {}
 
+            // 仍然尝试走 OPFS 取 quota/originUsed（如果可用）
+            if (this._useOPFS && !this._opfsFailed && typeof OPFSStorage !== 'undefined' && OPFSStorage.getStorageInfo) {
+                try {
+                    const info = await OPFSStorage.getStorageInfo();
+                    const originUsed = info.originUsed || 0;
+                    const finalUsed = appUsed > 0 ? appUsed : (info.used || 0);
+                    return {
+                        backend: 'opfs',
+                        used: finalUsed,
+                        webllmUsed,
+                        totalUsed: finalUsed + webllmUsed,
+                        originUsed,
+                        quota: info.quota
+                    };
+                } catch (_) {}
+            }
+
+            if (appUsed > 0) {
+                return {
+                    backend: this.getBackend(),
+                    used: appUsed,
+                    webllmUsed,
+                    totalUsed: appUsed + webllmUsed,
+                    originUsed: 0,
+                    quota: null
+                };
+            }
+
             if (navigator.storage && navigator.storage.estimate) {
                 const est = await navigator.storage.estimate();
-                // LS 兜底时无法精确区分我们的数据，用 estimate 作为参考
                 return {
-                    backend: 'localStorage',
-                    used: 0, // 无法可靠分离 app 大小，显示时会 fallback
+                    backend: this.getBackend(),
+                    used: 0,
                     webllmUsed,
                     totalUsed: (est.usage || 0),
                     originUsed: est.usage || 0,
@@ -4272,7 +4290,7 @@ async function scanAllStorageBackends() {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
             const data = JSON.parse(raw);
-            if (data && (Object.keys(data.conversations || {}).length > 0 || data.lastSaved)) {
+            if (data && (Object.keys(data.conversations || {}).length > 0 || data.lastSaved || data.settings)) {
                 candidates.push({
                     backend: 'localStorage',
                     data: data,
@@ -4374,7 +4392,7 @@ function loadAll() {
 }
 
 function saveAll(data) {
-    // 兼容层：更新快照 + 异步交给 StorageService（OPFS 主 + LS 兜底）
+    // 兼容层：直接委托（StorageService 内部已保证先同步写 LS 强快照）
     try {
         if (StorageService) StorageService._lastSaveSnapshot = data;
         if (StorageService && typeof StorageService.saveAll === 'function') {
@@ -4384,7 +4402,7 @@ function saveAll(data) {
             return;
         }
     } catch (e) {
-        console.warn('[saveAll compat] StorageService path failed, using LS:', e && e.message);
+        console.warn('[saveAll compat] StorageService path failed, direct LS:', e && e.message);
     }
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
 }
