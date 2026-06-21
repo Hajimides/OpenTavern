@@ -3571,8 +3571,30 @@ const OPFSStorage = {
 
     async clear() {
         try {
-            const root = await this._getRoot();
-            await root.removeEntry(this._fileName);
+            // 强制新鲜 root，避免缓存的 directory handle 导致删除不彻底
+            const root = await navigator.storage.getDirectory();
+            try {
+                await root.removeEntry(this._fileName);
+            } catch (removeErr) {
+                // 文件不存在就算清除了；其他错误则尝试覆盖为空数据（确保 load 拿不到旧用户数据）
+                if (removeErr && removeErr.name !== 'NotFoundError') {
+                    try {
+                        const fh = await root.getFileHandle(this._fileName, { create: true });
+                        const w = await fh.createWritable();
+                        await w.write(JSON.stringify({
+                            lastSaved: Date.now(),
+                            conversations: {},
+                            characters: {},
+                            worldBooks: {},
+                            conversationOrder: [],
+                            activeConvId: null,
+                            settings: {}
+                        }));
+                        await w.close();
+                    } catch (_) {}
+                }
+            }
+            this._root = null; // 清理缓存
         } catch (e) {}
     }
 };
@@ -3858,19 +3880,43 @@ var StorageService = {
     async clearAllData() {
         let cleared = { opfs: false, ls: false };
 
-        try {
-            if (typeof OPFSStorage !== 'undefined' && typeof OPFSStorage.clear === 'function') {
-                await OPFSStorage.clear();
-                cleared.opfs = true;
-            }
-        } catch (e) { console.warn('[Storage] OPFS clear error:', e); }
+        // 为了确保真正清除（removeEntry 在某些移动浏览器/状态下可能静默失败），
+        // 我们主动把 OPFS 和 LS 都重置为“空数据”版本。
+        // 这样无论 load 走哪个后端，拿到的都是没有用户角色卡/世界书/对话的数据。
+        const emptyData = {
+            lastSaved: Date.now(),
+            conversations: {},
+            conversationOrder: [],
+            activeConvId: null,
+            worldBooks: {},
+            characters: {},
+            settings: {},
+            charactersMigrated: true
+        };
 
+        // 强制重置 OPFS 文件为 empty（写空数据比 remove 更可靠，write 权限和存数据时一致）
+        try {
+            if (typeof OPFSStorage !== 'undefined' && typeof OPFSStorage.saveAll === 'function') {
+                await OPFSStorage.saveAll(emptyData).catch(() => {});
+            }
+            // 双保险：尝试删除文件
+            if (typeof OPFSStorage !== 'undefined' && typeof OPFSStorage.clear === 'function') {
+                try { await OPFSStorage.clear(); } catch (_) {}
+            }
+            cleared.opfs = true;
+        } catch (e) { console.warn('[Storage] OPFS clear/reset error:', e); }
+
+        // 强制重置 LS
         try {
             localStorage.removeItem(STORAGE_KEY);
             localStorage.removeItem('opentavern-last-backup');
             Object.keys(localStorage).forEach(k => {
                 if (k.startsWith('opentavern')) localStorage.removeItem(k);
             });
+            // 写一个空快照，确保 load 看到“已清空”
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(emptyData));
+            } catch (_) {}
             cleared.ls = true;
         } catch (e) {}
 
@@ -12150,7 +12196,14 @@ function bindEvents() {
                         await StorageService.clearAllData();
                     } else {
                         if (typeof OPFSStorage !== 'undefined' && OPFSStorage.clear) await OPFSStorage.clear();
-                        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+                        try {
+                            localStorage.removeItem(STORAGE_KEY);
+                            localStorage.removeItem('opentavern-last-backup');
+                            Object.keys(localStorage).forEach(k => { if (k.startsWith('opentavern')) localStorage.removeItem(k); });
+                            // 兜底写空
+                            const empty = JSON.stringify({lastSaved: Date.now(), conversations: {}, characters: {}, worldBooks: {}});
+                            localStorage.setItem(STORAGE_KEY, empty);
+                        } catch (e) {}
                     }
 
                     // 立即在 UI 上反馈已清空（reload 前）
