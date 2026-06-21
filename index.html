@@ -807,7 +807,7 @@ body.low-power .modal-overlay {
 
                 <p class="text-[10px] text-zinc-500" id="storageHint" data-i18n="storage_hint_opfs">正在使用 OPFS（容量大），localStorage 作为强快照兜底。</p>
 
-                <!-- 清除按钮：OPFS 主数据 + localStorage 强快照 -->
+                <!-- 清除按钮：IndexedDB 主数据 + localStorage 快照 + OPFS 镜像/恢复数据 -->
                 <button id="clearOPFSBtn"
                         class="mt-2 w-full px-3 py-1.5 text-xs rounded-lg bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 text-red-400 border border-red-500/20 transition-all font-medium flex items-center justify-center gap-1"
                         data-i18n="clear_opfs_data">
@@ -3479,6 +3479,43 @@ const OPFSStorage = {
         this._root = await navigator.storage.getDirectory();
         return this._root;
     },
+    _probeResult: null,
+    _probePromise: null,
+
+    async probeWritable() {
+        if (this._probeResult) return this._probeResult;
+        if (this._probePromise) return this._probePromise;
+
+        this._probePromise = (async () => {
+            const probeName = '__opentavern-opfs-probe__.json';
+            const payload = JSON.stringify({ ok: true, t: Date.now() });
+            try {
+                const root = await this._getRoot();
+                const fh = await root.getFileHandle(probeName, { create: true });
+                const writable = await fh.createWritable();
+                await writable.write(payload);
+                await writable.close();
+
+                const file = await fh.getFile();
+                const text = await file.text();
+                if (text !== payload) throw new Error('OPFS probe verification failed');
+
+                try { await root.removeEntry(probeName); } catch (_) {}
+                this._probeResult = { ok: true, reason: null };
+                return this._probeResult;
+            } catch (e) {
+                this._probeResult = {
+                    ok: false,
+                    reason: e && e.message ? e.message : String(e)
+                };
+                return this._probeResult;
+            } finally {
+                this._probePromise = null;
+            }
+        })();
+
+        return this._probePromise;
+    },
 
     async loadAll() {
         try {
@@ -3681,9 +3718,12 @@ const IDBStorage = {
     }
 };
 
-// ==================== StorageService（OPFS 主 + IndexedDB 持久兜底 + localStorage 快照） ====================
+// ==================== StorageService (IndexedDB primary + localStorage snapshot + optional OPFS mirror) ====================
 var StorageService = {
+    _primaryBackend: 'idb',
     _useOPFS: true,
+    _opfsReadableAvailable: false,
+    _opfsMirrorAvailable: false,
     _opfsFailed: false,
     _opfsFailureReason: null,
     _idbAvailable: false,
@@ -3695,6 +3735,7 @@ var StorageService = {
     _lastUsedBackend: null,
     _lastLoadedBackend: null,
     _lastQuotaAlert: 0,
+    _isSafariBrowser: null,
 
     _isQuotaError(e) {
         if (!e) return false;
@@ -3703,6 +3744,20 @@ var StorageService = {
                e.code === 22 ||
                msg.includes('quota') ||
                msg.includes('exceeded');
+    },
+
+    _isSafari() {
+        if (this._isSafariBrowser !== null) return this._isSafariBrowser;
+        try {
+            const ua = navigator.userAgent || '';
+            const vendor = navigator.vendor || '';
+            const isAppleWebKit = /AppleWebKit/i.test(ua);
+            const isChromium = /CriOS|Chrome|Chromium|Edg|OPR|Firefox|FxiOS/i.test(ua);
+            this._isSafariBrowser = /Safari/i.test(ua) && /Apple/i.test(vendor) && isAppleWebKit && !isChromium;
+        } catch (_) {
+            this._isSafariBrowser = false;
+        }
+        return this._isSafariBrowser;
     },
 
     _hasUserData(data) {
@@ -3742,7 +3797,12 @@ var StorageService = {
     },
 
     _tryWriteLocalSnapshot(data) {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); return true; } catch (_) { return false; }
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            return true;
+        } catch (_) {
+            return false;
+        }
     },
 
     _clearMarkerTime() {
@@ -3761,20 +3821,28 @@ var StorageService = {
 
     async _syncSnapshotToAvailableBackends(data, source) {
         if (!this._isValidSnapshot(data)) return;
+        const snapshot = this._cloneForPersist(data);
         const jobs = [];
-        if (source !== 'opfs' && this._useOPFS && !this._opfsFailed) {
-            jobs.push(OPFSStorage.saveAll(this._cloneForPersist(data)).catch((e) => {
-                console.warn('[Storage] OPFS sync failed:', e && e.message);
-            }));
-        }
+
         if (source !== 'idb' && this._idbAvailable && !this._idbFailed) {
-            jobs.push(IDBStorage.saveAll(this._cloneForPersist(data)).catch((e) => {
+            jobs.push(IDBStorage.saveAll(this._cloneForPersist(snapshot)).catch((e) => {
                 this._idbFailed = true;
                 this._idbFailureReason = e && e.message ? e.message : String(e);
                 console.warn('[Storage] IDB sync failed:', e && e.message);
             }));
         }
-        if (source !== 'localStorage') this._tryWriteLocalSnapshot(data);
+
+        if (source !== 'localStorage') this._tryWriteLocalSnapshot(snapshot);
+
+        if (source !== 'opfs' && this._opfsMirrorAvailable && !this._isSafari()) {
+            jobs.push(OPFSStorage.saveAll(this._cloneForPersist(snapshot)).catch((e) => {
+                this._opfsMirrorAvailable = false;
+                this._opfsFailed = true;
+                this._opfsFailureReason = e && e.message ? e.message : String(e);
+                console.warn('[Storage] OPFS mirror sync failed; canonical data remains in IndexedDB/localStorage:', e && e.message);
+            }));
+        }
+
         if (jobs.length) await Promise.all(jobs);
     },
 
@@ -3807,45 +3875,58 @@ var StorageService = {
 
         this._idbAvailable = false;
         this._idbFailed = false;
+        this._lastUsedBackend = null;
+
         try {
             if ('indexedDB' in window) {
                 await IDBStorage._open();
                 this._idbAvailable = true;
-                console.log('[Storage] IndexedDB snapshot backend initialized successfully');
+                this._primaryBackend = 'idb';
+                console.log('[Storage] IndexedDB primary backend initialized successfully');
+            } else {
+                throw new Error('IndexedDB not supported');
             }
         } catch (e) {
             this._idbFailed = true;
             this._idbFailureReason = e && e.message ? e.message : String(e);
-            console.warn('[Storage] IndexedDB snapshot backend unavailable:', e && e.message);
+            this._primaryBackend = 'localStorage';
+            console.warn('[Storage] IndexedDB unavailable; localStorage is the emergency primary:', e && e.message);
         }
 
-        if (!this._useOPFS || this._opfsFailed) return;
+        this._opfsReadableAvailable = false;
+        this._opfsMirrorAvailable = false;
+        this._opfsFailed = false;
+        this._opfsFailureReason = null;
 
         try {
-            if (typeof location !== 'undefined' && location.protocol === 'file:') {
-                this._useOPFS = false;
-                this._opfsFailed = true;
-                this._opfsFailureReason = 'file-protocol';
-                console.warn('[Storage] OPFS disabled (file://)');
-                return;
-            }
-            if (!window.isSecureContext) {
-                this._useOPFS = false;
-                this._opfsFailed = true;
-                this._opfsFailureReason = 'insecure-context';
-                console.warn('[Storage] OPFS disabled (insecure context)');
-                return;
-            }
-        } catch (_) {}
+            if (!this._useOPFS) throw new Error('OPFS disabled by policy');
+            if (typeof location !== 'undefined' && location.protocol === 'file:') throw new Error('file-protocol');
+            if (!window.isSecureContext) throw new Error('insecure-context');
+            if (!navigator.storage || !navigator.storage.getDirectory) throw new Error('OPFS not supported');
 
-        try {
             await OPFSStorage._getRoot();
-            console.log('[Storage] OPFS initialized successfully');
+            this._opfsReadableAvailable = true;
+
+            if (this._isSafari()) {
+                this._opfsFailed = true;
+                this._opfsFailureReason = 'Safari OPFS writes are disabled; IndexedDB is canonical.';
+                console.warn('[Storage] Safari detected: OPFS will be read for recovery only, not used for writes.');
+                return;
+            }
+
+            const probe = await OPFSStorage.probeWritable();
+            if (probe && probe.ok) {
+                this._opfsMirrorAvailable = true;
+                console.log('[Storage] OPFS writable mirror initialized successfully');
+            } else {
+                this._opfsFailed = true;
+                this._opfsFailureReason = (probe && probe.reason) || 'OPFS write probe failed';
+                console.warn('[Storage] OPFS write probe failed; keeping IndexedDB/localStorage canonical:', this._opfsFailureReason);
+            }
         } catch (e) {
-            this._useOPFS = false;
             this._opfsFailed = true;
             this._opfsFailureReason = e && e.message ? e.message : String(e);
-            console.warn('[Storage] OPFS init failed, using IndexedDB/localStorage fallback on this device:', e && e.message);
+            console.warn('[Storage] OPFS unavailable; IndexedDB/localStorage remain canonical:', e && e.message);
         }
     },
 
@@ -3854,19 +3935,13 @@ var StorageService = {
         const shouldReadLegacy = options.includeLegacy !== false;
         const candidates = [];
 
-        if (this._useOPFS && !this._opfsFailed) {
-            try {
+        try {
+            if (this._opfsReadableAvailable || (navigator.storage && navigator.storage.getDirectory)) {
                 const data = await OPFSStorage.loadAll();
                 if (this._isValidSnapshot(data)) candidates.push({ backend: 'opfs', data });
-            } catch (e) {
-                const msg = (e && e.message) || '';
-                if (e && (e.name === 'SecurityError' || /unsafe|security|file:/i.test(msg))) {
-                    this._useOPFS = false;
-                    this._opfsFailed = true;
-                    this._opfsFailureReason = msg;
-                }
-                console.warn('[Storage] OPFS load failed, falling back to IndexedDB/localStorage snapshot');
             }
+        } catch (e) {
+            console.warn('[Storage] OPFS recovery read failed:', e && e.message);
         }
 
         if (this._idbAvailable && !this._idbFailed) {
@@ -3876,6 +3951,7 @@ var StorageService = {
             } catch (e) {
                 this._idbFailed = true;
                 this._idbFailureReason = e && e.message ? e.message : String(e);
+                this._primaryBackend = 'localStorage';
                 console.warn('[Storage] IDB load failed:', e && e.message);
             }
         }
@@ -3894,7 +3970,8 @@ var StorageService = {
         if (!picked) return null;
 
         this._lastLoadedBackend = picked.backend;
-        console.log('[Storage] Loaded newest snapshot from', picked.backend);
+        this._lastUsedBackend = this.getBackend();
+        console.log('[Storage] Loaded newest snapshot from', picked.backend, 'canonical backend=', this.getBackend());
         if (shouldSync) await this._syncSnapshotToAvailableBackends(picked.data, picked.backend);
         return picked.data;
     },
@@ -3913,7 +3990,7 @@ var StorageService = {
     async _readNewestStoredSnapshotNoSync() {
         const candidates = [];
         try {
-            if (this._useOPFS && !this._opfsFailed) {
+            if (this._opfsReadableAvailable || (navigator.storage && navigator.storage.getDirectory)) {
                 const d = await OPFSStorage.loadAll();
                 if (this._isValidSnapshot(d)) candidates.push({ backend: 'opfs', data: d });
             }
@@ -3942,6 +4019,7 @@ var StorageService = {
             keys.slice(5).forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
         } catch (_) {}
     },
+
     async saveAll(data) {
         data = this._cloneForPersist(data);
 
@@ -3956,52 +4034,48 @@ var StorageService = {
         }
 
         this._lastSaveSnapshot = data;
-        let savedPrimary = false;
+        let savedCanonical = false;
         let lastError = null;
-
-        if (this._useOPFS && !this._opfsFailed) {
-            try {
-                await OPFSStorage.saveAll(data);
-                this._lastUsedBackend = 'opfs';
-                savedPrimary = true;
-            } catch (e) {
-                lastError = e;
-                const msg = (e && e.message) || '';
-                if (e && (e.name === 'SecurityError' || /unsafe|security|file:|NotAllowed|createWritable|InvalidState|blocked/i.test(msg))) {
-                    this._useOPFS = false;
-                    this._opfsFailed = true;
-                    this._opfsFailureReason = msg;
-                }
-                console.warn('[Storage] OPFS save failed, will try IndexedDB fallback:', e && e.message);
-            }
-        }
 
         if (this._idbAvailable && !this._idbFailed) {
             try {
                 await IDBStorage.saveAll(data);
-                if (!savedPrimary) this._lastUsedBackend = 'idb';
-                savedPrimary = true;
+                this._primaryBackend = 'idb';
+                this._lastUsedBackend = 'idb';
+                savedCanonical = true;
             } catch (e) {
                 lastError = e;
                 this._idbFailed = true;
                 this._idbFailureReason = e && e.message ? e.message : String(e);
-                console.warn('[Storage] IndexedDB save failed, will try localStorage fallback:', e && e.message);
+                this._primaryBackend = 'localStorage';
+                console.warn('[Storage] IndexedDB save failed, will use localStorage emergency snapshot:', e && e.message);
             }
         }
 
         const lsOk = this._tryWriteLocalSnapshot(data);
-        if (!savedPrimary && lsOk) {
+        if (!savedCanonical && lsOk) {
+            this._primaryBackend = 'localStorage';
             this._lastUsedBackend = 'localStorage';
-            savedPrimary = true;
+            savedCanonical = true;
+        }
+
+        if (this._opfsMirrorAvailable && !this._isSafari()) {
+            OPFSStorage.saveAll(this._cloneForPersist(data)).catch((e) => {
+                this._opfsMirrorAvailable = false;
+                this._opfsFailed = true;
+                this._opfsFailureReason = e && e.message ? e.message : String(e);
+                console.warn('[Storage] OPFS mirror write failed; canonical data remains safe:', e && e.message);
+                setTimeout(() => { try { if (typeof updateStorageInfo === 'function') updateStorageInfo(); } catch(_) {} }, 60);
+            });
         }
 
         setTimeout(() => { try { if (typeof updateStorageInfo === 'function') updateStorageInfo(); } catch(_) {} }, 60);
 
-        if (savedPrimary) return;
+        if (savedCanonical) return;
 
         if (lastError && this._isQuotaError(lastError)) this._handleQuotaExceeded(lastError, data);
-        const err = lastError || new Error('All storage backends failed');
-        console.error('[Storage] All save backends failed:', err);
+        const err = lastError || new Error('All canonical storage backends failed');
+        console.error('[Storage] All canonical save backends failed:', err);
         throw err;
     },
 
@@ -4034,12 +4108,10 @@ var StorageService = {
         } catch (exportErr) {
             console.error('[Storage] Auto backup export on quota fail failed:', exportErr);
         }
-        try { alert('存储空间不足！建议立即导出备份，然后清理模型缓存或站点数据释放空间。'); } catch(_) {}
+        try { alert('存储空间不足，已尝试导出当前数据备份。请保存备份文件后清理浏览器存储空间。'); } catch(_) {}
     },
 
     getBackend() {
-        if (this._lastUsedBackend) return this._lastUsedBackend;
-        if (this._useOPFS && !this._opfsFailed) return 'opfs';
         if (this._idbAvailable && !this._idbFailed) return 'idb';
         return 'localStorage';
     },
@@ -4055,18 +4127,7 @@ var StorageService = {
             try {
                 let current = this._lastSaveSnapshot || null;
                 if (!this._isValidSnapshot(current)) {
-                    const candidates = [];
-                    if (this._useOPFS && !this._opfsFailed) {
-                        const opfsData = await OPFSStorage.loadAll();
-                        if (this._isValidSnapshot(opfsData)) candidates.push({ backend: 'opfs', data: opfsData });
-                    }
-                    if (this._idbAvailable && !this._idbFailed) {
-                        const idbData = await IDBStorage.loadAll();
-                        if (this._isValidSnapshot(idbData)) candidates.push({ backend: 'idb', data: idbData });
-                    }
-                    const lsData = this._readLocalSnapshot();
-                    if (lsData) candidates.push({ backend: 'localStorage', data: lsData });
-                    const picked = this._pickNewest(candidates);
+                    const picked = await this._readNewestStoredSnapshotNoSync();
                     current = picked && picked.data;
                 }
                 if (current) appUsed = new Blob([JSON.stringify(current)]).size || 0;
@@ -4095,7 +4156,10 @@ var StorageService = {
                 quota,
                 persisted,
                 idbAvailable: this._idbAvailable && !this._idbFailed,
-                opfsAvailable: this._useOPFS && !this._opfsFailed
+                opfsAvailable: this._opfsReadableAvailable,
+                opfsMirrorAvailable: this._opfsMirrorAvailable,
+                opfsFailureReason: this._opfsFailureReason,
+                safariOpfsReadOnly: this._isSafari() && this._opfsReadableAvailable
             };
         } catch (e) {}
         return { backend: this.getBackend(), used: 0, webllmUsed: 0, totalUsed: 0, originUsed: 0, quota: null, persisted: null };
@@ -4115,7 +4179,7 @@ var StorageService = {
         };
 
         try {
-            if (typeof OPFSStorage !== 'undefined' && typeof OPFSStorage.saveAll === 'function') {
+            if (typeof OPFSStorage !== 'undefined' && typeof OPFSStorage.saveAll === 'function' && this._opfsMirrorAvailable && !this._isSafari()) {
                 await OPFSStorage.saveAll(emptyData).catch(() => {});
             }
             if (typeof OPFSStorage !== 'undefined' && typeof OPFSStorage.clear === 'function') {
@@ -4193,7 +4257,7 @@ function showBackupReminderIfNeeded() {
 
     // 只在 LS 兜底时提醒；OPFS 容量较大，交由用量警告接管
     const backend = StorageService.getBackend();
-    if (backend === 'opfs') {
+    if (backend === 'idb') {
         // OPFS 也可能 quota 紧张（尤其是手机），让 updateStorageInfo 的警告接管
         return;
     }
@@ -4229,64 +4293,87 @@ function showBackupReminderIfNeeded() {
 function getStorageBackendLabel(backend) {
     if (backend === 'opfs') return 'OPFS';
     if (backend === 'idb') return 'IndexedDB';
-    if (backend === 'legacy-idb') return '旧版 IndexedDB';
+    if (backend === 'legacy-idb') return '\u65e7\u7248 IndexedDB';
     return 'localStorage';
 }
-// 【Storage Fix】统一刷新存储信息（设置页 + 侧边栏），并在 >75% 时显示明显警告
+
+function formatStorageMB(bytes) {
+    return ((bytes || 0) / 1024 / 1024).toFixed(1);
+}
+
+function getOPFSStatusText(info) {
+    if (!info || !info.opfsAvailable) return 'OPFS: \u4e0d\u53ef\u7528';
+    if (info.opfsMirrorAvailable) return 'OPFS: \u955c\u50cf\u53ef\u5199';
+    if (info.safariOpfsReadOnly) return 'OPFS: Safari \u4ec5\u4f5c\u6062\u590d\u6765\u6e90';
+    return 'OPFS: \u4ec5\u4f5c\u6062\u590d\u6765\u6e90';
+}
+
+function buildStorageUsageText(info) {
+    info = info || {};
+    const backendLabel = getStorageBackendLabel(info.backend || StorageService.getBackend());
+    const appMB = formatStorageMB(info.used || 0);
+    const parts = [`\u5e94\u7528\u5feb\u7167 ${appMB} MB (${backendLabel})`];
+
+    if (info.webllmUsed > 0) {
+        parts.push(`\u6a21\u578b\u7f13\u5b58 ${formatStorageMB(info.webllmUsed)} MB`);
+    }
+
+    if (info.originUsed > 0 || info.quota > 0) {
+        const originMB = formatStorageMB(info.originUsed || ((info.used || 0) + (info.webllmUsed || 0)));
+        if (info.quota && info.quota > 0) {
+            const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
+            parts.push(`\u6d4f\u89c8\u5668\u603b\u7528\u91cf ${originMB} MB / \u914d\u989d ~${quotaGB} GB`);
+        } else {
+            parts.push(`\u6d4f\u89c8\u5668\u603b\u7528\u91cf ${originMB} MB`);
+        }
+    } else if (info.quota && info.quota > 0) {
+        const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
+        parts.push(`\u914d\u989d ~${quotaGB} GB`);
+    }
+
+    if (info.persisted === false) parts.push('\u975e\u6301\u4e45\u6388\u6743');
+    parts.push(getOPFSStatusText(info));
+    return parts.join(' · ');
+}
+
+function getStoragePressurePercent(info) {
+    info = info || {};
+    const appUsed = info.used || 0;
+    const overall = (info.originUsed && info.originUsed > 0)
+        ? info.originUsed
+        : (appUsed + (info.webllmUsed || 0));
+    return (info.quota && info.quota > 0)
+        ? Math.min((overall / info.quota) * 100, 100)
+        : Math.min(overall / (100 * 1024 * 1024), 100);
+}
+
+function styleStorageBackendBadge(el, backend) {
+    if (!el) return;
+    if (backend === 'idb') {
+        el.style.background = 'rgba(59,130,246,0.15)';
+        el.style.color = '#60a5fa';
+    } else {
+        el.style.background = 'rgba(245,158,11,0.15)';
+        el.style.color = '#fbbf24';
+    }
+}
+
 function updateStorageInfo() {
-    // 刷新侧边栏小徽标
     if (typeof updateStorageStatusUI === 'function') {
         try { updateStorageStatusUI(); } catch (_) {}
     }
 
-    // 刷新设置页中的用量显示（如果设置已打开）
     const usageEl = document.getElementById('storageUsage');
     const bar = document.getElementById('storageUsageBar');
     const backendEl = document.getElementById('storageBackend');
 
     StorageService.getStorageInfo().then(info => {
         const backend = StorageService.getBackend();
-        if (backendEl) {
-            if (backend === 'opfs') {
-                backendEl.style.background = 'rgba(16,185,129,0.15)';
-                backendEl.style.color = '#4ade80';
-            } else {
-                backendEl.style.background = 'rgba(245,158,11,0.15)';
-                backendEl.style.color = '#fbbf24';
-            }
-        }
+        styleStorageBackendBadge(backendEl, backend);
 
         if (usageEl && info) {
-            // 主数字只显示**应用数据**大小
-            let appUsedVal = (info.used != null ? info.used : 0);
-            if ((!appUsedVal || appUsedVal < 1) && backend !== 'opfs') {
-                try {
-                    const raw = localStorage.getItem(STORAGE_KEY);
-                    if (raw) appUsedVal = new Blob([raw]).size || 0;
-                } catch (_) {}
-            }
-            const appMB = (appUsedVal / 1024 / 1024).toFixed(1);
-
-            const backendLabel = getStorageBackendLabel(info.backend || backend);
-            let txt = `应用 ${appMB} MB (${backendLabel})`;
-            if (info.webllmUsed > 0) {
-                const wMB = (info.webllmUsed / 1024 / 1024).toFixed(1);
-                txt += ` · 模型缓存 ${wMB} MB (浏览器缓存)`;
-            }
-            if (info.quota && info.quota > 0) {
-                const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
-                txt += ` · 估算配额 ~${quotaGB} GB`;
-            }
-            if (info.persisted === false) txt += ' · 非持久授权';
-            usageEl.textContent = txt;
-
-            // 进度条和警告使用整体占用（含模型），因为配额是 origin 共享的
-            const overallForBar = (info.originUsed && info.originUsed > 0)
-                ? info.originUsed
-                : (appUsedVal + (info.webllmUsed || 0));
-            const percent = (info.quota && info.quota > 0)
-                ? Math.min((overallForBar / info.quota) * 100, 100)
-                : Math.min(overallForBar / (100 * 1024 * 1024), 100);  // 没有 quota 时用更合理的 100MB 基数，避免小数据就报警
+            usageEl.textContent = buildStorageUsageText(info);
+            const percent = getStoragePressurePercent(info);
             if (bar) bar.style.width = percent + '%';
 
             if (percent > 85) {
@@ -4299,23 +4386,14 @@ function updateStorageInfo() {
                 if (bar) bar.style.background = '#f59e0b';
                 usageEl.style.color = '';
             }
-
-            // 明显存储警告（>75%）——基于整体占用
             showOrHideStorageWarning(percent);
         } else if (usageEl) {
-            if (StorageService._opfsFailed) {
-                usageEl.textContent = 'localStorage（OPFS 不可用）';
-            } else if (backend === 'opfs') {
-                usageEl.textContent = 'OPFS 就绪';
-            } else {
-                usageEl.textContent = 'localStorage 快照';
-            }
+            usageEl.textContent = backend === 'idb' ? 'IndexedDB \u4e3b\u5b58\u50a8' : 'localStorage \u5e94\u6025\u5feb\u7167';
             if (bar) bar.style.width = '0%';
         }
     }).catch(() => {});
 }
-
-// 存储使用率警告 UI（>75% 时在界面明显提示）
+// Storage usage warning UI
 let _storageWarningEl = null;
 function showOrHideStorageWarning(percent) {
     const THRESHOLD = 75;
@@ -4349,65 +4427,31 @@ function updateStorageStatusUI() {
     if (!el) return;
 
     const backend = StorageService.getBackend();
-    const backendLabel = getStorageBackendLabel(backend);
-    const isOPFS = backend === 'opfs';
     const isIDB = backend === 'idb';
-
-    el.textContent = isOPFS ? 'OPFS' : (isIDB ? 'IDB' : 'LS');
-    if (isOPFS) {
-        el.style.background = 'rgba(16,185,129,0.15)';
-        el.style.color = '#4ade80';
-    } else if (isIDB) {
-        el.style.background = 'rgba(59,130,246,0.15)';
-        el.style.color = '#60a5fa';
-    } else {
-        el.style.background = 'rgba(245,158,11,0.15)';
-        el.style.color = '#fbbf24';
-    }
+    el.textContent = isIDB ? 'IDB' : 'LS';
+    styleStorageBackendBadge(el, backend);
 
     StorageService.getStorageInfo().then(info => {
-        let tip = `应用数据后端：${getStorageBackendLabel(info.backend || backend)}`;
+        let tip = `\u4e3b\u5b58\u50a8\u540e\u7aef: ${getStorageBackendLabel(info.backend || backend)}`;
+        tip += ` · \u5e94\u7528\u5feb\u7167 ${formatStorageMB(info.used || 0)} MB`;
+        if (info.webllmUsed > 0) tip += ` · \u6a21\u578b\u7f13\u5b58 ${formatStorageMB(info.webllmUsed)} MB`;
+        tip += ` · ${getOPFSStatusText(info)}`;
+        if (info.persisted === false) tip += ' · \u975e\u6301\u4e45\u6388\u6743';
 
-        if (StorageService._opfsFailed && !isIDB) {
-            tip = 'OPFS 不可用，当前使用 localStorage 快照兜底';
-        }
-
-        let appU = info.used || 0;
-        if ((!appU || appU < 1) && backend === 'localStorage') {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (raw) appU = new Blob([raw]).size || 0;
-            } catch (_) {}
-        }
-        const appMB = (appU / 1024 / 1024).toFixed(1);
-        tip += ` · 应用 ${appMB} MB`;
-        if (info.quota && info.quota > 0) {
-            const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
-            tip += ` · 估算配额 ~${quotaGB} GB`;
-        }
-        if (info.persisted === false) tip += ' · 非持久授权';
-        if (info.webllmUsed > 0) {
-            const wMB = (info.webllmUsed / 1024 / 1024).toFixed(1);
-            tip += ` · 模型缓存 ${wMB} MB (浏览器缓存)`;
-        }
-
-        const overall = (info.originUsed && info.originUsed > 0) ? info.originUsed : (appU + (info.webllmUsed || 0));
-        const q = (info.quota && info.quota > 0) ? info.quota : (100 * 1024 * 1024);
-        const percent = Math.min((overall / q) * 100, 100);
+        const percent = getStoragePressurePercent(info);
         if (percent > 85) {
             el.style.background = 'rgba(239,68,68,0.25)';
             el.style.color = '#f87171';
-            tip += ` (${t('storage_high_warning') || '高使用率'})`;
+            tip += ` (${t('storage_high_warning') || '\u5b58\u50a8\u538b\u529b\u8f83\u9ad8'})`;
         } else if (percent > 75) {
             el.style.background = 'rgba(245,158,11,0.25)';
             el.style.color = '#fbbf24';
         }
         el.title = tip;
     }).catch(() => {
-        el.title = StorageService._opfsFailed ? 'localStorage（OPFS 不可用）' : (isOPFS ? t('storage_hint_opfs') : t('storage_hint_ls'));
+        el.title = backend === 'idb' ? 'IndexedDB \u4e3b\u5b58\u50a8' : 'localStorage \u5e94\u6025\u5feb\u7167';
     });
 
-    // 点击直接打开设置
     if (!el._storageClickBound) {
         el._storageClickBound = true;
         el.addEventListener('click', function() {
@@ -4416,8 +4460,7 @@ function updateStorageStatusUI() {
         });
     }
 }
-
-// 【Storage Fix】清除 WebLLM 模型缓存（推荐在设置中调用）
+// WebLLM cache clear helper
 async function clearWebLLMCache(options = {}) {
     const { silent = false } = options;
     let cleared = 0;
@@ -5669,13 +5712,7 @@ async function initState() {
         migrationResult
     });
 
-    if (StorageService._opfsFailed) {
-        migrationResult.backend = 'localStorage (OPFS fallback)';
-    } else if (saved && StorageService.getBackend() === 'opfs') {
-        migrationResult.backend = 'opfs';
-    } else {
-        migrationResult.backend = StorageService.getBackend();
-    }
+    migrationResult.backend = StorageService.getBackend();
 
     state._storageMigration = migrationResult;
 
@@ -12355,78 +12392,33 @@ function bindEvents() {
         const backend = StorageService.getBackend();
 
         if (backendEl) {
-            let label = t('storage_backend') + ' (' + getStorageBackendLabel(backend) + ')';
-            if (backend === 'opfs') {
-                backendEl.style.background = 'rgba(16,185,129,0.15)';
-                backendEl.style.color = '#4ade80';
-            } else if (backend === 'idb') {
-                backendEl.style.background = 'rgba(59,130,246,0.15)';
-                backendEl.style.color = '#60a5fa';
-            } else {
-                backendEl.style.background = 'rgba(245,158,11,0.15)';
-                backendEl.style.color = '#fbbf24';
-            }
-            backendEl.textContent = label;
+            backendEl.textContent = t('storage_backend') + ' (' + getStorageBackendLabel(backend) + ')';
+            styleStorageBackendBadge(backendEl, backend);
         }
 
-        // 【Storage Fix】获取并显示存储用量：X.X MB / ~Y GB (OPFS) + 百分比
         if (usageEl) {
             StorageService.getStorageInfo().then(function(info) {
                 const bar = document.getElementById('storageUsageBar');
-
                 if (info) {
-                    // 主显示只用应用数据大小
-                    let appUsedVal = info.used || 0;
-                    // LS 兜底时如果 getStorageInfo 没给出精确 used（例如走 estimate），从 LS 实时算一次
-                    if ((!appUsedVal || appUsedVal < 1) && backend !== 'opfs') {
-                        try {
-                            const raw = localStorage.getItem(STORAGE_KEY);
-                            if (raw) appUsedVal = new Blob([raw]).size || 0;
-                        } catch (_) {}
-                    }
-                    const appMB = (appUsedVal / 1024 / 1024).toFixed(1);
-                    const backendLabel = getStorageBackendLabel(info.backend || backend);
-                    let display = `应用 ${appMB} MB (${backendLabel})`;
-                    if (info.webllmUsed > 0) {
-                        const wMB = (info.webllmUsed / 1024 / 1024).toFixed(1);
-                        display += ` · 模型缓存 ${wMB} MB (浏览器缓存)`;
-                    }
-                    if (info.quota && info.quota > 0) {
-                        const quotaGB = (info.quota / 1024 / 1024 / 1024).toFixed(1);
-                        display += ` · 估算配额 ~${quotaGB} GB`;
-                    }
-                    if (info.persisted === false) display += ' · 非持久授权';
-                    usageEl.textContent = display;
-
-                    // 进度条使用整体（含模型）
-                    const overall = (info.originUsed && info.originUsed > 0)
-                        ? info.originUsed
-                        : (appUsedVal + (info.webllmUsed || 0));
-                    const percent = (info.quota && info.quota > 0)
-                        ? Math.min((overall / info.quota) * 100, 100)
-                        : Math.min(overall / (100 * 1024 * 1024), 100);
+                    usageEl.textContent = buildStorageUsageText(info);
+                    const percent = getStoragePressurePercent(info);
                     if (bar) bar.style.width = percent + '%';
-
                     if (percent > 85) {
                         if (bar) bar.style.background = '#f87171';
                         usageEl.style.color = '#f87171';
                     } else if (percent > 70) {
                         if (bar) bar.style.background = '#fbbf24';
+                        usageEl.style.color = '#fbbf24';
                     } else {
                         if (bar) bar.style.background = '#f59e0b';
+                        usageEl.style.color = '';
                     }
                 } else {
-                    if (backend === 'opfs') {
-                        usageEl.textContent = 'OPFS（浏览器私有文件系统）';
-                    } else if (StorageService._opfsFailed) {
-                        usageEl.textContent = 'localStorage（OPFS 不可用）';
-                    } else {
-                        usageEl.textContent = 'localStorage 快照兜底';
-                    }
+                    usageEl.textContent = backend === 'idb' ? 'IndexedDB \u4e3b\u5b58\u50a8' : 'localStorage \u5e94\u6025\u5feb\u7167';
                     if (bar) bar.style.width = '0%';
                 }
             }).catch(function() {
-                usageEl.textContent = '无法获取';
+                usageEl.textContent = '\u65e0\u6cd5\u8bfb\u53d6\u5b58\u50a8\u7528\u91cf';
                 const bar = document.getElementById('storageUsageBar');
                 if (bar) bar.style.width = '0%';
             });
@@ -12434,27 +12426,26 @@ function bindEvents() {
 
         const hintEl = document.getElementById('storageHint');
         if (hintEl) {
-            if (backend === 'idb') {
-                hintEl.textContent = '当前使用 IndexedDB 持久快照兜底，localStorage 仅作快速恢复快照。';
-                hintEl.style.color = '#60a5fa';
-            } else if (StorageService._opfsFailed) {
-                hintEl.textContent = 'OPFS 不可用，当前使用 localStorage 快照兜底。建议定期导出备份。';
-                hintEl.style.color = '#fbbf24';
-            } else {
-                const hintKey = (backend === 'opfs') ? 'storage_hint_opfs' : 'storage_hint_ls';
-                hintEl.textContent = t(hintKey);
-                hintEl.style.color = '';
-            }
+            StorageService.getStorageInfo().then(function(info) {
+                const canonical = getStorageBackendLabel((info && info.backend) || backend);
+                const opfs = getOPFSStatusText(info || {});
+                hintEl.textContent = `\u4e3b\u5b58\u50a8\u4f7f\u7528 ${canonical}\uff0clocalStorage \u4fdd\u7559\u5e94\u6025\u5feb\u7167\uff0c${opfs}\u3002`;
+                hintEl.style.color = backend === 'idb' ? '#60a5fa' : '#fbbf24';
+            }).catch(function() {
+                hintEl.textContent = backend === 'idb'
+                    ? 'IndexedDB \u4e3b\u5b58\u50a8\uff0clocalStorage \u4fdd\u7559\u5e94\u6025\u5feb\u7167\u3002'
+                    : 'localStorage \u5e94\u6025\u5feb\u7167\u6b63\u5728\u4f7f\u7528\uff0c\u5efa\u8bae\u5b9a\u671f\u5bfc\u51fa\u5907\u4efd\u3002';
+                hintEl.style.color = backend === 'idb' ? '#60a5fa' : '#fbbf24';
+            });
         }
 
-        // 同步更新侧边栏的极简存储状态
         updateStorageStatusUI();
 
         const clearBtn = document.getElementById('clearOPFSBtn');
         if (clearBtn) {
             clearBtn.style.display = 'flex';
             clearBtn.textContent = t('clear_opfs_data') || '🗑️ 清除所有用户数据（OPFS + LS 快照）';
-            if (backend === 'opfs' && !StorageService._opfsFailed) {
+            if (backend === 'idb') {
                 clearBtn.style.background = 'rgba(239,68,68,0.15)';
                 clearBtn.style.color = '';
             } else {
