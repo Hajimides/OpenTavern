@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" class="dark">
 <head>
 <meta charset="UTF-8">
@@ -595,7 +595,482 @@ body.low-power .modal-overlay {
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
 }
-</style>
+
+
+/* ===== Optional migrated themes from index_new.html ===== */
+body.theme-new-light,
+body.theme-new-dark {
+    font-family: "Segoe UI Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    letter-spacing: 0;
+}
+
+body.theme-new-light {
+    --ot-bg: #f7f5ef;
+    --ot-bg-soft: #ebe5d9;
+    --ot-panel: #fffdf8;
+    --ot-panel-muted: #f2ede4;
+    --ot-border: #d8d0c2;
+    --ot-border-strong: #bfb5a6;
+    --ot-ink: #27231f;
+    --ot-ink-muted: #625b51;
+    --ot-ink-faint: #8b8174;
+    --ot-accent: #2f2a25;
+    --ot-accent-soft: #e8e0d5;
+    --ot-focus: #5f5750;
+    --ot-danger: #a6544f;
+    --blur-intensity: 0px;
+    --glass-bg: var(--ot-panel);
+    --glass-bg-hover: #f8f3ea;
+    --glass-bg-active: #f0e8dc;
+    --glass-border: var(--ot-border);
+    --glass-border-hover: var(--ot-border-strong);
+    --accent: var(--ot-accent);
+    --accent-secondary: var(--ot-ink-muted);
+    --accent-glow: rgba(47, 42, 37, 0.14);
+    background: var(--ot-bg) !important;
+    color: var(--ot-ink) !important;
+}
+
+body.theme-new-dark {
+    --ot-bg: #1f1e1b;
+    --ot-bg-soft: #27241f;
+    --ot-panel: #2b2925;
+    --ot-panel-muted: #34312c;
+    --ot-border: #4d473e;
+    --ot-border-strong: #665e52;
+    --ot-ink: #f2eee6;
+    --ot-ink-muted: #c8c0b3;
+    --ot-ink-faint: #92897c;
+    --ot-accent: #f2eee6;
+    --ot-accent-soft: #3a352e;
+    --ot-focus: #d8d0c2;
+    --ot-danger: #e09a94;
+    --blur-intensity: 0px;
+    --glass-bg: var(--ot-panel);
+    --glass-bg-hover: var(--ot-panel-muted);
+    --glass-bg-active: var(--ot-accent-soft);
+    --glass-border: var(--ot-border);
+    --glass-border-hover: var(--ot-border-strong);
+    --accent: var(--ot-accent);
+    --accent-secondary: var(--ot-ink-muted);
+    --accent-glow: rgba(242, 238, 230, 0.14);
+    background: var(--ot-bg) !important;
+    color: var(--ot-ink) !important;
+}
+
+body.theme-new-light *,
+body.theme-new-dark * { letter-spacing: 0 !important; }
+
+body.theme-new-light #shaderCanvas,
+body.theme-new-light #vignetteOverlay,
+body.theme-new-dark #shaderCanvas,
+body.theme-new-dark #vignetteOverlay { display: none !important; }
+
+body.theme-new-light #main-layout,
+body.theme-new-dark #main-layout {
+    background: linear-gradient(90deg, var(--ot-bg-soft) 0 270px, var(--ot-bg) 270px 100%), var(--ot-bg) !important;
+}
+
+body.theme-new-light .glass,
+body.theme-new-light .msg-bubble,
+body.theme-new-light input,
+body.theme-new-light textarea,
+body.theme-new-light select,
+body.theme-new-light .modal-overlay .relative.glass,
+body.theme-new-dark .glass,
+body.theme-new-dark .msg-bubble,
+body.theme-new-dark input,
+body.theme-new-dark textarea,
+body.theme-new-dark select,
+body.theme-new-dark .modal-overlay .relative.glass {
+    background: var(--ot-panel) !important;
+    color: var(--ot-ink) !important;
+    border: 1px solid var(--ot-border) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.theme-new-light .glass-hover:hover,
+body.theme-new-light .glass:hover,
+body.theme-new-light .hover\:bg-white\/10:hover,
+body.theme-new-light .hover\:bg-white\/15:hover,
+body.theme-new-light .hover\:bg-white\/5:hover,
+body.theme-new-dark .glass-hover:hover,
+body.theme-new-dark .glass:hover,
+body.theme-new-dark .hover\:bg-white\/10:hover,
+body.theme-new-dark .hover\:bg-white\/15:hover,
+body.theme-new-dark .hover\:bg-white\/5:hover {
+    background: var(--ot-panel-muted) !important;
+    border-color: var(--ot-border-strong) !important;
+}
+
+body.theme-new-light .glass-active,
+body.theme-new-light .conv-item.active,
+body.theme-new-light .tab-btn.active,
+body.theme-new-dark .glass-active,
+body.theme-new-dark .conv-item.active,
+body.theme-new-dark .tab-btn.active {
+    background: var(--ot-accent-soft) !important;
+    border-color: var(--ot-border-strong) !important;
+}
+
+body.theme-new-light .text-zinc-100,
+body.theme-new-light .text-zinc-200,
+body.theme-new-light .text-zinc-300,
+body.theme-new-dark .text-zinc-100,
+body.theme-new-dark .text-zinc-200,
+body.theme-new-dark .text-zinc-300 { color: var(--ot-ink) !important; }
+
+body.theme-new-light .text-zinc-400,
+body.theme-new-light .text-zinc-500,
+body.theme-new-light .text-zinc-600,
+body.theme-new-light .text-amber-200,
+body.theme-new-light .text-amber-300,
+body.theme-new-light .text-amber-400,
+body.theme-new-light .hover\:text-amber-300:hover,
+body.theme-new-light .hover\:text-amber-400:hover,
+body.theme-new-dark .text-zinc-400,
+body.theme-new-dark .text-zinc-500,
+body.theme-new-dark .text-zinc-600,
+body.theme-new-dark .text-amber-200,
+body.theme-new-dark .text-amber-300,
+body.theme-new-dark .text-amber-400,
+body.theme-new-dark .hover\:text-amber-300:hover,
+body.theme-new-dark .hover\:text-amber-400:hover { color: var(--ot-ink-muted) !important; }
+
+body.theme-new-light .text-red-400,
+body.theme-new-light .hover\:text-red-400:hover,
+body.theme-new-dark .text-red-400,
+body.theme-new-dark .hover\:text-red-400:hover { color: var(--ot-danger) !important; }
+
+body.theme-new-light .bg-zinc-950\/15,
+body.theme-new-light .bg-zinc-950\/25,
+body.theme-new-light .bg-black\/30,
+body.theme-new-light .bg-white\/5,
+body.theme-new-light .bg-white\/10,
+body.theme-new-light .bg-white\/15,
+body.theme-new-light .bg-amber-500\/10,
+body.theme-new-light .bg-amber-500\/15,
+body.theme-new-light .bg-amber-500\/20,
+body.theme-new-light .hover\:bg-amber-500\/20:hover,
+body.theme-new-light .active\:bg-amber-500\/30:active,
+body.theme-new-dark .bg-zinc-950\/15,
+body.theme-new-dark .bg-zinc-950\/25,
+body.theme-new-dark .bg-black\/30,
+body.theme-new-dark .bg-white\/5,
+body.theme-new-dark .bg-white\/10,
+body.theme-new-dark .bg-white\/15,
+body.theme-new-dark .bg-amber-500\/10,
+body.theme-new-dark .bg-amber-500\/15,
+body.theme-new-dark .bg-amber-500\/20,
+body.theme-new-dark .hover\:bg-amber-500\/20:hover,
+body.theme-new-dark .active\:bg-amber-500\/30:active { background-color: var(--ot-accent-soft) !important; }
+
+body.theme-new-light .bg-amber-500,
+body.theme-new-light .hover\:bg-amber-400:hover,
+body.theme-new-light .active\:bg-amber-600:active,
+body.theme-new-dark .bg-amber-500,
+body.theme-new-dark .hover\:bg-amber-400:hover,
+body.theme-new-dark .active\:bg-amber-600:active { background-color: var(--ot-accent) !important; }
+
+body.theme-new-light .border-white\/5,
+body.theme-new-light .border-white\/10,
+body.theme-new-light .border-amber-500,
+body.theme-new-light .border-amber-500\/20,
+body.theme-new-light .border-amber-500\/30,
+body.theme-new-dark .border-white\/5,
+body.theme-new-dark .border-white\/10,
+body.theme-new-dark .border-amber-500,
+body.theme-new-dark .border-amber-500\/20,
+body.theme-new-dark .border-amber-500\/30 { border-color: var(--ot-border-strong) !important; }
+
+body.theme-new-light button,
+body.theme-new-light .lang-btn,
+body.theme-new-light .tab-btn,
+body.theme-new-light .filter-btn,
+body.theme-new-light .msg-action-btn,
+body.theme-new-dark button,
+body.theme-new-dark .lang-btn,
+body.theme-new-dark .tab-btn,
+body.theme-new-dark .filter-btn,
+body.theme-new-dark .msg-action-btn { border-radius: 8px !important; }
+
+body.theme-new-light input::placeholder,
+body.theme-new-light textarea::placeholder,
+body.theme-new-dark input::placeholder,
+body.theme-new-dark textarea::placeholder { color: var(--ot-ink-faint) !important; }
+
+body.theme-new-light input:focus,
+body.theme-new-light textarea:focus,
+body.theme-new-light select:focus,
+body.theme-new-dark input:focus,
+body.theme-new-dark textarea:focus,
+body.theme-new-dark select:focus {
+    outline: 0 !important;
+    border-color: var(--ot-focus) !important;
+    box-shadow: inset 0 0 0 1px var(--ot-focus), 0 0 0 3px rgba(47, 42, 37, 0.08) !important;
+}
+
+body.theme-new-light input[type="range"],
+body.theme-new-dark input[type="range"] {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    height: 22px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    accent-color: var(--ot-accent) !important;
+}
+
+body.theme-new-light input[type="range"]::-webkit-slider-runnable-track,
+body.theme-new-dark input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--ot-border);
+    border: 1px solid var(--ot-border-strong);
+}
+
+body.theme-new-light input[type="range"]::-webkit-slider-thumb,
+body.theme-new-dark input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background: var(--ot-accent);
+    border: 2px solid var(--ot-panel);
+    box-shadow: 0 1px 2px rgba(39, 35, 31, 0.22);
+}
+
+body.theme-new-light input.peer + div,
+body.theme-new-dark input.peer + div {
+    width: 44px !important;
+    height: 24px !important;
+    background: var(--ot-border) !important;
+    border: 1px solid var(--ot-border-strong) !important;
+    box-shadow: inset 0 1px 2px rgba(39, 35, 31, 0.08) !important;
+}
+
+body.theme-new-light input.peer + div::after,
+body.theme-new-dark input.peer + div::after {
+    width: 18px !important;
+    height: 18px !important;
+    top: 2px !important;
+    left: 2px !important;
+    background: var(--ot-panel) !important;
+    border: 1px solid rgba(39, 35, 31, 0.08) !important;
+    box-shadow: 0 1px 2px rgba(39, 35, 31, 0.18) !important;
+}
+
+body.theme-new-light input.peer:checked + div,
+body.theme-new-dark input.peer:checked + div {
+    background: var(--ot-accent) !important;
+    border-color: var(--ot-accent) !important;
+}
+
+body.theme-new-light input.peer:checked + div::after,
+body.theme-new-dark input.peer:checked + div::after { transform: translateX(20px) !important; }
+body.theme-new-dark input.peer:checked + div::after { background: #24211d !important; }
+
+body.theme-new-light #sidebar,
+body.theme-new-dark #sidebar {
+    background: var(--ot-bg-soft) !important;
+    border-right: 1px solid var(--ot-border) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.theme-new-light #libraryView > .flex-shrink-0,
+body.theme-new-light #chatTopBar,
+body.theme-new-light #chatView > .flex-shrink-0:last-child,
+body.theme-new-dark #libraryView > .flex-shrink-0,
+body.theme-new-dark #chatTopBar,
+body.theme-new-dark #chatView > .flex-shrink-0:last-child {
+    background: var(--ot-bg-soft) !important;
+    border-color: var(--ot-border) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.theme-new-light #newChatBtn,
+body.theme-new-light #announceGotItBtn,
+body.theme-new-light #summaryGenerateBtn,
+body.theme-new-light #quickNewChatWithCurrentBtn,
+body.theme-new-light #sendBtn,
+body.theme-new-dark #newChatBtn,
+body.theme-new-dark #announceGotItBtn,
+body.theme-new-dark #summaryGenerateBtn,
+body.theme-new-dark #quickNewChatWithCurrentBtn,
+body.theme-new-dark #sendBtn {
+    background: var(--ot-accent) !important;
+    color: var(--ot-bg) !important;
+    border: 1px solid var(--ot-accent) !important;
+}
+
+body.theme-new-light #messagesContainer,
+body.theme-new-dark #messagesContainer {
+    background: var(--ot-bg) !important;
+    padding-left: clamp(12px, 1.4vw, 24px) !important;
+    padding-right: clamp(12px, 1.4vw, 24px) !important;
+}
+
+body.theme-new-light #messagesContainer .msg-wrapper,
+body.theme-new-dark #messagesContainer .msg-wrapper {
+    max-width: min(100%, 1540px) !important;
+}
+
+body.theme-new-light #tokenBar,
+body.theme-new-dark #tokenBar {
+    background: var(--ot-accent) !important;
+}
+
+body.theme-new-light #tokenBar {
+    opacity: 0.68;
+}
+
+body.theme-new-dark #tokenBar {
+    opacity: 0.76;
+}
+
+body.theme-new-light .msg-wrapper,
+body.theme-new-dark .msg-wrapper { animation: none !important; }
+
+body.theme-new-light .msg-bubble,
+body.theme-new-dark .msg-bubble {
+    border-radius: 12px !important;
+    padding: 13px 16px !important;
+    line-height: 1.72;
+    font-size: 0.95rem;
+}
+
+body.theme-new-light .msg-user .msg-bubble {
+    background: #ece4d7 !important;
+    border-color: #d9ccbd !important;
+}
+body.theme-new-dark .msg-user .msg-bubble {
+    background: #39352f !important;
+    border-color: #565044 !important;
+}
+
+body.theme-new-light .dialogue-highlight,
+body.theme-new-dark .dialogue-highlight { color: var(--ot-accent) !important; }
+
+body.theme-new-light .msg-action-btn,
+body.theme-new-dark .msg-action-btn {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--ot-ink-faint) !important;
+}
+
+body.theme-new-light .modal-overlay,
+body.theme-new-dark .modal-overlay {
+    padding: clamp(16px, 3vw, 32px) !important;
+}
+
+body.theme-new-light .modal-overlay .absolute.inset-0 {
+    background: rgba(39, 35, 31, 0.26) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.theme-new-dark .modal-overlay .absolute.inset-0 {
+    background: rgba(9, 8, 7, 0.62) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body.theme-new-light .modal-overlay .relative.glass,
+body.theme-new-dark .modal-overlay .relative.glass {
+    border-radius: 24px !important;
+    outline: 1px solid rgba(255, 255, 255, 0.42) !important;
+    outline-offset: 8px !important;
+    background-clip: padding-box !important;
+}
+
+body.theme-new-light .modal-overlay .relative.glass {
+    background: rgba(255, 253, 248, 0.96) !important;
+    border-color: rgba(191, 181, 166, 0.66) !important;
+    box-shadow:
+        0 24px 70px rgba(39, 35, 31, 0.24),
+        0 0 0 1px rgba(255, 255, 255, 0.54) inset !important;
+}
+
+body.theme-new-dark .modal-overlay .relative.glass {
+    background: rgba(43, 41, 37, 0.96) !important;
+    border-color: rgba(102, 94, 82, 0.7) !important;
+    outline-color: rgba(255, 255, 255, 0.08) !important;
+    box-shadow:
+        0 24px 76px rgba(0, 0, 0, 0.58),
+        0 0 0 1px rgba(255, 255, 255, 0.06) inset !important;
+}
+
+body.theme-new-light .modal-overlay .rounded-3xl,
+body.theme-new-light .modal-overlay .rounded-2xl,
+body.theme-new-dark .modal-overlay .rounded-3xl,
+body.theme-new-dark .modal-overlay .rounded-2xl {
+    border-radius: 24px !important;
+}
+
+@media (max-width: 767px) {
+    body.theme-new-light .modal-overlay,
+    body.theme-new-dark .modal-overlay {
+        padding: 12px !important;
+    }
+    body.theme-new-light .modal-overlay .relative.glass,
+    body.theme-new-dark .modal-overlay .relative.glass {
+        outline-offset: 4px !important;
+    }
+}
+
+body.theme-new-light .ot-avatar-fill,
+body.theme-new-light #myCardsGrid .bg-gradient-to-br,
+body.theme-new-light #publicCardsGrid .bg-gradient-to-br,
+body.theme-new-light #libraryView .bg-gradient-to-br {
+    background-image: linear-gradient(145deg, #2c2925 0%, #5a534a 100%) !important;
+    background-color: #2c2925 !important;
+}
+
+body.theme-new-dark .ot-avatar-fill,
+body.theme-new-dark #myCardsGrid .bg-gradient-to-br,
+body.theme-new-dark #publicCardsGrid .bg-gradient-to-br,
+body.theme-new-dark #libraryView .bg-gradient-to-br {
+    background-image: linear-gradient(145deg, #ded6c8 0%, #92897c 100%) !important;
+    background-color: #ded6c8 !important;
+    color: #211e1a !important;
+}
+
+body.theme-new-light ::-webkit-scrollbar-thumb,
+body.theme-new-dark ::-webkit-scrollbar-thumb {
+    background: rgba(40, 35, 31, 0.18);
+    border-radius: 999px;
+}
+body.theme-new-light ::-webkit-scrollbar-thumb:hover,
+body.theme-new-dark ::-webkit-scrollbar-thumb:hover { background: rgba(40, 35, 31, 0.28); }
+
+@media (max-width: 767px) {
+    body.theme-new-light #main-layout,
+    body.theme-new-dark #main-layout { background: var(--ot-bg) !important; }
+    body.theme-new-light #messagesContainer,
+    body.theme-new-dark #messagesContainer {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    body.theme-new-light #messagesContainer .msg-wrapper,
+    body.theme-new-dark #messagesContainer .msg-wrapper {
+        max-width: 92% !important;
+    }
+    body.theme-new-light #sidebar,
+    body.theme-new-dark #sidebar {
+        box-shadow: none !important;
+    }
+    body.theme-new-light #sidebarBackdrop,
+    body.theme-new-dark #sidebarBackdrop {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+    }
+}</style>
 </head>
 <body class="shimmer-enabled">
 
@@ -638,7 +1113,7 @@ body.low-power .modal-overlay {
                         <span data-i18n="settings_save_api_key">将 API Key 保存到浏览器本地存储</span>
                     </label>
                     <div class="mt-1 ml-5 text-[10px] text-amber-400/90 leading-snug" data-i18n="settings_save_api_key_warn">
-                        ⚠️ 请仅在您完全信任的私人设备上启用此选项。API Key 将以明文形式存储在浏览器 localStorage 中，存在被他人访问或脚本窃取的风险。在公共电脑、网吧或共享设备上请勿勾选！
+                        请仅在完全信任的私人设备上启用。API Key 将以明文形式存储在浏览器 localStorage 中，公共或共享设备请勿勾选。
                     </div>
                 </div>
             </div>
@@ -837,7 +1312,7 @@ body.low-power .modal-overlay {
                 <!-- 【Storage Fix】清除 WebLLM 缓存按钮 -->
                 <button id="clearWebLLMBtn"
                         class="mt-1.5 w-full px-3 py-1 text-xs rounded-lg bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-300 border border-amber-500/20 transition-all font-medium flex items-center justify-center gap-1">
-                    🧹 清除 WebLLM 模型缓存（释放大空间）
+                    清除 WebLLM 模型缓存
                 </button>
 
                 <!-- 【Recovery Tool】存储恢复工具 -->
@@ -873,7 +1348,17 @@ body.low-power .modal-overlay {
                 <input type="range" id="worldInfoBudget" min="256" max="8192" step="256" value="2048" class="w-full">
             </div>
 
-            <!-- 效能模式（新增，解决手机发热问题，用户可自由开关） -->
+            <!-- 界面主题（从 index_new.html 迁移为额外可选项） -->
+            <hr class="border-white/5">
+            <div>
+                <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_ui_theme_label">界面主题</label>
+                <p class="text-[10px] text-zinc-600 mt-0.5" data-i18n="settings_ui_theme_hint">选择聊天界面的视觉风格，不影响聊天、总结、世界书或模型设置。</p>
+                <select id="uiTheme" class="w-full mt-2 px-3 py-2 text-sm glass rounded-xl text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30">
+                    <option value="classic" data-i18n="settings_ui_theme_classic">经典暗色玻璃</option>
+                    <option value="new-light" data-i18n="settings_ui_theme_new_light">新版浅色工作区</option>
+                    <option value="new-dark" data-i18n="settings_ui_theme_new_dark">新版低亮度工作区</option>
+                </select>
+            </div>
             <hr class="border-white/5">
             <div class="flex items-center justify-between">
                 <div>
@@ -894,7 +1379,7 @@ body.low-power .modal-overlay {
     <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="webllmConfirmBackdrop"></div>
     <div class="relative glass rounded-3xl w-[92%] max-w-md p-6 shadow-2xl animate-fade-in">
         <div class="flex items-center gap-3 mb-4">
-            <span class="text-2xl">⚠️</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Local</span>
             <h2 class="text-lg font-bold text-zinc-100" data-i18n="webllm_confirm_title">启用浏览器本地模型</h2>
         </div>
         <div class="text-sm text-zinc-300 space-y-2 mb-4 leading-relaxed" id="webllmConfirmText">
@@ -1000,7 +1485,7 @@ body.low-power .modal-overlay {
         </div>
         <p class="text-sm text-zinc-400 mb-4"><span data-i18n="import_desc">Supports SillyTavern</span> <code class="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">chara_card_v1 / v2 / v3</code> <span data-i18n="import_desc2">format JSON and PNG (embedded data) files.</span></p>
         <label class="flex flex-col items-center gap-3 p-8 glass rounded-2xl border-dashed border-2 border-white/10 hover:border-amber-500/30 cursor-pointer transition-all">
-            <span class="text-3xl">📄</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Prompt</span>
             <span class="text-sm text-zinc-400" data-i18n="import_click_hint">Click to select a .json or .png (SillyTavern) character card</span>
             <input type="file" id="importFileInput" accept=".json,.png" class="hidden">
         </label>
@@ -1076,7 +1561,7 @@ body.low-power .modal-overlay {
         <!-- Header -->
         <div class="px-5 py-3 border-b border-white/10 flex items-center gap-3 flex-shrink-0 bg-black/20">
             <div class="flex items-center gap-2 flex-1 min-w-0">
-                <span class="text-xl">📖</span>
+                <span class="text-xs font-semibold uppercase tracking-wider text-zinc-500">WI</span>
                 <span class="font-bold text-lg text-zinc-100" data-i18n="world_book_title">世界书 / World Info</span>
                 <input id="wiBookName" class="ml-2 flex-1 max-w-[260px] px-3 py-1.5 text-sm glass rounded-xl text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40" placeholder="Lorebook name (optional)">
             </div>
@@ -1105,7 +1590,7 @@ body.low-power .modal-overlay {
             <div class="flex-1 flex flex-col overflow-y-auto p-4 bg-zinc-950/30" id="wiEditorContainer">
                 <div id="wiNoSelection" class="flex-1 flex items-center justify-center text-center text-zinc-500 text-sm">
                     <div>
-                        <div class="text-4xl mb-3 opacity-60">📖</div>
+                        <div class="text-xs mb-3 opacity-70 uppercase tracking-wider">World Info</div>
                         <div data-i18n="world_book_no_selection">选择左侧条目进行编辑，或点击“新建条目”</div>
                     </div>
                 </div>
@@ -1181,8 +1666,8 @@ body.low-power .modal-overlay {
                         <div>
                             <label class="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="wi_strategy">策略</label>
                             <div class="flex mt-1.5 gap-1">
-                                <button id="wiStratConstant" class="flex-1 px-2 py-1.5 text-xs rounded-xl border border-white/10 hover:border-amber-500/50 data-active:bg-amber-500/20 data-active:border-amber-500" data-active="false">🔵 恒常</button>
-                                <button id="wiStratSelective" class="flex-1 px-2 py-1.5 text-xs rounded-xl border border-white/10 hover:border-amber-500/50 data-active:bg-amber-500/20 data-active:border-amber-500" data-active="true">🟢 关键字</button>
+                                <button id="wiStratConstant" class="flex-1 px-2 py-1.5 text-xs rounded-xl border border-white/10 hover:border-amber-500/50 data-active:bg-amber-500/20 data-active:border-amber-500" data-active="false">恒常</button>
+                                <button id="wiStratSelective" class="flex-1 px-2 py-1.5 text-xs rounded-xl border border-white/10 hover:border-amber-500/50 data-active:bg-amber-500/20 data-active:border-amber-500" data-active="true">关键字</button>
                             </div>
                         </div>
                         <div>
@@ -1415,7 +1900,7 @@ body.low-power .modal-overlay {
         <!-- Header -->
         <div class="flex items-center justify-between mb-3">
             <div>
-                <div class="text-2xl mb-1">✨</div>
+                <div class="text-xs mb-1 uppercase tracking-wider text-zinc-500">OpenTavern</div>
                 <h2 class="text-xl font-bold text-zinc-100" data-i18n="announce_title">欢迎使用 OpenTavern</h2>
                 <p class="text-xs text-zinc-400 mt-0.5" data-i18n="announce_subtitle">快速开始 · 公共卡片库 30 秒导入角色</p>
             </div>
@@ -1458,7 +1943,7 @@ body.low-power .modal-overlay {
         </div>
 
         <div class="text-[11px] text-zinc-400 mb-4 px-1" data-i18n="announce_hint">
-            公共卡片库有很多高质量现成角色，导入后别忘了去 ⚙️ 设置里配好你的 API 就能马上聊天了！
+            公共卡片库提供多种现成角色。导入后在设置中配置 API，即可开始聊天。
         </div>
 
         <!-- Do not show checkbox -->
@@ -1529,7 +2014,7 @@ body.low-power .modal-overlay {
             <button id="quickNewChatWithCurrentBtn"
                     class="w-full px-4 py-3 rounded-2xl text-sm font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black transition-all flex items-center justify-center gap-2"
                     data-i18n="quick_new_with_current">
-                💬 与当前角色开启新对话
+                与当前角色开启新对话
             </button>
             <button id="quickReturnToLibraryBtn"
                     class="w-full px-4 py-3 rounded-2xl text-sm font-semibold bg-white/10 hover:bg-white/15 transition-all"
@@ -1539,7 +2024,7 @@ body.low-power .modal-overlay {
             <button id="quickNewGroupChatBtn"
                     class="w-full px-4 py-3 rounded-2xl text-sm font-semibold bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
                     data-i18n="quick_new_group">
-                👥 创建新群聊（进入选择界面）
+                创建新群聊（进入选择界面）
             </button>
         </div>
         <p class="mt-4 text-[10px] text-center text-zinc-500">在卡片库直接点击角色卡也可开始新对话或群聊</p>
@@ -1572,7 +2057,7 @@ body.low-power .modal-overlay {
     <!-- Left Sidebar -->
     <aside id="sidebar" class="w-[270px] flex-shrink-0 flex flex-col border-r border-white/5 bg-zinc-950/25 backdrop-blur-xl">
         <div class="px-5 py-4 flex items-center gap-3 border-b border-white/5">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xs font-bold tracking-tighter">OT</div>
+            <div class="w-9 h-9 rounded-xl ot-avatar-fill flex items-center justify-center text-white text-xs font-bold tracking-tighter">OT</div>
             <div class="flex-1">
                 <div class="flex items-center gap-2">
                     <p class="text-sm font-bold text-zinc-100 leading-tight">OpenTavern</p>
@@ -1606,7 +2091,7 @@ body.low-power .modal-overlay {
                 <!-- Preview state -->
                 <div id="charCardPreview" class="hidden">
                     <div class="flex items-center gap-2 mb-1">
-                        <div id="charCardAvatar" class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">?</div>
+                        <div id="charCardAvatar" class="w-7 h-7 rounded-lg ot-avatar-fill flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">?</div>
                         <div class="min-w-0 flex-1">
                             <p id="charCardName" class="text-xs font-medium text-zinc-200 truncate"></p>
                             <p id="charCardTagCount" class="text-[9px] text-zinc-500"></p>
@@ -1630,7 +2115,7 @@ body.low-power .modal-overlay {
 
             <!-- World Book quick access (below Character Card) -->
             <div class="glass rounded-xl px-3 py-2 flex items-center gap-2 text-xs">
-                <span class="text-zinc-400 flex-shrink-0">📖</span>
+                <span class="text-zinc-400 flex-shrink-0 text-[10px] font-semibold uppercase tracking-wider">WI</span>
                 <span class="flex-1 text-zinc-300 truncate" data-i18n="world_book">World Book</span>
                 <span id="wiEntryCount" class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-zinc-400 flex-shrink-0"></span>
                 <button id="worldBookBtn" class="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-500/20 hover:text-amber-300 text-zinc-300 transition-all text-[11px] font-medium flex-shrink-0 min-h-[28px]" data-i18n="world_book_btn">管理</button>
@@ -1648,10 +2133,10 @@ body.low-power .modal-overlay {
             </div>
             <div class="flex items-center gap-1.5">
                 <button id="sidebarSettingsBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all">
-                    <span>⚙️</span> <span data-i18n="settings">Settings</span>
+                    <span data-i18n="settings">Settings</span>
                 </button>
                 <button id="viewPromptBtn" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-zinc-500 glass hover:text-zinc-300 hover:bg-white/5 transition-all" data-i18n-title="view_prompt_title">
-                    <span>🔍</span>
+                    <span class="text-[10px] font-semibold uppercase tracking-wider">Prompt</span>
                 </button>
             </div>
         </div>
@@ -1729,7 +2214,7 @@ body.low-power .modal-overlay {
                 <button id="hamburgerBtn" class="hamburger-btn" aria-label="Menu">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
-                <div id="charAvatar" class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500 text-sm flex-shrink-0">💬</div>
+                <div id="charAvatar" class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500 text-[10px] font-semibold uppercase flex-shrink-0">Chat</div>
                 <div class="min-w-0">
                     <h3 id="chatTitle" class="text-sm font-semibold text-zinc-200 truncate" data-i18n="new_chat_title">New Chat</h3>
                     <p id="chatSubtitle" class="text-[10px] text-zinc-500 truncate" data-i18n="no_character">No character loaded</p>
@@ -1746,11 +2231,11 @@ body.low-power .modal-overlay {
                         class="px-2 sm:px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-500 glass hover:text-zinc-300 hover:bg-white/10 transition-all flex items-center justify-center"
                         data-i18n-title="summary_manager_title">
                     <!-- Desktop: full text | Mobile: emoji only (适配移动端) -->
-                    <span data-i18n="summary_btn" class="hidden sm:inline">🧠 总结</span>
-                    <span class="sm:hidden text-base leading-none">🧠</span>
+                    <span data-i18n="summary_btn" class="hidden sm:inline">总结</span>
+                    <span class="sm:hidden text-[10px] font-semibold uppercase leading-none">Sum</span>
                 </button>
-                <button id="archiveBtn" class="mobile-hide-sm px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-500 glass hover:text-zinc-300 hover:bg-white/10 transition-all" data-i18n="archive" data-i18n-title="archive_title">📋 Archive</button>
-                <button id="topSettingsBtn" class="w-8 h-8 rounded-xl glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">⚙️</button>
+                <button id="archiveBtn" class="mobile-hide-sm px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-500 glass hover:text-zinc-300 hover:bg-white/10 transition-all" data-i18n="archive" data-i18n-title="archive_title">Archive</button>
+                <button id="topSettingsBtn" class="w-8 h-8 rounded-xl glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors" aria-label="Settings">Set</button>
 
                 <!-- GitHub Link -->
                 <a id="githubBtn" href="https://github.com/Hajimides/OpenTavern" target="_blank" rel="noopener noreferrer"
@@ -1772,7 +2257,7 @@ body.low-power .modal-overlay {
         <!-- Messages Area -->
         <div id="messagesContainer" class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             <div id="emptyState" class="flex flex-col items-center justify-center h-full text-center">
-                <div class="w-20 h-20 rounded-3xl glass flex items-center justify-center text-3xl mb-4">✨</div>
+                <div class="w-20 h-20 rounded-3xl glass flex items-center justify-center text-3xl mb-4">OT</div>
                 <p class="text-zinc-400 text-sm font-medium mb-1" data-i18n="welcome_title">Welcome to OpenTavern</p>
                 <p class="text-zinc-600 text-xs max-w-xs" data-i18n="welcome_hint">Import a character card to get started, or just type a message below.</p>
             </div>
@@ -2446,10 +2931,10 @@ var i18n = {
         api_test_suggest_title: '建议检查项：',
         api_test_models_failed_prefix: '首选测试 (/v1/models) 失败：',
         api_test_unknown_error: '未知错误',
-        api_test_fallback_success: '备选测试（非流式 chat）✅ 成功',
+        api_test_fallback_success: '备选测试（非流式 chat）成功',
         api_test_fallback_success_choice: '（收到回复结构）',
         api_test_fallback_success_ok: '（200 OK）',
-        api_test_fallback_failed_prefix: '备选测试（非流式 chat）❌ ',
+        api_test_fallback_failed_prefix: '备选测试（非流式 chat）失败：',
         api_test_timeout_msg: '请求超时（{s}s）',
         api_test_typeerror_prefix: 'TypeError: ',
         api_test_typeerror_cors_note: 'TypeError (很可能 CORS 或网络不通)',
@@ -2511,7 +2996,7 @@ var i18n = {
         import_conv_success: '已导入',
         import_conv_success_suffix: '个对话。',
         import_conv_duplicate: '（已跳过重复）',
-        summary_btn: '🧠 总结',
+        summary_btn: '总结',
         summary_title: '对话总结',
         summary_auto_label: '启用自动总结',
         summary_auto_hint: '当消息数量达到下方“触发阈值”时自动总结。建议上下文长度 ≥12，阈值设为上下文的 50%~70% 效果最佳。',
@@ -2552,14 +3037,14 @@ var i18n = {
         no_conversations: '暂无保存的对话。<br>开始新对话吧。',
         no_character: '未加载角色',
         view_prompt_title: '查看完整提示词',
-        archive: '📋 存档',
+        archive: '存档',
         archive_title: '复制当前对话到历史记录',
         welcome_title: '欢迎来到 OpenTavern',
         welcome_hint: '导入角色卡开始对话，或直接在下方输入消息。',
         context_label: '上下文：',
         msgs_label: '条消息',
         input_placeholder: '输入消息...',
-        input_placeholder_no_api: '请先配置 API 设置（点击 ⚙️）...',
+        input_placeholder_no_api: '请先配置 API 设置...',
         input_placeholder_waiting: '等待回复中...',
         no_api_error: '请先在设置中配置 API 端点和密钥。',
         generation_abort_confirm: '正在生成回复，是否中止并切换？',
@@ -2669,6 +3154,11 @@ var i18n = {
         settings_wi_budget_max: '世界书最大 Token 数',
         wi_budget_warning: '部分世界书因预算限制未激活',
         wi_budget_warning_dismiss: '知道了',
+        settings_ui_theme_label: '界面主题',
+        settings_ui_theme_hint: '选择聊天界面的视觉风格，不影响聊天、总结、世界书或模型设置。',
+        settings_ui_theme_classic: '经典暗色玻璃',
+        settings_ui_theme_new_light: '新版浅色工作区',
+        settings_ui_theme_new_dark: '新版低亮度工作区',
         settings_low_power_label: '效能模式（减少视觉效果以降低手机发热）',
         settings_low_power_hint: '开启后暂停背景 WebGL 动画、关闭玻璃模糊（backdrop-filter），并精简部分过渡动画。可显著降低手机 GPU/CPU 负载与发热。随时可关闭，不影响聊天功能。',
         settings_inference_backend: '推理后端',
@@ -2692,7 +3182,7 @@ var i18n = {
         settings_summarize_api_key: 'API Key',
         settings_summarize_model: 'Model',
         settings_save_api_key: '将 API Key 保存到浏览器本地存储',
-        settings_save_api_key_warn: '⚠️ 请仅在您完全信任的私人设备上启用此选项。API Key 将以明文形式存储在浏览器 localStorage 中，存在被他人访问或脚本窃取的风险。在公共电脑、网吧或共享设备上请勿勾选！',
+        settings_save_api_key_warn: '请仅在完全信任的私人设备上启用。API Key 将以明文形式存储在浏览器 localStorage 中，公共或共享设备请勿勾选。',
         // Announcement modal
         announce_title: '欢迎使用 OpenTavern',
         announce_subtitle: '快速开始 · 公共卡片库 30 秒导入角色',
@@ -2702,7 +3192,7 @@ var i18n = {
         announce_step2_desc: '浏览公开角色，点一个喜欢的就能看到详情和预览',
         announce_step3_title: '3. 点击「导入并开始聊天」',
         announce_step3_desc: '一键导入到你的「我的」库，马上就能开始对话（记得先配好 API）',
-        announce_hint: '公共卡片库提供多种现成高质量角色。导入后别忘了去 ⚙️ 设置里配好你的 API 才能聊天！',
+        announce_hint: '公共卡片库提供多种现成角色。导入后在设置中配置 API，即可开始聊天。',
         announce_dont_show: '下次不再显示此公告',
         announce_got_it: '开始使用',
         announce_credits_main: '主要开发：哈基米德Hajimides',
@@ -2714,7 +3204,7 @@ var i18n = {
         storage_used_space: '已用空间',
         storage_hint_ls: '当前使用 localStorage 强快照兜底（OPFS 不可用时）。',
         storage_hint_opfs: '正在使用 OPFS（容量大、性能好），localStorage 作为强快照兜底。',
-        clear_opfs_data: '🗑️ 清除所有用户数据（OPFS + localStorage 快照，含 WebLLM 缓存）',
+        clear_opfs_data: '清除所有用户数据（OPFS + localStorage 快照，含 WebLLM 缓存）',
         storage_usage_calculating: '计算中...',
         storage_high_warning: '存储空间紧张，建议尽快备份！',
 
@@ -2826,10 +3316,10 @@ var i18n = {
         api_test_suggest_title: '建議檢查項目：',
         api_test_models_failed_prefix: '首選測試 (/v1/models) 失敗：',
         api_test_unknown_error: '未知錯誤',
-        api_test_fallback_success: '備選測試（非串流 chat）✅ 成功',
+        api_test_fallback_success: '備選測試（非串流 chat）成功',
         api_test_fallback_success_choice: '（收到回覆結構）',
         api_test_fallback_success_ok: '（200 OK）',
-        api_test_fallback_failed_prefix: '備選測試（非串流 chat）❌ ',
+        api_test_fallback_failed_prefix: '備選測試（非串流 chat）失敗：',
         api_test_timeout_msg: '請求逾時（{s}s）',
         api_test_typeerror_prefix: 'TypeError: ',
         api_test_typeerror_cors_note: 'TypeError（很可能是 CORS 或網路不通）',
@@ -2891,7 +3381,7 @@ var i18n = {
         import_conv_success: '已匯入',
         import_conv_success_suffix: '個對話。',
         import_conv_duplicate: '（已跳過重複）',
-        summary_btn: '🧠 總結',
+        summary_btn: '總結',
         summary_title: '對話總結',
         summary_auto_label: '啟用自動總結',
         summary_auto_hint: '當訊息數量達到下方「觸發閾值」時自動總結。建議上下文長度 ≥12，閾值設為上下文的 50%~70% 效果最佳。',
@@ -2932,14 +3422,14 @@ var i18n = {
         no_conversations: '暫無儲存的對話。<br>開始新對話吧。',
         no_character: '未載入角色',
         view_prompt_title: '檢視完整提示詞',
-        archive: '📋 存檔',
+        archive: '存檔',
         archive_title: '複製當前對話到歷史記錄',
         welcome_title: '歡迎來到 OpenTavern',
         welcome_hint: '匯入角色卡開始對話，或直接在下方輸入訊息。',
         context_label: '上下文：',
         msgs_label: '條訊息',
         input_placeholder: '輸入訊息...',
-        input_placeholder_no_api: '請先設定 API（點擊 ⚙️）...',
+        input_placeholder_no_api: '請先設定 API...',
         input_placeholder_waiting: '等待回覆中...',
         no_api_error: '請先在設定中設定 API 端點和金鑰。',
         generation_abort_confirm: '正在生成回覆，是否中止並切換？',
@@ -3049,6 +3539,11 @@ var i18n = {
         settings_wi_budget_max: '世界書最大 Token 數',
         wi_budget_warning: '部分世界書因預算限制未啟動',
         wi_budget_warning_dismiss: '知道了',
+        settings_ui_theme_label: '介面主題',
+        settings_ui_theme_hint: '選擇聊天介面的視覺風格，不影響聊天、總結、世界書或模型設定。',
+        settings_ui_theme_classic: '經典暗色玻璃',
+        settings_ui_theme_new_light: '新版淺色工作區',
+        settings_ui_theme_new_dark: '新版低亮度工作區',
         settings_low_power_label: '效能模式（減少視覺效果以降低手機發熱）',
         settings_low_power_hint: '開啟後暫停背景 WebGL 動畫、關閉玻璃模糊（backdrop-filter），並精簡部分過渡動畫。可顯著降低手機 GPU/CPU 負載與發熱。隨時可關閉，不影響聊天功能。',
         settings_inference_backend: '推理後端',
@@ -3072,7 +3567,7 @@ var i18n = {
         settings_summarize_api_key: 'API Key',
         settings_summarize_model: 'Model',
         settings_save_api_key: '將 API Key 儲存到瀏覽器本地',
-        settings_save_api_key_warn: '⚠️ 請僅在您完全信任的私人裝置上啟用此選項。API Key 將以明文形式儲存在瀏覽器 localStorage 中，存在被他人存取或腳本竊取的風險。在公共電腦、網吧或共享裝置上請勿勾選！',
+        settings_save_api_key_warn: '請僅在完全信任的私人裝置上啟用。API Key 將以明文形式儲存在瀏覽器 localStorage 中，公共或共享裝置請勿勾選。',
         // Announcement modal
         announce_title: '歡迎使用 OpenTavern',
         announce_subtitle: '快速開始 · 公共卡片庫 30 秒匯入角色',
@@ -3082,7 +3577,7 @@ var i18n = {
         announce_step2_desc: '瀏覽公開角色，點一個喜歡的就能看到詳情和預覽',
         announce_step3_title: '3. 點擊「匯入並開始聊天」',
         announce_step3_desc: '一鍵匯入到你的「我的」庫，馬上就能開始對話（記得先配好 API）',
-        announce_hint: '公共卡片庫提供多種現成高品質角色。匯入後別忘了去 ⚙️ 設定裡配好你的 API 才能聊天！',
+        announce_hint: '公共卡片庫提供多種現成角色。匯入後在設定中配置 API，即可開始聊天。',
         announce_dont_show: '下次不再顯示此公告',
         announce_got_it: '開始使用',
         announce_credits_main: '主要開發：哈基米德Hajimides',
@@ -3094,7 +3589,7 @@ var i18n = {
         storage_used_space: '已用空間',
         storage_hint_ls: '目前使用 localStorage 強快照兜底（OPFS 不可用時）。',
         storage_hint_opfs: '正在使用 OPFS（容量大、性能佳），localStorage 作為強快照兜底。',
-        clear_opfs_data: '🗑️ 清除所有用戶資料（OPFS + localStorage 快照，含 WebLLM 快取）',
+        clear_opfs_data: '清除所有用戶資料（OPFS + localStorage 快照，含 WebLLM 快取）',
         storage_usage_calculating: '計算中...',
         storage_high_warning: '儲存空間緊張，建議盡快備份！',
 
@@ -3159,10 +3654,10 @@ var i18n = {
         api_test_suggest_title: 'Suggested checks:',
         api_test_models_failed_prefix: 'Preferred test (/v1/models) failed: ',
         api_test_unknown_error: 'Unknown error',
-        api_test_fallback_success: 'Fallback test (non-streaming chat) ✅ succeeded',
+        api_test_fallback_success: 'Fallback test (non-streaming chat) succeeded',
         api_test_fallback_success_choice: ' (received reply structure)',
         api_test_fallback_success_ok: ' (200 OK)',
-        api_test_fallback_failed_prefix: 'Fallback test (non-streaming chat) ❌ ',
+        api_test_fallback_failed_prefix: 'Fallback test (non-streaming chat) failed: ',
         api_test_timeout_msg: 'Request timed out ({s}s)',
         api_test_typeerror_prefix: 'TypeError: ',
         api_test_typeerror_cors_note: 'TypeError (likely CORS or network unreachable)',
@@ -3224,7 +3719,7 @@ var i18n = {
         import_conv_success: 'Imported ',
         import_conv_success_suffix: ' conversation(s).',
         import_conv_duplicate: ' (duplicates skipped)',
-        summary_btn: '🧠 Summarize',
+        summary_btn: 'Summarize',
         summary_title: 'Chat Summary',
         summary_auto_label: 'Enable Auto-Summarize',
         summary_auto_hint: 'When messages reach the trigger threshold below, auto-summarize. Recommended: Context Length ≥12, Threshold = 50~70% of context for best results.',
@@ -3265,14 +3760,14 @@ var i18n = {
         no_conversations: 'No saved conversations yet.<br>Start a new chat to begin.',
         no_character: 'No character loaded',
         view_prompt_title: 'View full prompt',
-        archive: '📋 Archive',
+        archive: 'Archive',
         archive_title: 'Archive current conversation',
         welcome_title: 'Welcome to OpenTavern',
         welcome_hint: 'Import a character card to get started, or just type a message below.',
         context_label: 'Context:',
         msgs_label: 'msgs',
         input_placeholder: 'Type a message...',
-        input_placeholder_no_api: 'Configure API settings first (click ⚙️)...',
+        input_placeholder_no_api: 'Configure API settings first...',
         input_placeholder_waiting: 'Waiting for response...',
         no_api_error: 'Please configure API Endpoint and API Key in Settings.',
         generation_abort_confirm: 'A response is being generated. Abort and switch?',
@@ -3381,6 +3876,11 @@ var i18n = {
         settings_wi_budget_max: 'Max Tokens from World Info',
         wi_budget_warning: 'Some World Book entries were not activated due to budget limits',
         wi_budget_warning_dismiss: 'Dismiss',
+        settings_ui_theme_label: 'Interface Theme',
+        settings_ui_theme_hint: 'Choose the visual style for the chat workspace. Chat, summaries, world books, and model settings are unaffected.',
+        settings_ui_theme_classic: 'Classic dark glass',
+        settings_ui_theme_new_light: 'New light workspace',
+        settings_ui_theme_new_dark: 'New low-light workspace',
         settings_low_power_label: 'Performance Mode (reduce visual effects to lower phone heat)',
         settings_low_power_hint: 'Pauses the animated WebGL background, disables glass blur (backdrop-filter), and reduces heavy transitions/animations. Significantly lowers mobile GPU/CPU load and heat. Can be turned off anytime; does not affect chat, summaries, or any functionality.',
         settings_inference_backend: 'Inference Backend',
@@ -3404,7 +3904,7 @@ var i18n = {
         settings_summarize_api_key: 'API Key',
         settings_summarize_model: 'Model',
         settings_save_api_key: 'Save API Key to browser local storage',
-        settings_save_api_key_warn: '⚠️ Only enable on devices you fully trust. The API Key will be stored in plaintext in browser localStorage and can be read by anyone with physical access or via XSS attacks. Do NOT enable on public computers, internet cafes, or shared devices!',
+        settings_save_api_key_warn: 'Only enable on devices you fully trust. The API Key is stored in plaintext in browser localStorage; do not enable this on public or shared devices.',
         // Announcement modal
         announce_title: 'Welcome to OpenTavern',
         announce_subtitle: 'Quick Start · Import a ready-made character in 30 seconds',
@@ -3414,7 +3914,7 @@ var i18n = {
         announce_step2_desc: 'Browse the list and tap one to open its preview and details',
         announce_step3_title: '3. Click "Import and Start Chat"',
         announce_step3_desc: 'One-tap import into your library and jump straight into conversation (remember to set up your API first)',
-        announce_hint: 'The public library has many high-quality ready-made characters. After importing, don\'t forget to configure your API in the ⚙️ Settings so you can actually chat!',
+        announce_hint: 'The public library has ready-made characters. After importing, configure your API in Settings to start chatting.',
         announce_dont_show: 'Do not show this again',
         announce_got_it: 'Get Started',
         announce_credits_main: 'Main Developer: 哈基米德Hajimides',
@@ -3426,7 +3926,7 @@ var i18n = {
         storage_used_space: 'Used Space',
         storage_hint_ls: 'Using localStorage strong snapshot fallback (when OPFS unavailable).',
         storage_hint_opfs: 'Using OPFS (large capacity, good perf) + localStorage strong snapshot fallback.',
-        clear_opfs_data: '🗑️ Clear ALL user data (OPFS + localStorage snapshot, incl. WebLLM)',
+        clear_opfs_data: 'Clear ALL user data (OPFS + localStorage snapshot, incl. WebLLM)',
         storage_usage_calculating: 'Calculating...',
         storage_high_warning: 'Storage space is tight. Please back up soon!',
 
@@ -3719,7 +4219,7 @@ function applyPerformanceMode(enabled) {
     try {
         if (isLow) {
             if (typeof window.__pauseShader === 'function') window.__pauseShader();
-        } else {
+        } else if (!document.body || (!document.body.classList.contains('theme-new-light') && !document.body.classList.contains('theme-new-dark'))) {
             if (typeof window.__resumeShader === 'function') window.__resumeShader();
         }
     } catch (e) {
@@ -3728,6 +4228,19 @@ function applyPerformanceMode(enabled) {
     // 未来可在此添加更多节流（如限制流式渲染频率等）
 }
 
+// ==================== 界面主题应用函数（独立于效能模式） ====================
+function applyUiTheme(theme) {
+    var value = theme || 'classic';
+    if (value !== 'new-light' && value !== 'new-dark') value = 'classic';
+    if (!document.body) return;
+    document.body.classList.remove('theme-new-light', 'theme-new-dark');
+    if (value !== 'classic') {
+        document.body.classList.add('theme-' + value);
+        try { if (typeof window.__pauseShader === 'function') window.__pauseShader(); } catch (e) {}
+    } else if (!document.body.classList.contains('low-power')) {
+        try { if (typeof window.__resumeShader === 'function') window.__resumeShader(); } catch (e) {}
+    }
+}
 // ==================== Storage Engine (简化版：OPFS 主 + localStorage 强快照兜底) ====================
 // 目标：去掉复杂的 IndexedDB + 多级 fallback，只保留 OPFS 主 + LS 强快照兜底。
 // - OPFS 作为主存储（大容量、高性能）
@@ -4759,7 +5272,7 @@ function showOrHideStorageWarning(percent) {
         if (!_storageWarningEl) {
             _storageWarningEl = document.createElement('div');
             _storageWarningEl.style.cssText = 'position:fixed;bottom:48px;left:50%;transform:translateX(-50%);z-index:99998;background:rgba(239,68,68,0.92);color:white;padding:6px 14px;border-radius:999px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;';
-            _storageWarningEl.innerHTML = `⚠️ 存储使用率较高 (${percent.toFixed(0)}%)，建议导出备份或清理`;
+            _storageWarningEl.innerHTML = `存储使用率较高 (${percent.toFixed(0)}%)，建议导出备份或清理`;
             document.body.appendChild(_storageWarningEl);
 
             // 点击可快速打开设置
@@ -4770,7 +5283,7 @@ function showOrHideStorageWarning(percent) {
             };
         } else {
             _storageWarningEl.style.display = 'flex';
-            _storageWarningEl.innerHTML = `⚠️ 存储使用率较高 (${percent.toFixed(0)}%)，建议导出备份或清理`;
+            _storageWarningEl.innerHTML = `存储使用率较高 (${percent.toFixed(0)}%)，建议导出备份或清理`;
         }
     } else if (_storageWarningEl) {
         _storageWarningEl.style.display = 'none';
@@ -5244,6 +5757,9 @@ function defaultSettings() {
         worldInfoBudgetEnabled: true,
         worldInfoBudget: 2048,
 
+        // 界面主题（classic / new-light / new-dark）
+        uiTheme: 'classic',
+
         // 效能模式（用户自由切换，降低手机发热）
         lowPowerMode: false,
 
@@ -5338,7 +5854,7 @@ window.testMainApiConnection = function() {
 
     function buildErrorHtml(title, details, suggestions, testedUrls) {
         var html = '<div class="bg-red-500/10 border border-red-500/30 rounded-lg p-2 text-red-300">';
-        html += '<div class="font-semibold mb-1">❌ ' + title + '</div>';
+        html += '<div class="font-semibold mb-1">' + title + '</div>';
         if (details) html += '<div class="text-red-200/90 mb-1 whitespace-pre-wrap">' + details + '</div>';
         if (testedUrls && testedUrls.length) {
             html += '<div class="text-[10px] text-red-300/70 mb-1">' + t('api_test_tested_urls_label') + '<br>' + testedUrls.map(function(x){return '• ' + x;}).join('<br>') + '</div>';
@@ -5354,7 +5870,7 @@ window.testMainApiConnection = function() {
 
     function buildSuccessHtml(models) {
         var html = '<div class="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-2 text-emerald-300">';
-        html += '<div class="font-semibold">✅ ' + t('api_test_success_title') + '</div>';
+        html += '<div class="font-semibold">' + t('api_test_success_title') + '</div>';
         if (models && models.length > 0) {
             var shown = models.slice(0, 12);
             var total = models.length;
@@ -5703,8 +6219,8 @@ function showGroupMentionPanel(conv) {
         const letter = char.name ? char.name.charAt(0).toUpperCase() : '?';
         const pSrc = char.previewImage || char.avatar;
         const avatarHTML = pSrc
-            ? `<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-zinc-900 flex-shrink-0"><img src="${escapeHtml(pSrc)}" class="w-full h-full object-cover" alt="${escapeHtml(char.name || '')}" onerror="this.parentNode.outerHTML='<div class=\\'w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-base sm:text-lg font-bold flex-shrink-0\\'>${letter}</div>'"></div>`
-            : `<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-base sm:text-lg font-bold flex-shrink-0">${letter}</div>`;
+            ? `<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden bg-zinc-900 flex-shrink-0"><img src="${escapeHtml(pSrc)}" class="w-full h-full object-cover" alt="${escapeHtml(char.name || '')}" onerror="this.parentNode.outerHTML='<div class=\\'w-9 h-9 sm:w-10 sm:h-10 rounded-xl ot-avatar-fill flex items-center justify-center text-white text-base sm:text-lg font-bold flex-shrink-0\\'>${letter}</div>'"></div>`
+            : `<div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl ot-avatar-fill flex items-center justify-center text-white text-base sm:text-lg font-bold flex-shrink-0">${letter}</div>`;
 
         item.innerHTML = `
             ${avatarHTML}
@@ -6078,8 +6594,16 @@ async function initState() {
     if (!state.settings.lang) state.settings.lang = 'zh-CN';
 
     // 确保新字段有默认值（旧数据兼容）
+    if (typeof state.settings.uiTheme === 'undefined') {
+        state.settings.uiTheme = 'classic';
+    }
     if (typeof state.settings.lowPowerMode === 'undefined') {
         state.settings.lowPowerMode = false;
+    }
+
+    // 启动时应用已保存的界面主题
+    if (typeof applyUiTheme === 'function') {
+        applyUiTheme(state.settings.uiTheme);
     }
 
     // 启动时应用已保存的效能模式（立即暂停 shader + 应用 CSS 降级）
@@ -7418,7 +7942,7 @@ function renderChips(isPrimary) {
         var pill = document.createElement('span');
         pill.className = 'inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-white/10 text-zinc-200 border border-white/10';
         var isRegex = k[0] === '/' && k.lastIndexOf('/') > 0;
-        pill.innerHTML = (isRegex ? '<span class="text-emerald-400">⚡</span>' : '') + '<span>' + escapeHtml(k) + '</span><span class="cursor-pointer text-zinc-400 hover:text-red-400 ml-0.5" data-key="' + escapeHtml(k) + '">✕</span>';
+        pill.innerHTML = (isRegex ? '<span class="text-emerald-400">Regex</span>' : '') + '<span>' + escapeHtml(k) + '</span><span class="cursor-pointer text-zinc-400 hover:text-red-400 ml-0.5" data-key="' + escapeHtml(k) + '">✕</span>';
         pill.querySelector('span:last-child').addEventListener('click', function(ev) {
             ev.stopPropagation();
             removeWIKey(k, isPrimary);
@@ -7766,7 +8290,7 @@ function renderWIEntryList(filter) {
         var delBookRow = document.createElement('div');
         delBookRow.className = 'px-2 py-1 text-xs';
         delBookRow.innerHTML = `
-            <button class="px-2 py-0.5 text-[10px] rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 w-full text-left">🗑 ${t('world_book_delete_book') || '删除世界书'}</button>
+            <button class="px-2 py-0.5 text-[10px] rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 w-full text-left">${t('world_book_delete_book') || '删除世界书'}</button>
         `;
         delBookRow.querySelector('button').addEventListener('click', function() {
             if (wiState.currentWorldBookId) {
@@ -9528,9 +10052,9 @@ function showNewChatCharacterPicker() {
 
             let avatarHTML;
             if (pSrc) {
-                avatarHTML = `<div class="w-12 h-12 rounded-xl overflow-hidden bg-zinc-900 flex-shrink-0"><img src="${escapeHtml(pSrc)}" class="w-full h-full object-cover" alt="${escapeHtml(character.name || '')}" onerror="this.parentNode.outerHTML='<div class=\\'w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0\\'>${letter}</div>'"></div>`;
+                avatarHTML = `<div class="w-12 h-12 rounded-xl overflow-hidden bg-zinc-900 flex-shrink-0"><img src="${escapeHtml(pSrc)}" class="w-full h-full object-cover" alt="${escapeHtml(character.name || '')}" onerror="this.parentNode.outerHTML='<div class=\\'w-12 h-12 rounded-xl ot-avatar-fill flex items-center justify-center text-white text-xl font-bold flex-shrink-0\\'>${letter}</div>'"></div>`;
             } else {
-                avatarHTML = `<div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">${letter}</div>`;
+                avatarHTML = `<div class="w-12 h-12 rounded-xl ot-avatar-fill flex items-center justify-center text-white text-xl font-bold flex-shrink-0">${letter}</div>`;
             }
 
             card.innerHTML = `
@@ -9802,9 +10326,9 @@ function showQuickNewChatModal() {
     if (withCurrentBtn) {
         const base = t('quick_new_with_current') || '与当前角色开启新对话';
         if (currentChar && currentChar.name) {
-            withCurrentBtn.innerHTML = `💬 ${base}（${escapeHtml(currentChar.name)}）`;
+            withCurrentBtn.innerHTML = `${base}（${escapeHtml(currentChar.name)}）`;
         } else {
-            withCurrentBtn.innerHTML = `💬 ${base}`;
+            withCurrentBtn.innerHTML = base;
         }
     }
 
@@ -10080,7 +10604,7 @@ function createCardLibraryItem(card, query = '') {
     img.loading = 'lazy';
     img.onerror = function() {
         // 图片加载失败时显示首字母占位
-        imgWrap.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xl font-bold text-white bg-gradient-to-br from-amber-500 to-rose-500">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
+        imgWrap.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xl font-bold text-white ot-avatar-fill">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
     };
     imgWrap.appendChild(img);
 
@@ -10170,7 +10694,7 @@ function showCardLibraryDetail(card) {
         dom.cardLibraryDetailImage.onerror = function() {
             const wrap = dom.cardLibraryDetailImageWrap;
             if (wrap) {
-                wrap.innerHTML = `<div class="w-full h-full flex items-center justify-center text-4xl font-bold text-white bg-gradient-to-br from-amber-500 to-rose-500">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
+                wrap.innerHTML = `<div class="w-full h-full flex items-center justify-center text-4xl font-bold text-white ot-avatar-fill">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
             }
         };
     }
@@ -10475,7 +10999,7 @@ function renderMyCards() {
     const importCard = document.createElement('div');
     importCard.className = 'glass rounded-2xl overflow-hidden cursor-pointer hover:bg-white/5 transition-all border border-dashed border-amber-500/50 flex flex-col items-center justify-center text-center p-4 aspect-[3/4]';
     importCard.innerHTML = `
-        <div class="text-4xl mb-2">📥</div>
+        <div class="text-xs mb-2 uppercase tracking-wider text-zinc-500">Import</div>
         <div class="text-sm font-medium">导入角色卡</div>
         <div class="text-[10px] text-zinc-400 mt-1">从文件</div>
     `;
@@ -10512,12 +11036,12 @@ function renderMyCards() {
             img.className = 'w-full h-full object-cover';
             img.alt = char.name || '';
             img.onerror = () => {
-                preview.className = 'aspect-[3/4] w-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-5xl font-bold text-white rounded-t-2xl relative';
+                preview.className = 'aspect-[3/4] w-full ot-avatar-fill flex items-center justify-center text-5xl font-bold text-white rounded-t-2xl relative';
                 preview.textContent = letter;
             };
             preview.appendChild(img);
         } else {
-            preview.className = 'aspect-[3/4] w-full bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-5xl font-bold text-white rounded-t-2xl relative';
+            preview.className = 'aspect-[3/4] w-full ot-avatar-fill flex items-center justify-center text-5xl font-bold text-white rounded-t-2xl relative';
             preview.textContent = letter;
         }
 
@@ -10606,7 +11130,7 @@ function renderPublicCards() {
         img.className = 'w-full h-full object-cover';
         img.alt = card.name;
         img.onerror = () => {
-            preview.innerHTML = `<div class="w-full h-full flex items-center justify-center text-5xl font-bold text-white bg-gradient-to-br from-amber-500 to-rose-500">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
+            preview.innerHTML = `<div class="w-full h-full flex items-center justify-center text-5xl font-bold text-white ot-avatar-fill">${(card.name || '?').charAt(0).toUpperCase()}</div>`;
         };
         preview.appendChild(img);
 
@@ -10936,7 +11460,7 @@ function cacheDom() {
         'wiImportFile',
         'worldInfoBudgetEnabled','worldInfoBudget','worldInfoBudgetVal',
         'wiBudgetWarning','wiBudgetWarningText','wiBudgetWarningDismiss',
-        'lowPowerMode',
+        'uiTheme','lowPowerMode',
         'summarizeUseMainAPI','summarizeApiEndpoint','summarizeApiKey','summarizeModel',
         'summarizeCustomApiSection',
         // Announcement modal
@@ -11745,8 +12269,8 @@ function renderTopBar() {
     if (isGroupChat(conv)) {
         const members = getGroupMembers(conv);
         if (dom.charAvatar) {
-            dom.charAvatar.textContent = '👥';
-            dom.charAvatar.className = 'w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/70 to-rose-500/70 flex items-center justify-center text-white text-sm font-bold flex-shrink-0';
+            dom.charAvatar.textContent = 'Group';
+            dom.charAvatar.className = 'w-9 h-9 rounded-xl ot-avatar-fill flex items-center justify-center text-white text-sm font-bold flex-shrink-0';
         }
         if (dom.chatSubtitle) {
             const names = members.map(m => (m.character && m.character.name) ? m.character.name : '').filter(Boolean).slice(0, 3).join('、');
@@ -11764,7 +12288,7 @@ function renderTopBar() {
                 dom.charAvatar.className = 'w-9 h-9 rounded-xl overflow-hidden bg-zinc-900 flex-shrink-0 border border-white/10';
             } else {
                 dom.charAvatar.textContent = ch.name.charAt(0).toUpperCase();
-                dom.charAvatar.className = 'w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0';
+                dom.charAvatar.className = 'w-9 h-9 rounded-xl ot-avatar-fill flex items-center justify-center text-white text-sm font-bold flex-shrink-0';
             }
         }
         if (dom.chatSubtitle) {
@@ -11773,7 +12297,7 @@ function renderTopBar() {
         }
     } else {
         if (dom.charAvatar) {
-            dom.charAvatar.textContent = '💬';
+            dom.charAvatar.textContent = 'Chat';
             dom.charAvatar.className = 'w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-zinc-500 text-sm flex-shrink-0';
         }
         if (dom.chatSubtitle) dom.chatSubtitle.textContent = t('no_character');
@@ -11792,7 +12316,13 @@ function renderTokenBar() {
     dom.tokenMax.textContent = 'max ' + max + ' ' + t('msgs_label');
     var pct = Math.min(100, (msgCount / max) * 100);
     dom.tokenBar.style.width = pct + '%';
-    dom.tokenBar.style.background = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : 'rgba(245,158,11,0.5)';
+    var themed = document.body && (document.body.classList.contains('theme-new-light') || document.body.classList.contains('theme-new-dark'));
+    if (themed) {
+        var accent = getComputedStyle(document.body).getPropertyValue('--ot-accent').trim() || '#2f2a25';
+        dom.tokenBar.style.background = pct > 80 ? '#ef4444' : accent;
+    } else {
+        dom.tokenBar.style.background = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : 'rgba(245,158,11,0.5)';
+    }
 }
 
 function renderCharacterCard() {
@@ -11817,8 +12347,8 @@ function renderCharacterCard() {
 
         const members = getGroupMembers(conv);
         if (dom.charCardAvatar) {
-            dom.charCardAvatar.textContent = '👥';
-            dom.charCardAvatar.className = 'w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0';
+            dom.charCardAvatar.textContent = 'Group';
+            dom.charCardAvatar.className = 'w-7 h-7 rounded-lg ot-avatar-fill flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0';
         }
         if (dom.charCardName) {
             dom.charCardName.textContent = (conv.group && conv.group.name) ? conv.group.name : '群聊';
@@ -11852,7 +12382,7 @@ function renderCharacterCard() {
                 dom.charCardAvatar.className = 'w-7 h-7 rounded-lg overflow-hidden bg-zinc-900 flex-shrink-0 border border-white/10';
             } else {
                 dom.charCardAvatar.textContent = character.name ? character.name.charAt(0).toUpperCase() : '?';
-                dom.charCardAvatar.className = 'w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0';
+                dom.charCardAvatar.className = 'w-7 h-7 rounded-lg ot-avatar-fill flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0';
             }
         }
 
@@ -12913,6 +13443,11 @@ function bindEvents() {
         dom.worldInfoBudget.value = state.settings.worldInfoBudget || 2048;
         dom.worldInfoBudgetVal.textContent = state.settings.worldInfoBudget || 2048;
 
+        // 界面主题
+        if (dom.uiTheme) {
+            dom.uiTheme.value = state.settings.uiTheme || 'classic';
+        }
+
         // 效能模式（低功耗）
         if (dom.lowPowerMode) {
             dom.lowPowerMode.checked = !!state.settings.lowPowerMode;
@@ -13060,7 +13595,7 @@ function bindEvents() {
         const clearBtn = document.getElementById('clearOPFSBtn');
         if (clearBtn) {
             clearBtn.style.display = 'flex';
-            clearBtn.textContent = t('clear_opfs_data') || '🗑️ 清除所有用户数据（OPFS + LS 快照）';
+            clearBtn.textContent = t('clear_opfs_data') || '清除所有用户数据（OPFS + LS 快照）';
             if (backend === 'idb') {
                 clearBtn.style.background = 'rgba(239,68,68,0.15)';
                 clearBtn.style.color = '';
@@ -13191,6 +13726,9 @@ function bindEvents() {
         state.settings.worldInfoBudgetEnabled = dom.worldInfoBudgetEnabled.checked;
         state.settings.worldInfoBudget = parseInt(dom.worldInfoBudget.value) || 2048;
 
+        // 界面主题
+        state.settings.uiTheme = dom.uiTheme ? (dom.uiTheme.value || 'classic') : 'classic';
+
         // 效能模式（低功耗）
         state.settings.lowPowerMode = dom.lowPowerMode ? !!dom.lowPowerMode.checked : false;
 
@@ -13212,6 +13750,11 @@ function bindEvents() {
 
         persistState();
         dom.settingsModal.classList.add('hidden');
+
+        // 立即应用界面主题
+        if (typeof applyUiTheme === 'function') {
+            applyUiTheme(state.settings.uiTheme);
+        }
 
         // 立即应用效能模式（暂停/恢复 shader + 应用 CSS 类）
         if (typeof applyPerformanceMode === 'function') {
