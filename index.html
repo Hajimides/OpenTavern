@@ -728,12 +728,16 @@ body.theme-new-light .text-amber-200,
 body.theme-new-light .text-amber-300,
 body.theme-new-light .text-amber-400,
 body.theme-new-light .text-amber-500,
+body.theme-new-light .text-amber-400\/90,
+body.theme-new-light .text-amber-300\/90,
 body.theme-new-light .hover\:text-amber-300:hover,
 body.theme-new-light .hover\:text-amber-400:hover,
 body.theme-new-dark .text-amber-200,
 body.theme-new-dark .text-amber-300,
 body.theme-new-dark .text-amber-400,
 body.theme-new-dark .text-amber-500,
+body.theme-new-dark .text-amber-400\/90,
+body.theme-new-dark .text-amber-300\/90,
 body.theme-new-dark .hover\:text-amber-300:hover,
 body.theme-new-dark .hover\:text-amber-400:hover { color: #D56C4E !important; }
 
@@ -848,7 +852,7 @@ body.theme-new-dark input[type="range"]::-webkit-slider-thumb {
     height: 18px;
     margin-top: -7px;
     border-radius: 50%;
-    background: var(--ot-accent);
+    background: #D56C4E;
     border: 2px solid var(--ot-panel);
     box-shadow: 0 1px 2px rgba(39, 35, 31, 0.22);
 }
@@ -875,8 +879,8 @@ body.theme-new-dark input.peer + div::after {
 
 body.theme-new-light input.peer:checked + div,
 body.theme-new-dark input.peer:checked + div {
-    background: var(--ot-accent) !important;
-    border-color: var(--ot-accent) !important;
+    background: #D56C4E !important;
+    border-color: #D56C4E !important;
 }
 
 body.theme-new-light input.peer:checked + div::after,
@@ -1076,6 +1080,74 @@ body.theme-new-dark .bg-amber-500\/20.text-amber-400 { background-color: rgba(21
 /* Copy prompt button */
 body.theme-new-light #copyPromptBtn,
 body.theme-new-dark #copyPromptBtn { background-color: rgba(213,108,78,0.2) !important; color: #D56C4E !important; }
+
+/* Lang switcher active state → #D56C4E */
+body.theme-new-light .lang-btn.active,
+body.theme-new-dark .lang-btn.active { background: #D56C4E !important; color: #fff !important; }
+
+/* text-amber-*/90 (Tailwind opacity shorthand produces rgba — need explicit overrides) */
+body.theme-new-light .text-amber-400\/90,
+body.theme-new-dark .text-amber-400\/90,
+body.theme-new-light .text-amber-300\/90,
+body.theme-new-dark .text-amber-300\/90 { color: #D56C4E !important; }
+
+/* API test result / suggestion text (JS-generated) */
+body.theme-new-light #apiTestResult .text-amber-300\/90,
+body.theme-new-dark #apiTestResult .text-amber-300\/90,
+body.theme-new-light #apiTestResult .text-amber-400,
+body.theme-new-dark #apiTestResult .text-amber-400 { color: #D56C4E !important; }
+
+/* WI "back to book list" row */
+body.theme-new-light .text-xs.text-amber-400,
+body.theme-new-dark .text-xs.text-amber-400 { color: #D56C4E !important; }
+
+/* Import modal code badge */
+body.theme-new-light code.text-amber-400,
+body.theme-new-dark code.text-amber-400 { color: #D56C4E !important; background-color: rgba(213,108,78,0.1) !important; }
+
+/* WebLLM model size descriptions */
+body.theme-new-light #webllmConfirmChoice .text-amber-300,
+body.theme-new-dark #webllmConfirmChoice .text-amber-300 { color: #D56C4E !important; }
+
+/* WebLLM "Local" badge */
+body.theme-new-light #webllmConfirmModal .text-amber-300,
+body.theme-new-dark #webllmConfirmModal .text-amber-300 { color: #D56C4E !important; }
+
+/* WebLLM detect device button */
+body.theme-new-light #webllmDetectDeviceBtn,
+body.theme-new-dark #webllmDetectDeviceBtn { color: #D56C4E !important; }
+
+/* Summary preview button */
+body.theme-new-light #previewRangeBtn,
+body.theme-new-dark #previewRangeBtn { color: #D56C4E !important; }
+
+/* Summary threshold warning */
+body.theme-new-light #summaryThresholdWarning,
+body.theme-new-dark #summaryThresholdWarning { color: #D56C4E !important; }
+
+/* New chat picker multi bar */
+body.theme-new-light #newChatPickerMultiBar,
+body.theme-new-dark #newChatPickerMultiBar { color: #D56C4E !important; }
+
+/* New chat card "+" icon in library */
+body.theme-new-light .text-amber-400.text-4xl,
+body.theme-new-dark .text-amber-400.text-4xl { color: #D56C4E !important; }
+
+/* WI budget warning */
+body.theme-new-light #wiBudgetWarning,
+body.theme-new-dark #wiBudgetWarning { color: #D56C4E !important; border-color: rgba(213,108,78,0.2) !important; }
+
+/* Fill roleplay prompt button */
+body.theme-new-light #fillRoleplayPromptBtn,
+body.theme-new-dark #fillRoleplayPromptBtn { color: #D56C4E !important; background-color: rgba(213,108,78,0.15) !important; border-color: rgba(213,108,78,0.2) !important; }
+
+/* WebLLM clear cache button */
+body.theme-new-light button.bg-amber-500\/10.text-amber-300,
+body.theme-new-dark button.bg-amber-500\/10.text-amber-300 { color: #D56C4E !important; background-color: rgba(213,108,78,0.1) !important; border-color: rgba(213,108,78,0.2) !important; }
+
+/* mentionPill clear button hover overrides */
+body.theme-new-light #mentionPillClear:hover,
+body.theme-new-dark #mentionPillClear:hover { color: #ef4444 !important; }
 
 body.theme-new-light .modal-overlay,
 body.theme-new-dark .modal-overlay {
