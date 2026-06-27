@@ -7646,7 +7646,7 @@ function buildMessagesForSecondStage(firstStageMessage) {
 
     apiMessages.push({
         role: 'user',
-        content: '请基于以上完整上下文，尤其是最后一条正文回复，生成第二阶段 XML 选项。只输出 <options>...</options>。'
+        content: '请基于以上完整上下文，尤其是最后一条正文回复，严格按照第二阶段系统提示词的要求完成本阶段输出。'
     });
 
     return apiMessages;
