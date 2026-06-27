@@ -1382,6 +1382,23 @@ body.theme-new-dark ::-webkit-scrollbar-thumb:hover { background: rgba(40, 35, 3
                 </div>
                 <textarea id="systemPrompt" rows="4" class="w-full px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-none" data-i18n-placeholder="settings_system_prompt_placeholder"></textarea>
             </div>
+            <div>
+                <div class="flex items-center justify-between gap-3 mb-2">
+                    <div>
+                        <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_two_stage_label">两阶段生成</label>
+                        <p class="text-[10px] text-zinc-600 mt-0.5" data-i18n="settings_two_stage_hint">第一阶段专注正文；第二阶段独立生成选项与小提示。</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-3">
+                        <input type="checkbox" id="twoStageEnabled" class="sr-only peer">
+                        <div class="w-9 h-5 bg-white/10 rounded-full peer-checked:bg-amber-500/60 peer-checked:ring-1 peer-checked:ring-amber-500/40 transition-all after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                    </label>
+                </div>
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                    <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_two_stage_prompt">第二阶段系统提示词</label>
+                    <button id="restoreTwoStagePromptBtn" type="button" class="px-2.5 py-1 text-[11px] rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 transition-colors whitespace-nowrap" data-i18n="settings_two_stage_restore">恢复默认</button>
+                </div>
+                <textarea id="twoStageSystemPrompt" rows="7" class="w-full px-3 py-2.5 glass rounded-xl text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all resize-y" data-i18n-placeholder="settings_two_stage_prompt_placeholder"></textarea>
+            </div>
                         <div class="glass rounded-2xl p-3 border border-white/5">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
@@ -1661,6 +1678,10 @@ body.theme-new-dark ::-webkit-scrollbar-thumb:hover { background: rgba(40, 35, 3
                 <button id="copyPromptBtn" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-all" data-i18n="copy">Copy</button>
                 <button id="promptViewerCloseBtn" class="w-8 h-8 rounded-full glass flex items-center justify-center text-zinc-400 hover:text-zinc-200 transition-colors">&times;</button>
             </div>
+        </div>
+        <div class="flex items-center gap-2 mb-3 flex-shrink-0">
+            <button id="promptStageMainBtn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/20 transition-all" data-prompt-stage="main" data-i18n="prompt_stage_main">主生成</button>
+            <button id="promptStageSecondBtn" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10 transition-all" data-prompt-stage="second" data-i18n="prompt_stage_second">第二阶段</button>
         </div>
         <pre id="promptViewerContent" class="flex-1 overflow-y-auto glass rounded-2xl p-4 text-xs text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed"></pre>
     </div>
@@ -3145,6 +3166,14 @@ var i18n = {
         settings_system_prompt_hint: '（覆盖角色卡的系统提示词）',
         settings_system_prompt_placeholder: '可选：自定义系统级指令...',
         fill_roleplay_prompt: '一键填入角色扮演提示词',
+        settings_two_stage_label: '两阶段生成',
+        settings_two_stage_hint: '第一阶段专注正文；第二阶段独立生成选项与小提示。',
+        settings_two_stage_prompt: '第二阶段系统提示词',
+        settings_two_stage_restore: '恢复默认',
+        settings_two_stage_prompt_placeholder: '用于第二阶段生成选项与小提示的系统提示词...',
+        prompt_stage_main: '主生成',
+        prompt_stage_second: '第二阶段',
+        two_stage_sender: '第二阶段',
         settings_st_preset_title: 'SillyTavern 预设提示词',
         settings_st_preset_hint: '仅导入提示词文本，并插入到系统提示词之后。',
         settings_st_preset_import: '导入 JSON',
@@ -3533,6 +3562,14 @@ var i18n = {
         settings_system_prompt_hint: '（覆蓋角色卡的系統提示詞）',
         settings_system_prompt_placeholder: '可選：自訂系統級指令...',
         fill_roleplay_prompt: '一鍵填入角色扮演提示詞',
+        settings_two_stage_label: '兩階段生成',
+        settings_two_stage_hint: '第一階段專注正文；第二階段獨立生成選項與小提示。',
+        settings_two_stage_prompt: '第二階段系統提示詞',
+        settings_two_stage_restore: '恢復預設',
+        settings_two_stage_prompt_placeholder: '用於第二階段生成選項與小提示的系統提示詞...',
+        prompt_stage_main: '主生成',
+        prompt_stage_second: '第二階段',
+        two_stage_sender: '第二階段',
         settings_st_preset_title: 'SillyTavern 預設提示詞',
         settings_st_preset_hint: '僅匯入提示詞文字，並插入到系統提示詞之後。',
         settings_st_preset_import: '匯入 JSON',
@@ -3874,6 +3911,14 @@ var i18n = {
         settings_system_prompt_hint: '(overrides character\'s system prompt)',
         settings_system_prompt_placeholder: 'Optional: Custom system-level instructions...',
         fill_roleplay_prompt: 'Fill roleplay prompt',
+        settings_two_stage_label: 'Two-stage Generation',
+        settings_two_stage_hint: 'Stage one writes the scene; stage two separately generates options and hints.',
+        settings_two_stage_prompt: 'Stage Two System Prompt',
+        settings_two_stage_restore: 'Restore default',
+        settings_two_stage_prompt_placeholder: 'System prompt used to generate stage-two options and hints...',
+        prompt_stage_main: 'Main',
+        prompt_stage_second: 'Stage Two',
+        two_stage_sender: 'Stage Two',
         settings_st_preset_title: 'SillyTavern Preset Prompts',
         settings_st_preset_hint: 'Only prompt text is imported and inserted after the system prompt.',
         settings_st_preset_import: 'Import JSON',
@@ -5868,6 +5913,26 @@ function makeId() {
     return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
 
+var DEFAULT_TWO_STAGE_PROMPT = [
+    '你是一个专门为角色扮演对话生成“下一步行动选项 + 小提示”的结构化助手。',
+    '请严格基于当前角色卡、世界书、历史消息，以及刚刚完成的正文回复生成选项。',
+    '不要续写正文，不要解释，不要添加前言或结语，只输出以下 XML 结构：',
+    '',
+    '<options>',
+    '  <option>',
+    '    <title>2-5字短标题</title>',
+    '    <description>25-55字的行动导向描述，可包含亲密元素，但必须符合当前场景与角色性格。优先提供有创意且自然的发展方向。</description>',
+    '  </option>',
+    '  <!-- 共提供2-4个选项 -->',
+    '</options>',
+    '',
+    '硬性要求：',
+    '- 共提供 2-4 个 option。',
+    '- title 必须短，description 必须可执行、贴合当前剧情。',
+    '- 选项之间应有明显差异，避免机械重复。',
+    '- 只输出 XML，不要 Markdown。'
+].join('\n');
+
 // ==================== 状态容器 + 手动通知机制 ====================
 // 当前为非响应式设计（已移除 Proxy 自动响应）。
 // 修改 state 后请显式调用 appStore.notify('key') 或直接调用对应的 renderXXXOnly() / requestRender()。
@@ -5944,6 +6009,8 @@ function defaultSettings() {
         topP: 0.9,
         userName: 'User',
         systemPrompt: '',
+        twoStageEnabled: false,
+        twoStageSystemPrompt: DEFAULT_TWO_STAGE_PROMPT,
         userDescription: '',
         sillyTavernPreset: defaultSillyTavernPreset(),
         lang: 'zh-CN',
@@ -6800,6 +6867,12 @@ async function initState() {
     if (typeof state.settings.lowPowerMode === 'undefined') {
         state.settings.lowPowerMode = false;
     }
+    if (typeof state.settings.twoStageEnabled !== 'boolean') {
+        state.settings.twoStageEnabled = false;
+    }
+    if (!state.settings.twoStageSystemPrompt) {
+        state.settings.twoStageSystemPrompt = DEFAULT_TWO_STAGE_PROMPT;
+    }
 
     // 启动时应用已保存的界面主题
     if (typeof applyUiTheme === 'function') {
@@ -7326,6 +7399,70 @@ function buildSystemPrompt(character, worldInfoByPos) {
     return parts.join('\n\n').trim();
 }
 
+function buildSecondStageContextPrompt(conv, worldInfoByPos, focusSpeakerName) {
+    var parts = [];
+    var isGroup = isGroupChat(conv);
+    var userName = state.settings.userName || 'User';
+
+    var userDesc = state.settings.userDescription || '';
+    if (userDesc && userDesc.trim()) {
+        parts.push('User\'s Persona: ' + replacePlaceholders(userDesc.trim(), 'Assistant', userName));
+    }
+
+    if (isGroup) {
+        var members = getGroupMembers(conv);
+        var forcedSpeaker = null;
+        if (focusSpeakerName) {
+            var lowerFocus = String(focusSpeakerName).toLowerCase();
+            var matched = members.find(function(m) {
+                return m.character && String(m.character.name || '').toLowerCase() === lowerFocus;
+            });
+            if (matched) forcedSpeaker = matched.character;
+        }
+        forcedSpeaker = forcedSpeaker || conv._nextGroupSpeaker || getCurrentSpeakerCharacter(conv);
+        parts.push('这是一个多角色群组对话。第二阶段选项必须尊重每个角色的独立性格、当前主要发言者，以及群聊中的关系动态。');
+        if (conv.group && conv.group.scenarioOverride && conv.group.scenarioOverride.trim()) {
+            parts.push(replacePlaceholders(conv.group.scenarioOverride, forcedSpeaker ? forcedSpeaker.name : 'Assistant', userName));
+        }
+        members.forEach(function(member, index) {
+            var c = member.character || {};
+            var charName = c.name || ('角色' + (index + 1));
+            var charBlock = '=== ' + charName + ' ===\n';
+            if (c.system_prompt) charBlock += 'System Prompt: ' + replacePlaceholders(c.system_prompt, charName, userName) + '\n\n';
+            if (c.post_history_instructions) charBlock += 'Post-History Instructions: ' + replacePlaceholders(c.post_history_instructions, charName, userName) + '\n\n';
+            if (c.personality) charBlock += 'Personality: ' + replacePlaceholders(c.personality, charName, userName) + '\n\n';
+            if (c.scenario) charBlock += 'Scenario: ' + replacePlaceholders(c.scenario, charName, userName) + '\n\n';
+            if (c.description) charBlock += 'Description: ' + replacePlaceholders(c.description, charName, userName) + '\n\n';
+            if (c.mes_example) charBlock += 'Example Dialogues:\n' + replacePlaceholders(c.mes_example, charName, userName) + '\n\n';
+            parts.push(charBlock.trim());
+        });
+        if (forcedSpeaker && forcedSpeaker.name) {
+            parts.push('本轮正文的主要发言者/叙事焦点：' + forcedSpeaker.name);
+        }
+    } else {
+        var character = conv.character;
+        var charName = character ? character.name : 'Assistant';
+        if (character) {
+            var charInfo = [];
+            if (character.system_prompt) charInfo.push('System Prompt: ' + replacePlaceholders(character.system_prompt, charName, userName));
+            if (character.post_history_instructions) charInfo.push('Post-History Instructions: ' + replacePlaceholders(character.post_history_instructions, charName, userName));
+            if (character.personality) charInfo.push('Personality: ' + replacePlaceholders(character.personality, charName, userName));
+            if (character.scenario) charInfo.push('Scenario: ' + replacePlaceholders(character.scenario, charName, userName));
+            if (character.description) charInfo.push('Description: ' + replacePlaceholders(character.description, charName, userName));
+            if (character.mes_example) charInfo.push('Example Dialogues:\n' + replacePlaceholders(character.mes_example, charName, userName));
+            if (charInfo.length > 0) parts.push(charInfo.join('\n\n'));
+        }
+    }
+
+    if (worldInfoByPos) {
+        var currentChar = isGroup ? (forcedSpeaker || conv._nextGroupSpeaker || getCurrentSpeakerCharacter(conv)) : conv.character;
+        var activeCharName = currentChar ? currentChar.name : (conv.character ? conv.character.name : 'Assistant');
+        parts = injectWorldInfoIntoSystem(parts, worldInfoByPos, activeCharName, userName);
+    }
+
+    return parts.join('\n\n').trim();
+}
+
 function buildMessagesForAPI() {
     var conv = getActiveConv();
     normalizeConversation(conv);
@@ -7439,6 +7576,80 @@ function buildMessagesForAPI() {
     return apiMessages.map(function(m) {
         return { role: m.role, content: replacePlaceholders(m.content, charName, userName) };
     });
+}
+
+function formatPromptMessages(messages) {
+    var text = '';
+    for (var i = 0; i < messages.length; i++) {
+        var role = String(messages[i].role || '').toUpperCase();
+        var content = messages[i].content || '';
+        if (content) {
+            text += '=== ' + role + ' ===\n';
+            text += content + '\n\n';
+        }
+    }
+    return text;
+}
+
+function buildMessagesForSecondStage(firstStageMessage) {
+    var conv = getActiveConv();
+    normalizeConversation(conv);
+
+    var isGroup = isGroupChat(conv);
+    var currentChar = isGroup ? getCurrentSpeakerCharacter(conv) : conv.character;
+    var charName = currentChar ? currentChar.name : (conv.character ? conv.character.name : 'Assistant');
+    var userName = state.settings.userName || 'User';
+    var maxMsgs = state.settings.contextLength;
+
+    var wiResult = getActivatedWorldInfo(conv);
+    var wiByPos = wiResult.byPosition || {};
+    var contextSystem = buildSecondStageContextPrompt(conv, wiByPos, firstStageMessage && firstStageMessage.speaker);
+
+    var secondPrompt = (state.settings.twoStageSystemPrompt || DEFAULT_TWO_STAGE_PROMPT || '').trim();
+    var apiMessages = [];
+    if (secondPrompt) {
+        apiMessages.push({ role: 'system', content: replacePlaceholders(secondPrompt, charName, userName) });
+    }
+    if (contextSystem) {
+        apiMessages.push({
+            role: 'system',
+            content: '[角色卡、世界书与长期设定，仅供第二阶段生成选项时参考]\n' + contextSystem
+        });
+    }
+
+    if (conv.summaries && conv.summaries.length > 0) {
+        var summaryText = conv.summaries.map(function(s) { return s.text; }).join('\n---\n');
+        apiMessages.push({ role: 'system', content: '[以下是先前对话的自动摘要，供上下文参考]\n' + summaryText });
+    }
+
+    var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
+    if (firstStageMessage && regularMsgs.indexOf(firstStageMessage) === -1) {
+        regularMsgs = regularMsgs.concat([firstStageMessage]);
+    }
+
+    var lastCovered = -1;
+    if (conv.summaries && conv.summaries.length > 0) {
+        conv.summaries.forEach(function(s) {
+            if (typeof s.coveredEnd === 'number' && s.coveredEnd > lastCovered) lastCovered = s.coveredEnd;
+        });
+    }
+    if (lastCovered >= 0 && lastCovered < regularMsgs.length - 1) {
+        regularMsgs = regularMsgs.slice(lastCovered + 1);
+    }
+    if (regularMsgs.length > maxMsgs) {
+        regularMsgs = regularMsgs.slice(regularMsgs.length - maxMsgs);
+    }
+
+    apiMessages = apiMessages.concat(regularMsgs.map(function(m) {
+        return { role: m.role, content: replacePlaceholders(m.content || '', charName, userName) };
+    }));
+
+    apiMessages.push({
+        role: 'user',
+        content: '请基于以上完整上下文，尤其是最后一条正文回复，生成第二阶段 XML 选项。只输出 <options>...</options>。'
+    });
+
+    return apiMessages;
 }
 
 // ==================== World Info (World Book) Support ====================
@@ -9289,11 +9500,10 @@ function processTimedEffects(conv, activatedEntries) {
 }
 
 // ==================== API Client ====================
-function streamChat(onToken, onComplete, onError) {
+function streamChatWithMessages(messages, onToken, onComplete, onError, requestOptions) {
     var settings = state.settings;
     if (isWebLLMBackend()) {
-        // 理论上不应该走到这里（调用方已分支），但作为保险直接走本地
-        streamChatWebLLM(onToken, onComplete, onError);
+        streamChatWebLLMWithMessages(messages, onToken, onComplete, onError, requestOptions);
         return;
     }
     if (!settings.apiEndpoint || !settings.apiKey) {
@@ -9301,22 +9511,13 @@ function streamChat(onToken, onComplete, onError) {
         return;
     }
 
-    var messages;
-    try {
-        messages = buildMessagesForAPI();
-    } catch (err) {
-        console.error('buildMessagesForAPI failed:', err);
-        state.isGenerating = false;
-        appStore.notify('isGenerating');
-        onError(new Error('构建提示词时出错：' + (err.message || err)));
-        return;
-    }
-
     var controller = new AbortController();
     state.abortController = controller;
     state.isGenerating = true;
+    appStore.notify('isGenerating');
 
     var endpoint = normalizeApiEndpoint(settings.apiEndpoint);
+    requestOptions = requestOptions || {};
 
     fetch(endpoint, {
         method: 'POST',
@@ -9327,9 +9528,9 @@ function streamChat(onToken, onComplete, onError) {
         body: JSON.stringify({
             model: settings.model,
             messages: messages,
-            max_tokens: settings.maxTokens,
-            temperature: settings.temperature,
-            top_p: settings.topP,
+            max_tokens: requestOptions.maxTokens || settings.maxTokens,
+            temperature: typeof requestOptions.temperature === 'number' ? requestOptions.temperature : settings.temperature,
+            top_p: typeof requestOptions.topP === 'number' ? requestOptions.topP : settings.topP,
             stream: true
         }),
         signal: controller.signal
@@ -9403,14 +9604,7 @@ function streamChat(onToken, onComplete, onError) {
     });
 }
 
-// ==================== WebLLM 本地生成（仅在 ensure 成功后调用） ====================
-async function streamChatWebLLM(onToken, onComplete, onError) {
-    var modelId = getWebLLMModelId();
-    if (!webllmEngine || webllmCurrentModel !== modelId) {
-        onError(new Error('本地引擎未就绪，请在设置中重新初始化 WebLLM 模型'));
-        return;
-    }
-
+function streamChat(onToken, onComplete, onError) {
     var messages;
     try {
         messages = buildMessagesForAPI();
@@ -9421,17 +9615,28 @@ async function streamChatWebLLM(onToken, onComplete, onError) {
         onError(new Error('构建提示词时出错：' + (err.message || err)));
         return;
     }
+    streamChatWithMessages(messages, onToken, onComplete, onError);
+}
+
+// ==================== WebLLM 本地生成（仅在 ensure 成功后调用） ====================
+async function streamChatWebLLMWithMessages(messages, onToken, onComplete, onError, requestOptions) {
+    var modelId = getWebLLMModelId();
+    if (!webllmEngine || webllmCurrentModel !== modelId) {
+        onError(new Error('本地引擎未就绪，请在设置中重新初始化 WebLLM 模型'));
+        return;
+    }
 
     state.isGenerating = true;
     appStore.notify('isGenerating');
 
     // WebLLM 使用与远程相同的消息格式
     var settings = state.settings;
+    requestOptions = requestOptions || {};
     var req = {
         messages: messages,
-        max_tokens: settings.maxTokens || 1024,
-        temperature: typeof settings.temperature === 'number' ? settings.temperature : 0.7,
-        top_p: typeof settings.topP === 'number' ? settings.topP : 0.9,
+        max_tokens: requestOptions.maxTokens || settings.maxTokens || 1024,
+        temperature: typeof requestOptions.temperature === 'number' ? requestOptions.temperature : (typeof settings.temperature === 'number' ? settings.temperature : 0.7),
+        top_p: typeof requestOptions.topP === 'number' ? requestOptions.topP : (typeof settings.topP === 'number' ? settings.topP : 0.9),
         stream: true
     };
 
@@ -9470,6 +9675,20 @@ async function streamChatWebLLM(onToken, onComplete, onError) {
     }
 }
 
+async function streamChatWebLLM(onToken, onComplete, onError) {
+    var messages;
+    try {
+        messages = buildMessagesForAPI();
+    } catch (err) {
+        console.error('buildMessagesForAPI failed:', err);
+        state.isGenerating = false;
+        appStore.notify('isGenerating');
+        onError(new Error('构建提示词时出错：' + (err.message || err)));
+        return;
+    }
+    return streamChatWebLLMWithMessages(messages, onToken, onComplete, onError);
+}
+
 function stopGeneration() {
     if (state.abortController) {
         state.abortController.abort();
@@ -9481,6 +9700,167 @@ function stopGeneration() {
     if (state._webllmAbort) {
         try { state._webllmAbort(); } catch (e) {}
         state._webllmAbort = null;
+    }
+}
+
+function ensureMessageIdentity(msg, stage) {
+    if (!msg) return msg;
+    if (!msg.id) msg.id = makeId();
+    if (stage && !msg.stage) msg.stage = stage;
+    return msg;
+}
+
+function getLinkedSecondStageIndexes(conv, parentMsg) {
+    if (!conv || !parentMsg) return [];
+    ensureMessageIdentity(parentMsg, 'main');
+    var indexes = [];
+    for (var i = 0; i < conv.messages.length; i++) {
+        var m = conv.messages[i];
+        if (m && m.role === 'assistant' && m.stage === 'second' && m.parentId === parentMsg.id) {
+            indexes.push(i);
+        }
+    }
+    return indexes;
+}
+
+function removeLinkedSecondStageMessages(conv, parentMsg) {
+    var indexes = getLinkedSecondStageIndexes(conv, parentMsg);
+    for (var i = indexes.length - 1; i >= 0; i--) {
+        conv.messages.splice(indexes[i], 1);
+    }
+}
+
+function updateStreamingBubble(fullContent, conv, label) {
+    var streamingEl = document.getElementById('streamingContent');
+    if (streamingEl) {
+        streamingEl.innerHTML = renderAssistantContent(fullContent);
+    } else {
+        var div = document.createElement('div');
+        div.id = 'streamingMsg';
+        div.className = 'msg-assistant flex justify-start msg-enter';
+        div.innerHTML = '<div class="max-w-[80%]"><p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' +
+            escapeHtml(label || getCurrentGeneratingSpeakerName(conv)) +
+            '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
+            renderAssistantContent(fullContent) + '</div></div>';
+        dom.messagesContainer.appendChild(div);
+    }
+    dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+}
+
+function finishAssistantMessage(conv, fullContent, speakerForMsg, stage, parentId) {
+    if (!conv || !fullContent) return null;
+    var pushObj = { role: 'assistant', content: fullContent, id: makeId() };
+    if (speakerForMsg) pushObj.speaker = speakerForMsg;
+    if (stage) pushObj.stage = stage;
+    if (parentId) pushObj.parentId = parentId;
+    conv.messages.push(pushObj);
+    conv.updated = Date.now();
+    persistState();
+    appendFinalAssistantMessage(conv, fullContent);
+    renderTokenBar();
+    return pushObj;
+}
+
+function runSecondStageGeneration(firstStageMessage, onDone) {
+    var conv = getActiveConv();
+    if (!conv || !firstStageMessage) {
+        if (onDone) onDone();
+        return;
+    }
+    ensureMessageIdentity(firstStageMessage, 'main');
+
+    function startSecondStage() {
+        var messages;
+        try {
+            messages = buildMessagesForSecondStage(firstStageMessage);
+        } catch (err) {
+            console.error('buildMessagesForSecondStage failed:', err);
+            alert('构建第二阶段提示词时出错：' + (err.message || err));
+            if (onDone) onDone(err);
+            return;
+        }
+
+        streamChatWithMessages(
+            messages,
+            function onToken(token, fullContent) {
+                updateStreamingBubble(fullContent, conv, t('two_stage_sender') || '第二阶段');
+            },
+            function onComplete(fullContent) {
+                var streamingEl = document.getElementById('streamingMsg');
+                if (streamingEl) streamingEl.remove();
+                var c = getActiveConv();
+                if (c && fullContent) {
+                    var speaker = firstStageMessage.speaker || null;
+                    finishAssistantMessage(c, fullContent, speaker, 'second', firstStageMessage.id);
+                }
+                state.isGenerating = false;
+                appStore.notify('isGenerating');
+                if (onDone) onDone(null);
+            },
+            function onError(err) {
+                var streamingEl = document.getElementById('streamingMsg');
+                if (streamingEl) streamingEl.remove();
+                state.isGenerating = false;
+                appStore.notify('isGenerating');
+                renderMessagesOnly();
+                alert('第二阶段生成失败：' + (err.message || err));
+                if (onDone) onDone(err);
+            },
+            { temperature: 0.35, maxTokens: Math.min(state.settings.maxTokens || 1024, 1024) }
+        );
+    }
+
+    if (isWebLLMBackend()) {
+        ensureWebLLMEngine(getWebLLMModelId()).then(startSecondStage).catch(function(e) {
+            var msg = (e && e.message === 'NO_WEBGPU') ? (t('webllm_init_no_webgpu') || '需要 WebGPU 支持') : (e && e.message) || String(e);
+            alert('本地模型错误: ' + msg);
+            if (state && state.settings) state.settings.inferenceBackend = 'remote-api';
+            persistState();
+            if (onDone) onDone(e);
+        });
+    } else {
+        startSecondStage();
+    }
+}
+
+function completeGenerationTurn(conv) {
+    if (!conv) return;
+    if (isGroupChat(conv)) {
+        conv._nextGroupSpeaker = getNextGroupSpeaker(conv);
+    } else {
+        delete conv._nextGroupSpeaker;
+    }
+    conv.updated = Date.now();
+    persistState();
+    state.isGenerating = false;
+    appStore.notify('isGenerating');
+    renderTokenBar();
+    if (state.settings.summaryEnabled) {
+        setTimeout(function() { autoSummarize(); }, 500);
+    }
+}
+
+function handlePrimaryAssistantComplete(fullContent) {
+    var streamingEl = document.getElementById('streamingMsg');
+    if (streamingEl) streamingEl.remove();
+    var conv = getActiveConv();
+    if (!conv || !fullContent) {
+        state.isGenerating = false;
+        appStore.notify('isGenerating');
+        return;
+    }
+
+    var speakerForMsg = isGroupChat(conv)
+        ? (conv._nextGroupSpeaker ? conv._nextGroupSpeaker.name : getCurrentGeneratingSpeakerName(conv))
+        : null;
+    var firstStageMsg = finishAssistantMessage(conv, fullContent, speakerForMsg, 'main');
+
+    if (state.settings.twoStageEnabled && firstStageMsg) {
+        runSecondStageGeneration(firstStageMsg, function() {
+            completeGenerationTurn(conv);
+        });
+    } else {
+        completeGenerationTurn(conv);
     }
 }
 
@@ -11614,10 +11994,10 @@ function cacheDom() {
         'settingsModal','settingsBackdrop','settingsCloseBtn',
         'apiEndpoint','apiKey','saveApiKey','modelName','contextLength','contextLenVal',
         'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
-        'userName','systemPrompt','fillRoleplayPromptBtn','userDescription',
+        'userName','systemPrompt','fillRoleplayPromptBtn','twoStageEnabled','twoStageSystemPrompt','restoreTwoStagePromptBtn','userDescription',
         'stPresetImportBtn','stPresetExportBtn','stPresetDeleteBtn','stPresetImportFile','stPresetStatus','stPresetList',
         'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
-        'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn',
+        'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn','promptStageMainBtn','promptStageSecondBtn',
         'archiveBtn','tokenInfo','tokenCount','tokenBar','tokenMax','newChatBtn',
         'sidebarSettingsBtn','topSettingsBtn','viewPromptBtn',
         'exportAllBtn','importConvBtn','convImportFile',
@@ -11686,6 +12066,8 @@ function defaultSillyTavernPreset() {
 
 function ensureSillyTavernPresetSettings() {
     if (!state.settings) state.settings = defaultSettings();
+    if (typeof state.settings.twoStageEnabled !== 'boolean') state.settings.twoStageEnabled = false;
+    if (!state.settings.twoStageSystemPrompt) state.settings.twoStageSystemPrompt = DEFAULT_TWO_STAGE_PROMPT;
     if (!state.settings.sillyTavernPreset || typeof state.settings.sillyTavernPreset !== 'object') {
         state.settings.sillyTavernPreset = defaultSillyTavernPreset();
     }
@@ -13006,6 +13388,9 @@ function renderAssistantContent(text) {
     if (!text) return '';
 
     var raw = String(text);
+    var optionsHtml = renderOptionsXml(raw);
+    if (optionsHtml) return optionsHtml;
+
     var html = '';
     var lastIndex = 0;
     var statusBlockRe = /<details\b[\s\S]*?<\/details>/gi;
@@ -13024,6 +13409,33 @@ function renderAssistantContent(text) {
     return html;
 }
 
+function renderOptionsXml(raw) {
+    var text = String(raw || '').trim();
+    if (!/^<options[\s>]/i.test(text)) return '';
+    try {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(text, 'application/xml');
+        if (doc.getElementsByTagName('parsererror').length) return '';
+        var optionNodes = Array.prototype.slice.call(doc.getElementsByTagName('option')).slice(0, 4);
+        if (!optionNodes.length) return '';
+        var html = '<div class="space-y-2">';
+        optionNodes.forEach(function(node) {
+            var titleNode = node.getElementsByTagName('title')[0];
+            var descNode = node.getElementsByTagName('description')[0];
+            var title = titleNode ? titleNode.textContent.trim() : '';
+            var desc = descNode ? descNode.textContent.trim() : '';
+            html += '<div class="glass rounded-xl border border-white/10 px-3 py-2">';
+            if (title) html += '<div class="text-sm font-semibold text-amber-300 mb-1">' + escapeHtml(title) + '</div>';
+            if (desc) html += '<div class="text-sm text-zinc-300 leading-relaxed">' + highlightDialogue(desc) + '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+        return html;
+    } catch (e) {
+        return '';
+    }
+}
+
 // ==================== Message Actions ====================
 function deleteMessage(actualIdx) {
     var conv = getActiveConv();
@@ -13031,14 +13443,19 @@ function deleteMessage(actualIdx) {
     var msg = conv.messages[actualIdx];
     if (!msg) return;
     if (msg.role === 'user') {
-        // Delete user message and the following AI response if it exists
-        if (actualIdx + 1 < conv.messages.length && conv.messages[actualIdx + 1].role === 'assistant') {
-            conv.messages.splice(actualIdx, 2);
-        } else {
-            conv.messages.splice(actualIdx, 1);
+        var deleteCount = 1;
+        var scanIdx = actualIdx + 1;
+        while (scanIdx < conv.messages.length && conv.messages[scanIdx].role === 'assistant') {
+            deleteCount++;
+            scanIdx++;
+            if (deleteCount >= 3) break;
         }
+        conv.messages.splice(actualIdx, deleteCount);
     } else {
-        // Delete only this AI message
+        if (msg.stage !== 'second') {
+            removeLinkedSecondStageMessages(conv, msg);
+            actualIdx = conv.messages.indexOf(msg);
+        }
         conv.messages.splice(actualIdx, 1);
     }
     conv.updated = Date.now();
@@ -13057,145 +13474,43 @@ function regenerateMessage(actualIdx) {
     if (!conv) return;
     var msg = conv.messages[actualIdx];
     if (!msg || msg.role !== 'assistant') return;
-    // Remove this AI message
-    conv.messages.splice(actualIdx, 1);
-    conv.updated = Date.now();
-    if (conv) {
+
+    if (msg.stage === 'second') {
+        var parent = conv.messages.find(function(m) { return m && m.id && m.id === msg.parentId; });
+        conv.messages.splice(actualIdx, 1);
+        conv.updated = Date.now();
         conv._wiCache = null;
-        conv._lastRenderedVisibleCount = 0;   // 消息被移除 → 增量状态失效
+        conv._lastRenderedVisibleCount = 0;
+        persistState();
+        renderMessagesOnly();
+        if (parent) runSecondStageGeneration(parent, function() { completeGenerationTurn(conv); });
+        return;
     }
+
+    removeLinkedSecondStageMessages(conv, msg);
+    actualIdx = conv.messages.indexOf(msg);
+    if (actualIdx >= 0) conv.messages.splice(actualIdx, 1);
+    conv.updated = Date.now();
+    conv._wiCache = null;
+    conv._lastRenderedVisibleCount = 0;
     persistState();
     renderMessagesOnly();
-    renderConversationListOnly(); // title/date may change
+    renderConversationListOnly();
 
-    // Re-send to API (the last message should be from user now)
     var lastMsg = conv.messages[conv.messages.length - 1];
     if (!lastMsg || lastMsg.role !== 'user') return;
 
-    // 群组重试时也决定发言者：优先尊重用户消息里是否带 @ 指定，否则按 list_order 推进
     if (isGroupChat(conv)) {
         const mentioned = parseGroupMention(lastMsg.content || '', conv);
         conv._nextGroupSpeaker = mentioned || getNextGroupSpeaker(conv);
     }
 
-    // 再生也走相同后端分支
-    if (isWebLLMBackend()) {
-        (async function() {
-            try {
-                await ensureWebLLMEngine(getWebLLMModelId());
-                streamChatWebLLM(
-                    function onToken(token, fullContent) {
-                        var streamingEl = document.getElementById('streamingContent');
-                        if (streamingEl) {
-                            streamingEl.innerHTML = renderAssistantContent(fullContent);
-                        } else {
-                            var div = document.createElement('div');
-                            div.id = 'streamingMsg';
-                            div.className = 'msg-assistant flex justify-start msg-enter';
-                            div.innerHTML = '<div class="max-w-[80%]"><p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' +
-                                escapeHtml(getCurrentGeneratingSpeakerName(conv)) +
-                                '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
-                                renderAssistantContent(fullContent) + '</div></div>';
-                            dom.messagesContainer.appendChild(div);
-                        }
-                        dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
-                    },
-        function onComplete(fullContent) {
-            var streamingEl = document.getElementById('streamingMsg');
-            if (streamingEl) streamingEl.remove();
-            var c = getActiveConv();
-            if (c && fullContent) {
-                // 优先使用生成前决定的发言者
-                var speakerForMsg = isGroupChat(c) 
-                    ? (c._nextGroupSpeaker ? c._nextGroupSpeaker.name : getCurrentGeneratingSpeakerName(c))
-                    : null;
-
-                var pushObj = { role: 'assistant', content: fullContent };
-                if (speakerForMsg) pushObj.speaker = speakerForMsg;
-                c.messages.push(pushObj);
-                c.updated = Date.now();
-
-                // 生成结束后，预先计算下一次用户消息时该谁说话
-                if (isGroupChat(c)) {
-                    c._nextGroupSpeaker = getNextGroupSpeaker(c);
-                } else {
-                    delete c._nextGroupSpeaker;
-                }
-
-                persistState();
-            }
-            state.isGenerating = false;
-            appStore.notify('isGenerating');      // 关键修复：通知UI更新输入状态
-            // 使用增量追加而不是全量渲染，避免用户浏览历史时被强制滚到底部
-            appendFinalAssistantMessage(c, fullContent);
-            renderTokenBar();                     // lightweight
-            // 只要「启用自动总结」开启，回复后就会检查是否达到上下文长度并自动总结
-            if (state.settings.summaryEnabled) {
-                setTimeout(function() { autoSummarize(); }, 500);
-            }
-        },
-        function onError(err) {
-            var streamingEl = document.getElementById('streamingMsg');
-            if (streamingEl) streamingEl.remove();
-            state.isGenerating = false;
-            appStore.notify('isGenerating');
-            renderMessagesOnly();
-            alert('Error: ' + (err.message || err));
-        }
-                );
-            } catch (e) {
-                state.isGenerating = false;
-                appStore.notify('isGenerating');
-                renderMessagesOnly();
-                alert('Error: ' + (e.message || e));
-            }
-            updateInputState();
-        })();
-    } else {
+    var start = function() {
         streamChat(
             function onToken(token, fullContent) {
-                var streamingEl = document.getElementById('streamingContent');
-                if (streamingEl) {
-                    streamingEl.innerHTML = renderAssistantContent(fullContent);
-                } else {
-                    var div = document.createElement('div');
-                    div.id = 'streamingMsg';
-                    div.className = 'msg-assistant flex justify-start msg-enter';
-                    div.innerHTML = '<div class="max-w-[80%]"><p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' +
-                        escapeHtml(getCurrentGeneratingSpeakerName(conv)) +
-                        '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
-                        renderAssistantContent(fullContent) + '</div></div>';
-                    dom.messagesContainer.appendChild(div);
-                }
-                dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+                updateStreamingBubble(fullContent, conv, getCurrentGeneratingSpeakerName(conv));
             },
-            function onComplete(fullContent) {
-                var streamingEl = document.getElementById('streamingMsg');
-                if (streamingEl) streamingEl.remove();
-                var c = getActiveConv();
-                if (c && fullContent) {
-                    var speakerForMsg = isGroupChat(c) 
-                        ? (c._nextGroupSpeaker ? c._nextGroupSpeaker.name : getCurrentGeneratingSpeakerName(c))
-                        : null;
-                    var pushObj = { role: 'assistant', content: fullContent };
-                    if (speakerForMsg) pushObj.speaker = speakerForMsg;
-                    c.messages.push(pushObj);
-                    c.updated = Date.now();
-                    if (isGroupChat(c)) {
-                        c._nextGroupSpeaker = getNextGroupSpeaker(c);
-                    } else {
-                        delete c._nextGroupSpeaker;
-                    }
-                    persistState();
-                }
-                state.isGenerating = false;
-                appStore.notify('isGenerating');
-                appendFinalAssistantMessage(c, fullContent);
-                renderTokenBar();
-                if (state.settings.summaryEnabled) {
-                    setTimeout(function() { autoSummarize(); }, 500);
-                }
-            },
+            handlePrimaryAssistantComplete,
             function onError(err) {
                 var streamingEl = document.getElementById('streamingMsg');
                 if (streamingEl) streamingEl.remove();
@@ -13206,6 +13521,17 @@ function regenerateMessage(actualIdx) {
             }
         );
         updateInputState();
+    };
+
+    if (isWebLLMBackend()) {
+        ensureWebLLMEngine(getWebLLMModelId()).then(start).catch(function(e) {
+            state.isGenerating = false;
+            appStore.notify('isGenerating');
+            renderMessagesOnly();
+            alert('Error: ' + (e.message || e));
+        });
+    } else {
+        start();
     }
 }
 
@@ -13290,6 +13616,9 @@ function editMessage(actualIdx, triggerBtn) {
         var newVal = ta.value.trim();
         if (newVal !== originalContent) {
             conv.messages[actualIdx].content = newVal;
+            if (conv.messages[actualIdx].role === 'assistant' && conv.messages[actualIdx].stage !== 'second') {
+                removeLinkedSecondStageMessages(conv, conv.messages[actualIdx]);
+            }
             conv.updated = Date.now();
             conv._wiCache = null;
             conv._lastRenderedVisibleCount = 0;
@@ -13361,131 +13690,12 @@ function sendMessage() {
     persistState();
     requestFullRender();
 
-    // ===== 后端分支：WebLLM 本地 vs 远程 API（严格零加载：只有用户在设置确认后才可能进入本地路径） =====
-    var useLocal = isWebLLMBackend();
-
-    if (useLocal) {
-        (async function() {
-            try {
-                var modelId = getWebLLMModelId();
-                await ensureWebLLMEngine(modelId, function(p) { console.log('[WebLLM progress]', Math.round((p.progress || 0) * 100) + '%', p.text || ''); });
-                streamChatWebLLM(
-                    function onToken(token, fullContent) {
-            var streamingEl = document.getElementById('streamingContent');
-            if (streamingEl) {
-                streamingEl.innerHTML = renderAssistantContent(fullContent);
-            } else {
-                var div = document.createElement('div');
-                div.id = 'streamingMsg';
-                div.className = 'msg-assistant flex justify-start msg-enter';
-                div.innerHTML = '<div class="max-w-[80%]"><p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' +
-                    escapeHtml(getCurrentGeneratingSpeakerName(conv)) +
-                    '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
-                    renderAssistantContent(fullContent) + '</div></div>';
-                dom.messagesContainer.appendChild(div);
-            }
-            dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
-        },
-        function onComplete(fullContent) {
-            var streamingEl = document.getElementById('streamingMsg');
-            if (streamingEl) streamingEl.remove();
-            var conv = getActiveConv();
-            if (conv && fullContent) {
-                // 优先使用生成前决定的发言者
-                var speakerForMsg = isGroupChat(conv) 
-                    ? (conv._nextGroupSpeaker ? conv._nextGroupSpeaker.name : getCurrentGeneratingSpeakerName(conv))
-                    : null;
-
-                var pushObj = { role: 'assistant', content: fullContent };
-                if (speakerForMsg) pushObj.speaker = speakerForMsg;
-                conv.messages.push(pushObj);
-                conv.updated = Date.now();
-
-                // 生成结束后，预先计算下一次用户消息时该谁说话
-                if (isGroupChat(conv)) {
-                    conv._nextGroupSpeaker = getNextGroupSpeaker(conv);
-                } else {
-                    delete conv._nextGroupSpeaker;
-                }
-
-                persistState();
-            }
-            state.isGenerating = false;
-            appStore.notify('isGenerating');      // 关键修复：通知UI更新输入状态
-            // 使用增量追加而不是全量渲染，避免用户浏览历史时被强制滚到底部
-            appendFinalAssistantMessage(conv, fullContent);
-            renderTokenBar();
-            // 只要「启用自动总结」开启，回复后就会检查是否达到上下文长度并自动总结
-            if (state.settings.summaryEnabled) {
-                setTimeout(function() { autoSummarize(); }, 500);
-            }
-        },
-        function onError(err) {
-            var streamingEl = document.getElementById('streamingMsg');
-            if (streamingEl) streamingEl.remove();
-            state.isGenerating = false;
-            appStore.notify('isGenerating');
-            renderMessagesOnly();
-            alert('Error: ' + (err.message || err));
-        }
-                );
-            } catch (e) {
-                state.isGenerating = false;
-                appStore.notify('isGenerating');
-                renderMessagesOnly();
-                var msg = (e && e.message === 'NO_WEBGPU') ? (t('webllm_init_no_webgpu') || '需要 WebGPU 支持') : (e && e.message) || String(e);
-                alert('本地模型错误: ' + msg);
-                if (state && state.settings) state.settings.inferenceBackend = 'remote-api';
-                persistState();
-            }
-            updateInputState();
-        })();
-    } else {
-        // 远程 API 原路径
+    var start = function() {
         streamChat(
             function onToken(token, fullContent) {
-                var streamingEl = document.getElementById('streamingContent');
-                if (streamingEl) {
-                    streamingEl.innerHTML = renderAssistantContent(fullContent);
-                } else {
-                    var div = document.createElement('div');
-                    div.id = 'streamingMsg';
-                    div.className = 'msg-assistant flex justify-start msg-enter';
-                    div.innerHTML = '<div class="max-w-[80%]"><p class="text-[10px] text-zinc-500 mb-1 ml-1 font-medium">' +
-                        escapeHtml(getCurrentGeneratingSpeakerName(conv)) +
-                        '</p><div class="msg-bubble typing-cursor" id="streamingContent">' +
-                        renderAssistantContent(fullContent) + '</div></div>';
-                    dom.messagesContainer.appendChild(div);
-                }
-                dom.messagesContainer.scrollTop = dom.messagesContainer.scrollHeight;
+                updateStreamingBubble(fullContent, conv, getCurrentGeneratingSpeakerName(conv));
             },
-            function onComplete(fullContent) {
-                var streamingEl = document.getElementById('streamingMsg');
-                if (streamingEl) streamingEl.remove();
-                var c = getActiveConv();
-                if (c && fullContent) {
-                    var speakerForMsg = isGroupChat(c) 
-                        ? (c._nextGroupSpeaker ? c._nextGroupSpeaker.name : getCurrentGeneratingSpeakerName(c))
-                        : null;
-                    var pushObj = { role: 'assistant', content: fullContent };
-                    if (speakerForMsg) pushObj.speaker = speakerForMsg;
-                    c.messages.push(pushObj);
-                    c.updated = Date.now();
-                    if (isGroupChat(c)) {
-                        c._nextGroupSpeaker = getNextGroupSpeaker(c);
-                    } else {
-                        delete c._nextGroupSpeaker;
-                    }
-                    persistState();
-                }
-                state.isGenerating = false;
-                appStore.notify('isGenerating');
-                appendFinalAssistantMessage(c, fullContent);
-                renderTokenBar();
-                if (state.settings.summaryEnabled) {
-                    setTimeout(function() { autoSummarize(); }, 500);
-                }
-            },
+            handlePrimaryAssistantComplete,
             function onError(err) {
                 var streamingEl = document.getElementById('streamingMsg');
                 if (streamingEl) streamingEl.remove();
@@ -13496,6 +13706,22 @@ function sendMessage() {
             }
         );
         updateInputState();
+    };
+
+    if (isWebLLMBackend()) {
+        ensureWebLLMEngine(getWebLLMModelId(), function(p) {
+            console.log('[WebLLM progress]', Math.round((p.progress || 0) * 100) + '%', p.text || '');
+        }).then(start).catch(function(e) {
+            state.isGenerating = false;
+            appStore.notify('isGenerating');
+            renderMessagesOnly();
+            var msg = (e && e.message === 'NO_WEBGPU') ? (t('webllm_init_no_webgpu') || '需要 WebGPU 支持') : (e && e.message) || String(e);
+            alert('本地模型错误: ' + msg);
+            if (state && state.settings) state.settings.inferenceBackend = 'remote-api';
+            persistState();
+        });
+    } else {
+        start();
     }
 }
 
@@ -13676,6 +13902,15 @@ function bindEvents() {
         dom.topPVal.textContent = state.settings.topP;
         dom.userName.value = state.settings.userName;
         dom.systemPrompt.value = state.settings.systemPrompt;
+        if (dom.twoStageEnabled) dom.twoStageEnabled.checked = !!state.settings.twoStageEnabled;
+        if (dom.twoStageSystemPrompt) dom.twoStageSystemPrompt.value = state.settings.twoStageSystemPrompt || DEFAULT_TWO_STAGE_PROMPT;
+        if (dom.restoreTwoStagePromptBtn && dom.twoStageSystemPrompt) {
+            dom.restoreTwoStagePromptBtn.onclick = function() {
+                dom.twoStageSystemPrompt.value = DEFAULT_TWO_STAGE_PROMPT;
+                state.settings.twoStageSystemPrompt = DEFAULT_TWO_STAGE_PROMPT;
+                persistState(true);
+            };
+        }
         if (dom.fillRoleplayPromptBtn) {
             dom.fillRoleplayPromptBtn.onclick = function() {
                 dom.systemPrompt.value = BASE_SYSTEM_PROMPT;
@@ -13975,6 +14210,8 @@ function bindEvents() {
         state.settings.topP = parseFloat(dom.topP.value) || 0.9;
         state.settings.userName = dom.userName.value.trim() || 'User';
         state.settings.systemPrompt = dom.systemPrompt.value.trim();
+        if (dom.twoStageEnabled) state.settings.twoStageEnabled = !!dom.twoStageEnabled.checked;
+        if (dom.twoStageSystemPrompt) state.settings.twoStageSystemPrompt = dom.twoStageSystemPrompt.value.trim() || DEFAULT_TWO_STAGE_PROMPT;
         if (dom.userDescription) state.settings.userDescription = dom.userDescription.value.trim();
         ensureSillyTavernPresetSettings();
         state.settings.summaryEnabled = dom.summaryEnabled.checked;
@@ -14229,28 +14466,63 @@ function bindEvents() {
     });
 
     // Prompt viewer
-    function showFullPrompt() {
-        try {
-            // 现在基础系统提示已移除jailbreak成分（保留风格、角色一致性、字数指导等），查看器直接展示实际发送给API的完整内容，实现完全透明。
-            var messages = buildMessagesForAPI();
-            var text = '';
-            for (var i = 0; i < messages.length; i++) {
-                var role = messages[i].role.toUpperCase();
-                var content = messages[i].content || '';
+    var currentPromptViewerStage = 'main';
 
-                if (content) {
-                    text += '=== ' + role + ' ===\n';
-                    text += content + '\n\n';
-                }
+    function setPromptStageButtons(stage) {
+        currentPromptViewerStage = stage || 'main';
+        var active = ['bg-amber-500/20', 'text-amber-300', 'border-amber-500/20'];
+        var inactive = ['bg-white/5', 'text-zinc-400', 'border-white/10'];
+        [
+            { btn: dom.promptStageMainBtn, stage: 'main' },
+            { btn: dom.promptStageSecondBtn, stage: 'second' }
+        ].forEach(function(item) {
+            if (!item.btn) return;
+            item.btn.classList.remove.apply(item.btn.classList, active.concat(inactive));
+            item.btn.classList.add.apply(item.btn.classList, item.stage === currentPromptViewerStage ? active : inactive);
+        });
+    }
+
+    function findLatestMainAssistantMessage(conv) {
+        if (!conv || !Array.isArray(conv.messages)) return null;
+        for (var i = conv.messages.length - 1; i >= 0; i--) {
+            var m = conv.messages[i];
+            if (m && m.role === 'assistant' && m.stage !== 'second') return m;
+        }
+        return null;
+    }
+
+    function refreshPromptViewer() {
+        try {
+            var messages;
+            if (currentPromptViewerStage === 'second') {
+                var conv = getActiveConv();
+                var latestMain = findLatestMainAssistantMessage(conv);
+                messages = buildMessagesForSecondStage(latestMain);
+            } else {
+                messages = buildMessagesForAPI();
             }
+            var text = formatPromptMessages(messages);
             dom.promptViewerContent.textContent = text || t('no_messages_to_send');
-            dom.promptViewerModal.classList.remove('hidden');
         } catch (err) {
             console.error('showFullPrompt error:', err);
             alert('无法生成提示词预览：' + (err.message || err));
         }
     }
+
+    function showFullPrompt() {
+        setPromptStageButtons('main');
+        refreshPromptViewer();
+        dom.promptViewerModal.classList.remove('hidden');
+    }
     dom.viewPromptBtn.addEventListener('click', showFullPrompt);
+    if (dom.promptStageMainBtn) dom.promptStageMainBtn.addEventListener('click', function() {
+        setPromptStageButtons('main');
+        refreshPromptViewer();
+    });
+    if (dom.promptStageSecondBtn) dom.promptStageSecondBtn.addEventListener('click', function() {
+        setPromptStageButtons('second');
+        refreshPromptViewer();
+    });
     dom.promptViewerCloseBtn.addEventListener('click', function() { dom.promptViewerModal.classList.add('hidden'); });
     dom.promptViewerBackdrop.addEventListener('click', function() { dom.promptViewerModal.classList.add('hidden'); });
 
