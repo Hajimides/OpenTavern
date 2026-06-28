@@ -1438,6 +1438,18 @@ body.theme-new-dark ::-webkit-scrollbar-thumb:hover { background: rgba(40, 35, 3
                         <input type="range" id="twoStageTopP" min="0" max="1" step="0.05" value="0.85" class="w-full">
                     </div>
                 </div>
+                <div class="glass rounded-xl p-3 border border-white/5 mb-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_two_stage_recent_context_label">加入上一轮上下文</label>
+                            <p class="text-[10px] text-zinc-600 mt-0.5" data-i18n="settings_two_stage_recent_context_hint">额外发送上一轮主回复/第二阶段回复、当前用户消息和本轮正文。</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 ml-3">
+                            <input type="checkbox" id="twoStageIncludeRecentContext" class="sr-only peer">
+                            <div class="w-9 h-5 bg-white/10 rounded-full peer-checked:bg-amber-500/60 peer-checked:ring-1 peer-checked:ring-amber-500/40 transition-all after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                        </label>
+                    </div>
+                </div>
                 <div class="flex items-center justify-between gap-2 mb-1.5">
                     <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_two_stage_prompt">第二阶段系统提示词</label>
                     <button id="restoreTwoStagePromptBtn" type="button" class="px-2.5 py-1 text-[11px] rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 transition-colors whitespace-nowrap" data-i18n="settings_two_stage_restore">恢复默认</button>
@@ -3259,6 +3271,8 @@ var i18n = {
         settings_two_stage_hint: '第一阶段专注正文；第二阶段独立生成选项与小提示。',
         settings_two_stage_temperature: '第二阶段 Temperature',
         settings_two_stage_top_p: '第二阶段 Top P',
+        settings_two_stage_recent_context_label: '加入上一轮上下文',
+        settings_two_stage_recent_context_hint: '额外发送上一轮主回复/第二阶段回复、当前用户消息和本轮正文。',
         settings_two_stage_prompt: '第二阶段系统提示词',
         settings_two_stage_restore: '恢复默认',
         settings_two_stage_prompt_placeholder: '用于第二阶段生成选项与小提示的系统提示词...',
@@ -3672,6 +3686,8 @@ var i18n = {
         settings_two_stage_hint: '第一階段專注正文；第二階段獨立生成選項與小提示。',
         settings_two_stage_temperature: '第二階段 Temperature',
         settings_two_stage_top_p: '第二階段 Top P',
+        settings_two_stage_recent_context_label: '加入上一輪上下文',
+        settings_two_stage_recent_context_hint: '額外傳送上一輪主回覆/第二階段回覆、目前使用者訊息和本輪正文。',
         settings_two_stage_prompt: '第二階段系統提示詞',
         settings_two_stage_restore: '恢復預設',
         settings_two_stage_prompt_placeholder: '用於第二階段生成選項與小提示的系統提示詞...',
@@ -4038,6 +4054,8 @@ var i18n = {
         settings_two_stage_hint: 'Stage one writes the scene; stage two separately generates options and hints.',
         settings_two_stage_temperature: 'Stage Two Temperature',
         settings_two_stage_top_p: 'Stage Two Top P',
+        settings_two_stage_recent_context_label: 'Include Previous Turn Context',
+        settings_two_stage_recent_context_hint: 'Also send the previous main/stage-two replies, current user message, and current scene.',
         settings_two_stage_prompt: 'Stage Two System Prompt',
         settings_two_stage_restore: 'Restore default',
         settings_two_stage_prompt_placeholder: 'System prompt used to generate stage-two options and hints...',
@@ -6160,6 +6178,7 @@ function defaultSettings() {
         twoStageEnabled: false,
         twoStageTemperature: 0.3,
         twoStageTopP: 0.85,
+        twoStageIncludeRecentContext: false,
         twoStageSystemPrompt: DEFAULT_TWO_STAGE_PROMPT,
         twoStagePostHistoryInstructions: '',
         requestCotEnabled: false,
@@ -7039,6 +7058,9 @@ async function initState() {
     if (typeof state.settings.twoStageTopP !== 'number') {
         state.settings.twoStageTopP = 0.85;
     }
+    if (typeof state.settings.twoStageIncludeRecentContext !== 'boolean') {
+        state.settings.twoStageIncludeRecentContext = false;
+    }
     if (!state.settings.twoStageSystemPrompt) {
         state.settings.twoStageSystemPrompt = DEFAULT_TWO_STAGE_PROMPT;
     }
@@ -7787,6 +7809,76 @@ function formatPromptMessages(messages) {
     return text;
 }
 
+function findLinkedSecondStageMessage(conv, parentMsg) {
+    if (!conv || !parentMsg || !Array.isArray(conv.messages)) return null;
+    ensureMessageIdentity(parentMsg, 'main');
+    for (var i = conv.messages.length - 1; i >= 0; i--) {
+        var m = conv.messages[i];
+        if (m && m.role === 'assistant' && m.stage === 'second' && m.parentId === parentMsg.id) {
+            return m;
+        }
+    }
+    return null;
+}
+
+function findPreviousMainAssistantMessage(conv, currentMainMsg) {
+    if (!conv || !currentMainMsg || !Array.isArray(conv.messages)) return null;
+    var currentIdx = conv.messages.indexOf(currentMainMsg);
+    if (currentIdx < 0) currentIdx = conv.messages.length;
+    for (var i = currentIdx - 1; i >= 0; i--) {
+        var m = conv.messages[i];
+        if (m && m.role === 'assistant' && m.stage !== 'second') {
+            return m;
+        }
+    }
+    return null;
+}
+
+function findLatestUserMessageBefore(conv, targetMsg) {
+    if (!conv || !targetMsg || !Array.isArray(conv.messages)) return null;
+    var targetIdx = conv.messages.indexOf(targetMsg);
+    if (targetIdx < 0) targetIdx = conv.messages.length;
+    for (var i = targetIdx - 1; i >= 0; i--) {
+        var m = conv.messages[i];
+        if (m && m.role === 'user') return m;
+    }
+    return null;
+}
+
+function buildSecondStageRecentContextMessages(conv, firstStageMessage, charName, userName) {
+    var messages = [];
+    var previousMain = findPreviousMainAssistantMessage(conv, firstStageMessage);
+    var previousSecond = findLinkedSecondStageMessage(conv, previousMain);
+    var currentUser = findLatestUserMessageBefore(conv, firstStageMessage);
+
+    if (previousMain && previousMain.content) {
+        messages.push({
+            role: 'assistant',
+            content: '[上一轮正文]\n' + replacePlaceholders(previousMain.content || '', charName, userName)
+        });
+    }
+    if (previousSecond && previousSecond.content) {
+        messages.push({
+            role: 'assistant',
+            content: '[上一轮第二阶段输出]\n' + replacePlaceholders(previousSecond.content || '', charName, userName)
+        });
+    }
+    if (currentUser && currentUser.content) {
+        messages.push({
+            role: 'user',
+            content: '[当前用户消息]\n' + replacePlaceholders(currentUser.content || '', charName, userName)
+        });
+    }
+    if (firstStageMessage && firstStageMessage.content) {
+        messages.push({
+            role: 'assistant',
+            content: '[本轮刚生成的正文]\n' + replacePlaceholders(firstStageMessage.content || '', charName, userName)
+        });
+    }
+
+    return messages;
+}
+
 function buildMessagesForSecondStage(firstStageMessage) {
     var conv = getActiveConv();
     normalizeConversation(conv);
@@ -7800,6 +7892,10 @@ function buildMessagesForSecondStage(firstStageMessage) {
     var apiMessages = [];
     if (secondPrompt) {
         apiMessages.push({ role: 'system', content: replacePlaceholders(secondPrompt, charName, userName) });
+    }
+
+    if (state.settings.twoStageIncludeRecentContext) {
+        return apiMessages.concat(buildSecondStageRecentContextMessages(conv, firstStageMessage, charName, userName));
     }
 
     if (firstStageMessage && firstStageMessage.content) {
@@ -12210,7 +12306,7 @@ function cacheDom() {
         'settingsModal','settingsBackdrop','settingsCloseBtn',
         'apiEndpoint','apiKey','saveApiKey','modelName','contextLength','contextLenVal',
         'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
-        'userName','systemPrompt','postHistoryInstructions','fillPostHistoryBtn','fillRoleplayPromptBtn','twoStageEnabled','twoStageTemperature','twoStageTempVal','twoStageTopP','twoStageTopPVal','twoStageSystemPrompt','twoStagePostHistoryInstructions','restoreTwoStagePromptBtn','requestCotEnabled','showCotEnabled','userDescription',
+        'userName','systemPrompt','postHistoryInstructions','fillPostHistoryBtn','fillRoleplayPromptBtn','twoStageEnabled','twoStageTemperature','twoStageTempVal','twoStageTopP','twoStageTopPVal','twoStageIncludeRecentContext','twoStageSystemPrompt','twoStagePostHistoryInstructions','restoreTwoStagePromptBtn','requestCotEnabled','showCotEnabled','userDescription',
         'stPresetImportBtn','stPresetExportBtn','stPresetDeleteBtn','stPresetImportFile','stPresetStatus','stPresetList',
         'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
         'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn','promptStageMainBtn','promptStageSecondBtn',
@@ -12285,6 +12381,7 @@ function ensureSillyTavernPresetSettings() {
     if (typeof state.settings.twoStageEnabled !== 'boolean') state.settings.twoStageEnabled = false;
     if (typeof state.settings.twoStageTemperature !== 'number') state.settings.twoStageTemperature = 0.3;
     if (typeof state.settings.twoStageTopP !== 'number') state.settings.twoStageTopP = 0.85;
+    if (typeof state.settings.twoStageIncludeRecentContext !== 'boolean') state.settings.twoStageIncludeRecentContext = false;
     if (!state.settings.twoStageSystemPrompt) state.settings.twoStageSystemPrompt = DEFAULT_TWO_STAGE_PROMPT;
     if (typeof state.settings.requestCotEnabled !== 'boolean') state.settings.requestCotEnabled = false;
     if (typeof state.settings.showCotEnabled !== 'boolean') state.settings.showCotEnabled = true;
@@ -14141,6 +14238,7 @@ function bindEvents() {
         if (dom.twoStageTempVal) dom.twoStageTempVal.textContent = state.settings.twoStageTemperature;
         if (dom.twoStageTopP) dom.twoStageTopP.value = state.settings.twoStageTopP;
         if (dom.twoStageTopPVal) dom.twoStageTopPVal.textContent = state.settings.twoStageTopP;
+        if (dom.twoStageIncludeRecentContext) dom.twoStageIncludeRecentContext.checked = !!state.settings.twoStageIncludeRecentContext;
         if (dom.twoStageSystemPrompt) dom.twoStageSystemPrompt.value = state.settings.twoStageSystemPrompt || DEFAULT_TWO_STAGE_PROMPT;
         if (dom.twoStagePostHistoryInstructions) dom.twoStagePostHistoryInstructions.value = state.settings.twoStagePostHistoryInstructions || '';
         if (dom.requestCotEnabled) dom.requestCotEnabled.checked = !!state.settings.requestCotEnabled;
@@ -14463,6 +14561,7 @@ function bindEvents() {
         if (dom.twoStageEnabled) state.settings.twoStageEnabled = !!dom.twoStageEnabled.checked;
         if (dom.twoStageTemperature) state.settings.twoStageTemperature = Number.isFinite(parseFloat(dom.twoStageTemperature.value)) ? parseFloat(dom.twoStageTemperature.value) : 0.3;
         if (dom.twoStageTopP) state.settings.twoStageTopP = Number.isFinite(parseFloat(dom.twoStageTopP.value)) ? parseFloat(dom.twoStageTopP.value) : 0.85;
+        if (dom.twoStageIncludeRecentContext) state.settings.twoStageIncludeRecentContext = !!dom.twoStageIncludeRecentContext.checked;
         if (dom.twoStageSystemPrompt) state.settings.twoStageSystemPrompt = dom.twoStageSystemPrompt.value.trim() || DEFAULT_TWO_STAGE_PROMPT;
         if (dom.twoStagePostHistoryInstructions) state.settings.twoStagePostHistoryInstructions = dom.twoStagePostHistoryInstructions.value.trim();
         if (dom.requestCotEnabled) state.settings.requestCotEnabled = !!dom.requestCotEnabled.checked;
