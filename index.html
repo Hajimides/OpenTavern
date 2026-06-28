@@ -1422,6 +1422,22 @@ body.theme-new-dark ::-webkit-scrollbar-thumb:hover { background: rgba(40, 35, 3
                         <div class="w-9 h-5 bg-white/10 rounded-full peer-checked:bg-amber-500/60 peer-checked:ring-1 peer-checked:ring-amber-500/40 transition-all after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
                     </label>
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_two_stage_temperature">第二阶段 Temperature</label>
+                            <span id="twoStageTempVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">0.3</span>
+                        </div>
+                        <input type="range" id="twoStageTemperature" min="0" max="2" step="0.05" value="0.3" class="w-full">
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_two_stage_top_p">第二阶段 Top P</label>
+                            <span id="twoStageTopPVal" class="text-xs text-zinc-500 bg-white/5 px-2 py-0.5 rounded-full">0.85</span>
+                        </div>
+                        <input type="range" id="twoStageTopP" min="0" max="1" step="0.05" value="0.85" class="w-full">
+                    </div>
+                </div>
                 <div class="flex items-center justify-between gap-2 mb-1.5">
                     <label class="text-xs font-semibold text-zinc-400 uppercase tracking-wider" data-i18n="settings_two_stage_prompt">第二阶段系统提示词</label>
                     <button id="restoreTwoStagePromptBtn" type="button" class="px-2.5 py-1 text-[11px] rounded-lg bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 transition-colors whitespace-nowrap" data-i18n="settings_two_stage_restore">恢复默认</button>
@@ -3241,6 +3257,8 @@ var i18n = {
         fill_roleplay_prompt: '一键填入角色扮演提示词',
         settings_two_stage_label: '两阶段生成',
         settings_two_stage_hint: '第一阶段专注正文；第二阶段独立生成选项与小提示。',
+        settings_two_stage_temperature: '第二阶段 Temperature',
+        settings_two_stage_top_p: '第二阶段 Top P',
         settings_two_stage_prompt: '第二阶段系统提示词',
         settings_two_stage_restore: '恢复默认',
         settings_two_stage_prompt_placeholder: '用于第二阶段生成选项与小提示的系统提示词...',
@@ -3652,6 +3670,8 @@ var i18n = {
         fill_roleplay_prompt: '一鍵填入角色扮演提示詞',
         settings_two_stage_label: '兩階段生成',
         settings_two_stage_hint: '第一階段專注正文；第二階段獨立生成選項與小提示。',
+        settings_two_stage_temperature: '第二階段 Temperature',
+        settings_two_stage_top_p: '第二階段 Top P',
         settings_two_stage_prompt: '第二階段系統提示詞',
         settings_two_stage_restore: '恢復預設',
         settings_two_stage_prompt_placeholder: '用於第二階段生成選項與小提示的系統提示詞...',
@@ -4016,6 +4036,8 @@ var i18n = {
         fill_roleplay_prompt: 'Fill roleplay prompt',
         settings_two_stage_label: 'Two-stage Generation',
         settings_two_stage_hint: 'Stage one writes the scene; stage two separately generates options and hints.',
+        settings_two_stage_temperature: 'Stage Two Temperature',
+        settings_two_stage_top_p: 'Stage Two Top P',
         settings_two_stage_prompt: 'Stage Two System Prompt',
         settings_two_stage_restore: 'Restore default',
         settings_two_stage_prompt_placeholder: 'System prompt used to generate stage-two options and hints...',
@@ -6040,7 +6062,7 @@ function makeId() {
 
 var DEFAULT_TWO_STAGE_PROMPT = [
     '你是一个专门为角色扮演对话生成“下一步行动选项 + 小提示”的结构化助手。',
-    '请严格基于当前角色卡、世界书、历史消息，以及刚刚完成的正文回复生成选项。',
+    '请严格基于刚刚完成的正文回复生成选项。',
     '不要续写正文，不要解释，不要添加前言或结语，只输出以下 XML 结构：',
     '',
     '<options>',
@@ -6136,6 +6158,8 @@ function defaultSettings() {
         systemPrompt: '',
         postHistoryInstructions: '',
         twoStageEnabled: false,
+        twoStageTemperature: 0.3,
+        twoStageTopP: 0.85,
         twoStageSystemPrompt: DEFAULT_TWO_STAGE_PROMPT,
         twoStagePostHistoryInstructions: '',
         requestCotEnabled: false,
@@ -7009,6 +7033,12 @@ async function initState() {
     if (typeof state.settings.twoStageEnabled !== 'boolean') {
         state.settings.twoStageEnabled = false;
     }
+    if (typeof state.settings.twoStageTemperature !== 'number') {
+        state.settings.twoStageTemperature = 0.3;
+    }
+    if (typeof state.settings.twoStageTopP !== 'number') {
+        state.settings.twoStageTopP = 0.85;
+    }
     if (!state.settings.twoStageSystemPrompt) {
         state.settings.twoStageSystemPrompt = DEFAULT_TWO_STAGE_PROMPT;
     }
@@ -7765,55 +7795,19 @@ function buildMessagesForSecondStage(firstStageMessage) {
     var currentChar = isGroup ? getCurrentSpeakerCharacter(conv) : conv.character;
     var charName = currentChar ? currentChar.name : (conv.character ? conv.character.name : 'Assistant');
     var userName = state.settings.userName || 'User';
-    var maxMsgs = state.settings.contextLength;
-
-    var wiResult = getActivatedWorldInfo(conv);
-    var wiByPos = wiResult.byPosition || {};
-    var contextSystem = buildSecondStageContextPrompt(conv, wiByPos, firstStageMessage && firstStageMessage.speaker);
 
     var secondPrompt = (state.settings.twoStageSystemPrompt || DEFAULT_TWO_STAGE_PROMPT || '').trim();
     var apiMessages = [];
     if (secondPrompt) {
         apiMessages.push({ role: 'system', content: replacePlaceholders(secondPrompt, charName, userName) });
     }
-    if (contextSystem) {
+
+    if (firstStageMessage && firstStageMessage.content) {
         apiMessages.push({
-            role: 'system',
-            content: '[角色卡、世界书与长期设定，仅供第二阶段生成选项时参考]\n' + contextSystem
+            role: 'assistant',
+            content: replacePlaceholders(firstStageMessage.content || '', charName, userName)
         });
     }
-
-    if (conv.summaries && conv.summaries.length > 0) {
-        var summaryText = conv.summaries.map(function(s) { return s.text; }).join('\n---\n');
-        apiMessages.push({ role: 'system', content: '[以下是先前对话的自动摘要，供上下文参考]\n' + summaryText });
-    }
-
-    var regularMsgs = conv.messages.filter(function(m) { return m.role !== 'system'; });
-    if (firstStageMessage && regularMsgs.indexOf(firstStageMessage) === -1) {
-        regularMsgs = regularMsgs.concat([firstStageMessage]);
-    }
-
-    var lastCovered = -1;
-    if (conv.summaries && conv.summaries.length > 0) {
-        conv.summaries.forEach(function(s) {
-            if (typeof s.coveredEnd === 'number' && s.coveredEnd > lastCovered) lastCovered = s.coveredEnd;
-        });
-    }
-    if (lastCovered >= 0 && lastCovered < regularMsgs.length - 1) {
-        regularMsgs = regularMsgs.slice(lastCovered + 1);
-    }
-    if (regularMsgs.length > maxMsgs) {
-        regularMsgs = regularMsgs.slice(regularMsgs.length - maxMsgs);
-    }
-
-    apiMessages = apiMessages.concat(regularMsgs.map(function(m) {
-        return { role: m.role, content: replacePlaceholders(m.content || '', charName, userName) };
-    }));
-
-    apiMessages.push({
-        role: 'user',
-        content: '请基于以上完整上下文，尤其是最后一条正文回复，严格按照第二阶段系统提示词的要求完成本阶段输出。'
-    });
 
     return apiMessages;
 }
@@ -10020,7 +10014,11 @@ function runSecondStageGeneration(firstStageMessage, onDone) {
                 alert('第二阶段生成失败：' + (err.message || err));
                 if (onDone) onDone(err);
             },
-            { temperature: 0.35, maxTokens: Math.min(state.settings.maxTokens || 1024, 1024) }
+            {
+                temperature: typeof state.settings.twoStageTemperature === 'number' ? state.settings.twoStageTemperature : 0.3,
+                topP: typeof state.settings.twoStageTopP === 'number' ? state.settings.twoStageTopP : 0.85,
+                maxTokens: Math.min(state.settings.maxTokens || 1024, 1024)
+            }
         );
     }
 
@@ -12212,7 +12210,7 @@ function cacheDom() {
         'settingsModal','settingsBackdrop','settingsCloseBtn',
         'apiEndpoint','apiKey','saveApiKey','modelName','contextLength','contextLenVal',
         'maxTokens','maxTokensVal','temperature','tempVal','topP','topPVal',
-        'userName','systemPrompt','postHistoryInstructions','fillPostHistoryBtn','fillRoleplayPromptBtn','twoStageEnabled','twoStageSystemPrompt','twoStagePostHistoryInstructions','restoreTwoStagePromptBtn','requestCotEnabled','showCotEnabled','userDescription',
+        'userName','systemPrompt','postHistoryInstructions','fillPostHistoryBtn','fillRoleplayPromptBtn','twoStageEnabled','twoStageTemperature','twoStageTempVal','twoStageTopP','twoStageTopPVal','twoStageSystemPrompt','twoStagePostHistoryInstructions','restoreTwoStagePromptBtn','requestCotEnabled','showCotEnabled','userDescription',
         'stPresetImportBtn','stPresetExportBtn','stPresetDeleteBtn','stPresetImportFile','stPresetStatus','stPresetList',
         'importModal','importBackdrop','importCloseBtn','importFileInput','importStatus',
         'promptViewerModal','promptViewerBackdrop','promptViewerCloseBtn','promptViewerContent','copyPromptBtn','promptStageMainBtn','promptStageSecondBtn',
@@ -12285,6 +12283,8 @@ function defaultSillyTavernPreset() {
 function ensureSillyTavernPresetSettings() {
     if (!state.settings) state.settings = defaultSettings();
     if (typeof state.settings.twoStageEnabled !== 'boolean') state.settings.twoStageEnabled = false;
+    if (typeof state.settings.twoStageTemperature !== 'number') state.settings.twoStageTemperature = 0.3;
+    if (typeof state.settings.twoStageTopP !== 'number') state.settings.twoStageTopP = 0.85;
     if (!state.settings.twoStageSystemPrompt) state.settings.twoStageSystemPrompt = DEFAULT_TWO_STAGE_PROMPT;
     if (typeof state.settings.requestCotEnabled !== 'boolean') state.settings.requestCotEnabled = false;
     if (typeof state.settings.showCotEnabled !== 'boolean') state.settings.showCotEnabled = true;
@@ -14137,6 +14137,10 @@ function bindEvents() {
         dom.systemPrompt.value = state.settings.systemPrompt;
         if (dom.postHistoryInstructions) dom.postHistoryInstructions.value = state.settings.postHistoryInstructions || '';
         if (dom.twoStageEnabled) dom.twoStageEnabled.checked = !!state.settings.twoStageEnabled;
+        if (dom.twoStageTemperature) dom.twoStageTemperature.value = state.settings.twoStageTemperature;
+        if (dom.twoStageTempVal) dom.twoStageTempVal.textContent = state.settings.twoStageTemperature;
+        if (dom.twoStageTopP) dom.twoStageTopP.value = state.settings.twoStageTopP;
+        if (dom.twoStageTopPVal) dom.twoStageTopPVal.textContent = state.settings.twoStageTopP;
         if (dom.twoStageSystemPrompt) dom.twoStageSystemPrompt.value = state.settings.twoStageSystemPrompt || DEFAULT_TWO_STAGE_PROMPT;
         if (dom.twoStagePostHistoryInstructions) dom.twoStagePostHistoryInstructions.value = state.settings.twoStagePostHistoryInstructions || '';
         if (dom.requestCotEnabled) dom.requestCotEnabled.checked = !!state.settings.requestCotEnabled;
@@ -14457,6 +14461,8 @@ function bindEvents() {
         state.settings.systemPrompt = dom.systemPrompt.value.trim();
         if (dom.postHistoryInstructions) state.settings.postHistoryInstructions = dom.postHistoryInstructions.value.trim();
         if (dom.twoStageEnabled) state.settings.twoStageEnabled = !!dom.twoStageEnabled.checked;
+        if (dom.twoStageTemperature) state.settings.twoStageTemperature = Number.isFinite(parseFloat(dom.twoStageTemperature.value)) ? parseFloat(dom.twoStageTemperature.value) : 0.3;
+        if (dom.twoStageTopP) state.settings.twoStageTopP = Number.isFinite(parseFloat(dom.twoStageTopP.value)) ? parseFloat(dom.twoStageTopP.value) : 0.85;
         if (dom.twoStageSystemPrompt) state.settings.twoStageSystemPrompt = dom.twoStageSystemPrompt.value.trim() || DEFAULT_TWO_STAGE_PROMPT;
         if (dom.twoStagePostHistoryInstructions) state.settings.twoStagePostHistoryInstructions = dom.twoStagePostHistoryInstructions.value.trim();
         if (dom.requestCotEnabled) state.settings.requestCotEnabled = !!dom.requestCotEnabled.checked;
@@ -14551,6 +14557,8 @@ function bindEvents() {
     bindSlider(dom.maxTokens, dom.maxTokensVal);
     bindSlider(dom.temperature, dom.tempVal);
     bindSlider(dom.topP, dom.topPVal);
+    if (dom.twoStageTemperature && dom.twoStageTempVal) bindSlider(dom.twoStageTemperature, dom.twoStageTempVal);
+    if (dom.twoStageTopP && dom.twoStageTopPVal) bindSlider(dom.twoStageTopP, dom.twoStageTopPVal);
     bindSlider(dom.worldInfoBudget, dom.worldInfoBudgetVal);
 
     // 实时更新“触发阈值高于上下文长度”的警告
