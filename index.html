@@ -6754,7 +6754,6 @@ function buildGroupSystemPrompt(conv, wiByPos) {
     if (customSysPrompt && customSysPrompt.trim()) {
         parts.push(replacePlaceholders(customSysPrompt.trim(), 'Assistant', userName));
     }
-    appendSillyTavernPresetPrompts(parts, forcedSpeaker ? forcedSpeaker.name : 'Assistant', userName);
 
     // Inject user description / persona (user's own setting) - also in group chats
     var userDesc = state.settings.userDescription || '';
@@ -7582,7 +7581,6 @@ function buildSystemPrompt(character, worldInfoByPos) {
     if (sysPrompt) {
         parts.push(replacePlaceholders(sysPrompt, charName, userName));
     }
-    appendSillyTavernPresetPrompts(parts, charName, userName);
 
     // Inject user description / persona (user's own setting)
     var userDesc = state.settings.userDescription || '';
@@ -7681,6 +7679,35 @@ function buildSecondStageContextPrompt(conv, worldInfoByPos, focusSpeakerName) {
     return parts.join('\n\n').trim();
 }
 
+function insertMessagesAtDepth(apiMessages, entries, charName, userName) {
+    if (!entries || entries.length === 0) return apiMessages;
+    entries.forEach(function(e) {
+        var d = (e._depth != null) ? e._depth : (e.depth != null ? e.depth : 4);
+        d = parseInt(d, 10);
+        if (isNaN(d)) d = 0;
+        var role = e.role;
+        if (typeof role === 'number') role = (role === 0) ? 'system' : (role === 1 ? 'user' : 'assistant');
+        role = normalizePromptRole(role || 'system');
+        var content = replacePlaceholders(e.content || '', charName, userName);
+        if (!content || !String(content).trim()) return;
+
+        var insertIdx;
+        if (d < 0) {
+            // Negative depth: -1 = after the last message, -2 = before the last message, etc.
+            insertIdx = apiMessages.length + (d + 1);
+        } else {
+            // Positive depth: 0 = after last, 1 = before last, etc. (from the end)
+            insertIdx = apiMessages.length - d;
+        }
+
+        if (insertIdx < 1) insertIdx = 1;
+        if (insertIdx > apiMessages.length) insertIdx = apiMessages.length;
+
+        apiMessages.splice(insertIdx, 0, { role: role, content: content });
+    });
+    return apiMessages;
+}
+
 function buildMessagesForAPI() {
     var conv = getActiveConv();
     normalizeConversation(conv);
@@ -7701,12 +7728,19 @@ function buildMessagesForAPI() {
         : buildSystemPrompt(conv.character, wiByPos);
 
     var apiMessages = [];
+    var presetBuckets = buildSillyTavernPresetMessageBuckets(charName, userName);
 
     // 不再自动注入内置角色扮演提示词；仅当用户在设置中手动填写/点击按钮填入后才作为自定义系统提示词发送。
     let finalSystemContent = systemContent || '';
 
     if (finalSystemContent) {
         apiMessages.push({ role: 'system', content: finalSystemContent });
+    }
+
+    if (presetBuckets.beforeHistory.length > 0) {
+        apiMessages = apiMessages.concat(presetBuckets.beforeHistory.map(function(m) {
+            return { role: m.role, content: m.content };
+        }));
     }
 
     // Inject summaries as a second system message if any exist
@@ -7745,32 +7779,19 @@ function buildMessagesForAPI() {
     });
     apiMessages = apiMessages.concat(clonedRegularMsgs);
 
+    if (presetBuckets.afterHistory.length > 0) {
+        apiMessages = apiMessages.concat(presetBuckets.afterHistory.map(function(m) {
+            return { role: m.role, content: m.content };
+        }));
+    }
+
     // 群组模式下，消息里的 speaker 信息由渲染层处理，这里不需要额外改动 prompt 里的 role 名称
     // （未来可在此处根据 speaker 给 assistant 消息加特殊标记）
 
     // @D (Depth) insertions: support positive and negative depth + correct roles
     var depthEntries = wiByPos[WI_POS.AT_DEPTH] || [];
-    if (depthEntries.length > 0) {
-        depthEntries.forEach(function(e) {
-            var d = (e.depth != null) ? e.depth : 4;
-            var role = (e.role === 0) ? 'system' : (e.role === 1 ? 'user' : 'assistant');
-            var content = replacePlaceholders(e.content || '', charName, userName);
-
-            var insertIdx;
-            if (d < 0) {
-                // Negative depth: -1 = after the last message, -2 = before the last message, etc.
-                insertIdx = apiMessages.length + (d + 1);
-            } else {
-                // Positive depth: 0 = after last, 1 = before last, etc. (from the end)
-                insertIdx = apiMessages.length - d;
-            }
-
-            if (insertIdx < 1) insertIdx = 1;
-            if (insertIdx > apiMessages.length) insertIdx = apiMessages.length;
-
-            apiMessages.splice(insertIdx, 0, { role: role, content: content });
-        });
-    }
+    insertMessagesAtDepth(apiMessages, depthEntries, charName, userName);
+    insertMessagesAtDepth(apiMessages, presetBuckets.inChat, charName, userName);
 
     // === Outlet Support ===
     // Resolve {{outlet::Name}} in all messages（在克隆对象上操作，不会污染原始存储）
@@ -12373,7 +12394,7 @@ function cacheDom() {
 }
 
 function defaultSillyTavernPreset() {
-    return { name: '', importedAt: '', prompts: [] };
+    return { name: '', importedAt: '', prompts: [], promptOrder: [] };
 }
 
 function ensureSillyTavernPresetSettings() {
@@ -12393,8 +12414,20 @@ function ensureSillyTavernPresetSettings() {
     }
     var preset = state.settings.sillyTavernPreset;
     if (!Array.isArray(preset.prompts)) preset.prompts = [];
+    if (!Array.isArray(preset.promptOrder)) preset.promptOrder = [];
     preset.name = String(preset.name || '');
     preset.importedAt = String(preset.importedAt || '');
+    preset.promptOrder = preset.promptOrder.map(function(item, idx) {
+        item = item || {};
+        return {
+            identifier: String(item.identifier || item.id || item.name || ''),
+            enabled: item.enabled !== false,
+            order: typeof item.order === 'number' ? item.order : idx,
+            role: item.role != null ? String(item.role) : '',
+            position: item.position != null ? item.position : item.injection_position,
+            depth: item.depth != null ? item.depth : item.injection_depth
+        };
+    }).filter(function(item) { return item.identifier; });
     preset.prompts = preset.prompts.map(function(p, idx) {
         p = p || {};
         var id = String(p.id || p.identifier || p.name || ('prompt_' + idx));
@@ -12402,13 +12435,26 @@ function ensureSillyTavernPresetSettings() {
             id: id,
             identifier: String(p.identifier || id),
             name: String(p.name || p.identifier || id),
-            role: String(p.role || 'system'),
+            role: normalizePromptRole(p.role || 'system'),
             content: String(p.content || ''),
             enabled: p.enabled !== false,
-            order: typeof p.order === 'number' ? p.order : idx
+            order: typeof p.order === 'number' ? p.order : idx,
+            position: p.position != null ? p.position : p.injection_position,
+            depth: p.depth != null ? p.depth : p.injection_depth,
+            injection_position: p.injection_position != null ? p.injection_position : p.position,
+            injection_depth: p.injection_depth != null ? p.injection_depth : p.depth
         };
     }).filter(function(p) { return p.content.trim(); });
     return preset;
+}
+
+function normalizePromptRole(role) {
+    var r = String(role || 'system').toLowerCase().trim();
+    if (r === '0') return 'system';
+    if (r === '1') return 'user';
+    if (r === '2') return 'assistant';
+    if (r === 'user' || r === 'assistant' || r === 'system') return r;
+    return 'system';
 }
 
 function getSillyTavernPromptOrderItems(promptOrder) {
@@ -12422,7 +12468,10 @@ function getSillyTavernPromptOrderItems(promptOrder) {
                 items.push({
                     identifier: item.identifier || item.id || item.name || '',
                     enabled: item.enabled !== false,
-                    order: typeof item.order === 'number' ? item.order : idx
+                    order: typeof item.order === 'number' ? item.order : idx,
+                    role: item.role != null ? item.role : '',
+                    position: item.position != null ? item.position : item.injection_position,
+                    depth: item.depth != null ? item.depth : item.injection_depth
                 });
             }
         });
@@ -12439,7 +12488,14 @@ function getSillyTavernPromptOrderItems(promptOrder) {
             var value = promptOrder[key];
             if (key === 'order') return;
             if (value && typeof value === 'object' && !Array.isArray(value)) {
-                items.push({ identifier: value.identifier || key, enabled: value.enabled !== false, order: typeof value.order === 'number' ? value.order : idx });
+                items.push({
+                    identifier: value.identifier || key,
+                    enabled: value.enabled !== false,
+                    order: typeof value.order === 'number' ? value.order : idx,
+                    role: value.role != null ? value.role : '',
+                    position: value.position != null ? value.position : value.injection_position,
+                    depth: value.depth != null ? value.depth : value.injection_depth
+                });
             } else if (typeof value === 'boolean') {
                 items.push({ identifier: key, enabled: value, order: idx });
             }
@@ -12466,7 +12522,14 @@ function normalizeSillyTavernPreset(raw) {
     orderItems.forEach(function(item, idx) {
         var id = String(item.identifier || '');
         if (!id) return;
-        orderMap[id] = { enabled: item.enabled !== false, order: typeof item.order === 'number' ? item.order : idx };
+        orderMap[id] = {
+            enabled: item.enabled !== false,
+            order: typeof item.order === 'number' ? item.order : idx,
+            role: item.role,
+            position: item.position,
+            depth: item.depth
+        };
+        orderMap[id.toLowerCase()] = orderMap[id];
     });
 
     var usedIds = {};
@@ -12478,15 +12541,19 @@ function normalizeSillyTavernPreset(raw) {
         usedIds[id] = true;
         var content = p.content != null ? p.content : (p.prompt != null ? p.prompt : (p.text != null ? p.text : p.value));
         content = String(content || '');
-        var ordered = orderMap[baseId] || orderMap[id];
+        var ordered = orderMap[baseId] || orderMap[id] || orderMap[baseId.toLowerCase()] || orderMap[id.toLowerCase()];
         return {
             id: id,
             identifier: String(p.identifier || id),
             name: String(p.name || p.identifier || id),
-            role: String(p.role || 'system'),
+            role: normalizePromptRole(p.role || (ordered && ordered.role) || 'system'),
             content: content,
             enabled: ordered ? ordered.enabled : p.enabled !== false,
-            order: ordered ? ordered.order : idx
+            order: ordered ? ordered.order : idx,
+            position: p.position != null ? p.position : (p.injection_position != null ? p.injection_position : (ordered ? ordered.position : undefined)),
+            depth: p.depth != null ? p.depth : (p.injection_depth != null ? p.injection_depth : (ordered ? ordered.depth : undefined)),
+            injection_position: p.injection_position != null ? p.injection_position : (ordered ? ordered.position : undefined),
+            injection_depth: p.injection_depth != null ? p.injection_depth : (ordered ? ordered.depth : undefined)
         };
     }).filter(function(p) { return p.content.trim(); });
 
@@ -12496,6 +12563,16 @@ function normalizeSillyTavernPreset(raw) {
     return {
         name: String(src.name || src.preset_name || raw.name || 'SillyTavern Preset'),
         importedAt: new Date().toISOString(),
+        promptOrder: orderItems.map(function(item, idx) {
+            return {
+                identifier: String(item.identifier || ''),
+                enabled: item.enabled !== false,
+                order: typeof item.order === 'number' ? item.order : idx,
+                role: item.role != null ? String(item.role) : '',
+                position: item.position,
+                depth: item.depth
+            };
+        }).filter(function(item) { return item.identifier; }),
         prompts: prompts.map(function(p, idx) {
             p.order = idx;
             return p;
@@ -12537,6 +12614,7 @@ function renderSillyTavernPresetSettings() {
     dom.stPresetList.innerHTML = rows.map(function(row) {
         var p = row.prompt;
         var preview = p.content.length > 220 ? p.content.slice(0, 220) + '...' : p.content;
+        var placement = describeSillyTavernPresetPlacement(p);
         return '<div class="rounded-xl bg-black/15 border border-white/5 p-2">' +
             '<label class="flex items-start gap-2 cursor-pointer select-none">' +
                 '<input type="checkbox" class="st-preset-toggle accent-amber-500 mt-0.5 flex-shrink-0" data-index="' + row.index + '" ' + (p.enabled !== false ? 'checked' : '') + '>' +
@@ -12544,6 +12622,7 @@ function renderSillyTavernPresetSettings() {
                     '<div class="flex items-center gap-1.5 min-w-0">' +
                         '<span class="text-xs font-medium text-zinc-200 truncate">' + escapeHtml(p.name || p.identifier || p.id) + '</span>' +
                         '<span class="text-[9px] uppercase text-zinc-500 bg-white/5 rounded px-1 py-0.5 flex-shrink-0">' + escapeHtml(p.role || 'system') + '</span>' +
+                        '<span class="text-[9px] uppercase text-zinc-500 bg-white/5 rounded px-1 py-0.5 flex-shrink-0">' + escapeHtml(placement) + '</span>' +
                     '</div>' +
                     '<details class="mt-1">' +
                         '<summary class="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors">' + escapeHtml(preview) + '</summary>' +
@@ -12605,14 +12684,26 @@ function exportSillyTavernPreset() {
                 name: p.name || p.identifier || p.id,
                 role: p.role || 'system',
                 content: p.content || '',
+                position: p.position,
+                injection_position: p.injection_position,
+                depth: p.depth,
+                injection_depth: p.injection_depth,
                 system_prompt: true,
                 marker: false
             };
         }),
         prompt_order: [{
             character_id: 100001,
-            order: prompts.map(function(p) {
-                return { identifier: p.identifier || p.id, enabled: p.enabled !== false };
+            order: (preset.promptOrder && preset.promptOrder.length ? preset.promptOrder : prompts).map(function(item) {
+                var id = item.identifier || item.id;
+                return {
+                    identifier: id,
+                    enabled: item.enabled !== false,
+                    position: item.position,
+                    injection_position: item.injection_position,
+                    depth: item.depth,
+                    injection_depth: item.injection_depth
+                };
             })
         }],
         opentavern: {
@@ -12638,14 +12729,104 @@ function deleteSillyTavernPreset() {
     alert(t('settings_st_preset_delete_success'));
 }
 
-function appendSillyTavernPresetPrompts(parts, charName, userName) {
+function describeSillyTavernPresetPlacement(prompt) {
+    var placement = getSillyTavernPresetPlacement(prompt, 'before_history');
+    if (placement === 'in_chat') {
+        var depth = parseSillyTavernDepth(prompt);
+        return 'in-chat d' + depth;
+    }
+    return placement === 'after_history' ? 'after history' : 'before history';
+}
+
+function isSillyTavernChatHistoryMarker(identifier) {
+    var id = String(identifier || '').toLowerCase().replace(/[\s-]/g, '_');
+    return id === 'chat_history' || id === 'chathistory' || id === 'messages' || id === 'conversation_history';
+}
+
+function getSillyTavernPresetPlacement(prompt, fallback) {
+    prompt = prompt || {};
+    var raw = prompt.position != null ? prompt.position : prompt.injection_position;
+    var str = String(raw == null ? '' : raw).toLowerCase().trim();
+
+    if (str === '1' || str === 'in_chat' || str === 'in-chat' || str === 'depth' || str === 'at_depth') return 'in_chat';
+    if (str.indexOf('after') !== -1 && (str.indexOf('history') !== -1 || str.indexOf('chat') !== -1)) return 'after_history';
+    if (str.indexOf('before') !== -1 && (str.indexOf('history') !== -1 || str.indexOf('chat') !== -1)) return 'before_history';
+    if (prompt.depth != null || prompt.injection_depth != null) {
+        if (str === '0' || str === 'relative') return fallback || 'before_history';
+        return 'in_chat';
+    }
+    return fallback || 'before_history';
+}
+
+function parseSillyTavernDepth(prompt) {
+    var raw = prompt && (prompt.depth != null ? prompt.depth : prompt.injection_depth);
+    var d = parseInt(raw, 10);
+    return isNaN(d) ? 0 : d;
+}
+
+function buildSillyTavernPresetMessageBuckets(charName, userName) {
     var preset = ensureSillyTavernPresetSettings();
-    preset.prompts.slice()
+    var enabledPrompts = preset.prompts
         .filter(function(p) { return p && p.enabled !== false && p.content && p.content.trim(); })
-        .sort(function(a, b) { return (a.order || 0) - (b.order || 0); })
-        .forEach(function(p) {
-            parts.push(replacePlaceholders(p.content.trim(), charName, userName));
+        .sort(function(a, b) { return (a.order || 0) - (b.order || 0); });
+
+    var byId = {};
+    enabledPrompts.forEach(function(p) {
+        [p.id, p.identifier, p.name].forEach(function(id) {
+            if (!id) return;
+            byId[String(id).toLowerCase()] = p;
         });
+    });
+
+    var buckets = { beforeHistory: [], afterHistory: [], inChat: [] };
+    var seen = {};
+    var afterHistory = false;
+
+    function addPrompt(prompt, orderItem) {
+        if (!prompt) return;
+        var key = String(prompt.id || prompt.identifier || prompt.name || '');
+        if (seen[key]) return;
+        seen[key] = true;
+
+        var merged = Object.assign({}, prompt);
+        if (orderItem) {
+            if (orderItem.role) merged.role = orderItem.role;
+            if (orderItem.position != null) merged.position = orderItem.position;
+            if (orderItem.depth != null) merged.depth = orderItem.depth;
+        }
+
+        var placement = getSillyTavernPresetPlacement(merged, afterHistory ? 'after_history' : 'before_history');
+        var msg = {
+            role: normalizePromptRole(merged.role || 'system'),
+            content: replacePlaceholders(String(merged.content || '').trim(), charName, userName),
+            _depth: parseSillyTavernDepth(merged),
+            _order: typeof merged.order === 'number' ? merged.order : 0
+        };
+
+        if (!msg.content) return;
+        if (placement === 'in_chat') buckets.inChat.push(msg);
+        else if (placement === 'after_history') buckets.afterHistory.push(msg);
+        else buckets.beforeHistory.push(msg);
+    }
+
+    var ordered = preset.promptOrder && preset.promptOrder.length
+        ? preset.promptOrder.slice().sort(function(a, b) { return (a.order || 0) - (b.order || 0); })
+        : [];
+
+    ordered.forEach(function(item) {
+        var id = String(item.identifier || '').toLowerCase();
+        if (!id) return;
+        if (isSillyTavernChatHistoryMarker(id)) {
+            afterHistory = true;
+            return;
+        }
+        if (item.enabled === false) return;
+        addPrompt(byId[id], item);
+    });
+
+    enabledPrompts.forEach(function(p) { addPrompt(p, null); });
+    buckets.inChat.sort(function(a, b) { return (a._order || 0) - (b._order || 0); });
+    return buckets;
 }
 
 // ==================== Conversation Export / Import ====================
