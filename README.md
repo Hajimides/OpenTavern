@@ -1,5 +1,8 @@
 本项目采用 AGPL v3 许可。
 如需商业用途（闭源使用、商业产品集成、SaaS 服务等），请联系作者获取商业许可。
+This project is licensed under the AGPL v3.
+
+For commercial use (including closed-source distribution, commercial product integration, or SaaS deployment), please contact the author to obtain a commercial license.
 # OpenTavern
 
 **A lightweight, powerful, single-file AI character chat app**  
